@@ -91,8 +91,10 @@ static uint32_t PHY_GenerateVendorIeData_OpenThread(Phy_PhyLocalStruct_t *ctx, p
 
 #ifdef CTX_SCHED
 void PHY_InterruptHandler_base(uint8_t xcvseqCopy, uint32_t irqStatus);
+void PhyAbort_base(Phy_PhyLocalStruct_t *ctx);
 #else
 #define PHY_InterruptHandler_base PHY_InterruptHandler
+#define PhyAbort_base(ctx) PhyAbort()
 #endif
 
 /*! *********************************************************************************
@@ -1220,9 +1222,9 @@ void PHY_InterruptHandler_base(
 #if defined(FFU_DEVICE_LIMIT_VISIBILITY)
                 if( !PHY_isFrameVisible(ctx, rxFcf) )
                 {
-                    // Filtering Feature is enabled - abort sequencer to drop current frame + ACK
-                    // Cleanup before abort
-                    PhyAbort();
+                    /* Filtering Feature is enabled - abort sequencer to drop current frame + ACK.
+                       Cleanup curent context. There is no sequence end event */
+                    PhyAbort_base(ctx);
                     Radio_Phy_AbortIndication(ctx);
 
                     // Default Rx Watermark Level

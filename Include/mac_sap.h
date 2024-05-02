@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- * Copyright NXP B.V. 2012. All rights reserved
+ * Copyright NXP B.V. 2012,2019-2023. All rights reserved
  *
  ***************************************************************************/
 
@@ -1935,6 +1935,9 @@ typedef enum
     PHY_PIB_ATTR_CCA_MODE           = 3,  /**<  */
     PHY_PIB_ATTR_AUX_CHANNEL        = 4,  /**< Only for multi-MAC or sub-GHz */
     PHY_PIB_ATTR_CCA_THRESHOLD      = 5,  /**<  */
+    PHY_PIB_ATTR_NT_SET             = 6,  /**< Enable/Disable PHY NT */
+    PHY_PIB_ATTR_NT_ADD_CHADDR      = 7,  /**< Add a child address in NT */
+    PHY_PIB_ATTR_NT_DEL_CHADDR      = 8,  /**< Delete a child address in NT */
 } PHY_PibAttr_e;
 
 /**

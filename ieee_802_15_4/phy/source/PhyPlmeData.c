@@ -230,8 +230,6 @@ phyStatus_t PhyPdDataRequest(Phy_PhyLocalStruct_t *ctx)
 
     ctx_set_rx_ongoing(ctx, FALSE);
 
-    Phy_SetSequenceTiming(&pTxPacket->startTime, pTxPacket->txDuration, ccaOverheadSym);
-
     /* Load data into Packet Buffer byte by byte to avoid memory access issues.
        psduLength should include the 2 FCS bytes (gPhyFCSSize_c) */
     PHY_MemCpyVerify(TX_PB, &pTxPacket->psduLength, sizeof(pTxPacket->psduLength));
@@ -300,6 +298,8 @@ phyStatus_t PhyPdDataRequest(Phy_PhyLocalStruct_t *ctx)
 #if (RADIO_COEX_METRICS_ENABLE==1)
     PhyUpdateCoexSwMetricsTx();
 #endif
+
+    Phy_SetSequenceTiming(&pTxPacket->startTime, pTxPacket->txDuration, ccaOverheadSym);
 
     /* Start the TX / TRX sequence */
     ZLL->PHY_CTRL |= xcvseq;

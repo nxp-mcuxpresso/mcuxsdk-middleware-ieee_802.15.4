@@ -2242,6 +2242,7 @@ void sched_abort_current()
     if (scheduler.current)
     {
         scheduler.current->filter_fail = 0;
+        scheduler.current->rx_ongoing = FALSE;
 
         if (scheduler.current->op == TX_OP)
         {
@@ -2716,7 +2717,9 @@ void PhyAbort_base(Phy_PhyLocalStruct_t *ctx)
 
     if (ctx)
     {
-        ctx->op = NONE_OP;
+        ctx->op          = NONE_OP;
+        ctx->filter_fail = 0;
+        ctx->rx_ongoing  = FALSE;
     }
 
     OSA_InterruptEnable();

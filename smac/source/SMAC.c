@@ -1429,7 +1429,6 @@ phyStatus_t PLME_SMAC_SapHandler(void* pMsg, instanceId_t instance)
 
         lSmacInstanceBackup = mSmacActivePan;
         MLMESetActivePan((smacMultiPanInstances_t)instance);
-        pSmacToApp->msgData.edCnf.scannedChannel = MLMEGetChannelRequest();
         MLMESetActivePan(lSmacInstanceBackup);
       }
       else

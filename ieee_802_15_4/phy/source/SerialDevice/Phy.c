@@ -107,11 +107,6 @@ void Phy_Init(void)
 
     OSA_InterruptEnable();
 
-#ifndef CM33_DUAL_MODE
-    /* Start CM3 core and Initializes the RPMSG adapter module for dual core communication */
-    PLATFORM_InitMulticore();
-#endif
-
     if (HAL_RpmsgInit((hal_rpmsg_handle_t)phyRpmsgHandle, &phyRpmsgConfig) != kStatus_HAL_RpmsgSuccess)
     {
         assert(0);

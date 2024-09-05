@@ -47,6 +47,24 @@
 #include "SMAC_Interface.h"
 #endif
 
+#define CH2FREQ(x)             \
+    (x == 11) ? 2405000000UL : \
+    (x == 12) ? 2410000000UL : \
+    (x == 13) ? 2415000000UL : \
+    (x == 14) ? 2420000000UL : \
+    (x == 15) ? 2425000000UL : \
+    (x == 16) ? 2430000000UL : \
+    (x == 17) ? 2435000000UL : \
+    (x == 18) ? 2440000000UL : \
+    (x == 19) ? 2445000000UL : \
+    (x == 20) ? 2450000000UL : \
+    (x == 21) ? 2455000000UL : \
+    (x == 22) ? 2460000000UL : \
+    (x == 23) ? 2465000000UL : \
+    (x == 24) ? 2470000000UL : \
+    (x == 25) ? 2475000000UL : \
+    (x == 26) ? 2480000000UL : -1
+
 #if gAspCapability_d
 
 /*! *********************************************************************************
@@ -591,6 +609,7 @@ AspStatus_t ASP_TelecTest(uint8_t mode)
     uint8_t channel;
     AspStatus_t status = gAspSuccess_c;
     static bool_t fracSet = FALSE;
+    static uint32_t pad_dly;
 
     /* Get current channel number */
     channel = PhyPlmeGetCurrentChannelRequest(0);
@@ -604,6 +623,10 @@ AspStatus_t ASP_TelecTest(uint8_t mode)
     switch (mode)
     {
     case gTestForceIdle_c:  /* ForceIdle() */
+        XCVR_DftTxOff();
+        /* CONNRF-1310 */
+        XCVR_TX_DIG->DATA_PADDING_CTRL = pad_dly;
+
         /* Stop Tx interval timer (if started) */
         PhyTime_CancelEvent(mAsp_TxTimer);
         PhyAbort();
@@ -652,14 +675,19 @@ AspStatus_t ASP_TelecTest(uint8_t mode)
         break;
 
     case gTestContinuousTxNoMod_c: /* Sets the device to continuously transmit an unmodulated CW */
-        /* First shut everything off */
-        ASP_setDftMode(0U);
-        /* Clear DFT features */
-        ASP_clearDftfeatures();
-        /* Set CW TX RADIO_DFT_MODE */
-        ASP_setDftMode(1U);
-        /* Warm-up the Radio */
-        XCVR_ForceTxWu();
+        /*
+         * As per CONNRF-1310, there's a HW issue, that's
+         * present on both KW45 as well as KW47. The short version
+         * is that the data padding is incorrectly being added as
+         * an offset to the PLL numerator in this DFT mode.
+         * As a W/A save it and restore it when exiting DFT.
+         */
+        pad_dly = XCVR_TX_DIG->DATA_PADDING_CTRL;
+        XCVR_TX_DIG->DATA_PADDING_CTRL = 0;
+
+        XCVR_ForcePAPower(0x32);
+        XCVR_DftTxCW(CH2FREQ(channel));
+
         fracSet = TRUE;
         break;
 

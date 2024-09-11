@@ -1,0 +1,47 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+menuconfig MCUX_COMPONENT_middleware.wireless.ieee_802_15_4
+    bool "ieee 802.15.4"
+    help
+       Enable ieee 802.15.4 MAC/PHY
+
+if MCUX_COMPONENT_middleware.wireless.ieee_802_15_4
+
+choice
+    prompt "ieee 802.15.4 MAC/PHY"
+
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.split_PHY
+    bool "k32w1/mcxw71: PHY only on NBU core"
+    depends on MCUX_COMPONENT_middleware.wireless.framework.platform.kw45_k32w1_mcxw71
+
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.split_MAC
+    bool "k32w1/mcxw71: MAC/PHY on NBU core"
+    depends on MCUX_COMPONENT_middleware.wireless.framework.platform.kw45_k32w1_mcxw71
+
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.MAC_split_PHY
+    bool "k32w1/mcxw71: MAC on main core, PHY on NBU core"
+    depends on MCUX_COMPONENT_middleware.wireless.framework.platform.kw45_k32w1_mcxw71
+
+
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.split_PHY
+    bool "mcxw72: PHY only on NBU core"
+    depends on MCUX_COMPONENT_middleware.wireless.framework.platform.kw47_mcxw72
+
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.split_MAC
+    bool "mcxw72: MAC/PHY on NBU core"
+    depends on MCUX_COMPONENT_middleware.wireless.framework.platform.kw47_mcxw72
+
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.MAC_split_PHY
+    bool "mcxw72: MAC on main core, PHY on NBU core"
+    depends on MCUX_COMPONENT_middleware.wireless.framework.platform.kw47_mcxw72
+
+
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.rw61x.split_MAC
+    bool "rw61x: MAC/PHY on NBU core"
+    depends on MCUX_COMPONENT_middleware.wireless.framework.platform.rw61x
+
+endchoice
+
+endif

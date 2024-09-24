@@ -149,6 +149,16 @@ uint8_t phy_lp_flag = 0;
 uint8_t mXcvrAcquired = 0;
 #endif
 
+#if (gMWS_Enabled_d) || (gMWS_UseCoexistence_d)
+/*
+ * LDO ANT TRIM value to be applied at each XCVR Init or mode change.
+ * This is init on NBU core based on gAppMaxTxPowerDbm_c define.
+ * Valid value 0 - 15.
+ * Set to invalid value 0xFF by default
+ */
+uint8_t g_ldo_ant_trim_15_4 = 0xFF;
+#endif
+
 /*! *********************************************************************************
 *************************************************************************************
 * Public functions
@@ -210,6 +220,11 @@ void Phy_Init(void)
 
 #if defined(K32W1480_SERIES) || defined(CPU_KW45B41Z83AFPA_NBU) || defined(MCXW72BD_cm33_core0_SERIES) || defined(MCXW716A_SERIES) || defined(MCXW716C_SERIES)
     PLATFORM_SetGenfskMaxTxPower(gAppMaxTxPowerDbm_c);
+#endif
+
+#if (gMWS_Enabled_d) || (gMWS_UseCoexistence_d)
+    /* Store maintained value for LDO Ant Trim used by 15.4 Phy layer */
+    g_ldo_ant_trim_15_4 = XCVR_getLdoAntTrim();
 #endif
 
 #ifdef CTX_SCHED
@@ -1579,6 +1594,13 @@ static uint32_t MWS_802_15_4_Callback(mwsEvents_t event)
            */
           PhyPlatformHwInit();
 
+          /*
+           * In the process of dynamically changing modes between BLE and 15.4 Phy,
+           *  BLE may change LDO_ANT_TRIM value
+           *  restore LDO ANT TRIM to value maintained and expected by 15.4
+           */
+          XCVR_setLdoAntTrim(g_ldo_ant_trim_15_4);
+
           XCVR_SetActiveLL(XCVR_ACTIVE_LL_ZIGBEE_LL);
 
           /* Reset TX state machine -> MATTER-256. This is a software workaround to reset the TX done
@@ -1668,6 +1690,15 @@ static uint32_t MWS_802_15_4_Callback(mwsEvents_t event)
           mXcvrAcquired = 0;
 
           XCVR_ChangeMode(&xcvrConfigBLE, &rbmeConfigBLE);
+
+          /*
+           * In the process of dynamically changing modes between BLE and 15.4 Phy,
+           * 15.4 Phy Layer may change LDO_ANT_TRIM value
+           * restore LDO ANT TRIM to value maintained and expected by BLE
+           */
+          extern void Controller_RestoreLdoAntTrim(void);
+          Controller_RestoreLdoAntTrim();
+
           XCVR_SetActiveLL(XCVR_ACTIVE_LL_BTLE);
 
           OSA_InterruptEnable();

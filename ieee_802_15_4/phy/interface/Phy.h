@@ -605,22 +605,22 @@ phyStatus_t PhyPlmeSetCurrentChannelRequest(uint8_t channel, uint8_t pan);
 uint8_t PhyPlmeGetCurrentChannelRequest(uint8_t pan);
 
 /*! *********************************************************************************
- * \brief Set the TX power level
+ * \brief Set the TX ouput power level in dBm signed value
  *
- * \param[in] pwrStep  the Tx power level
+ * \param[in] pwr_dbm Tx output power in dBm signed value
  *
  * \return status
  *
  ********************************************************************************** */
-phyStatus_t PhyPlmeSetPwrLevelRequest(int8_t pwrStep);
+phyStatus_t PhyPlmeSetPwrLevelRequest(int8_t pwr_dbm);
 
 /*! *********************************************************************************
- * \brief Get the TX power level
+ * \brief Get the TX output power level in dBm signed value
  *
- * \return current power level
+ * \return current TX output power in dBm signed value
  *
  ********************************************************************************** */
-uint8_t PhyPlmeGetPwrLevelRequest(void);
+int8_t PhyPlmeGetPwrLevelRequest(void);
 
 /*! *********************************************************************************
  * \brief Set a PHY PIB

@@ -49,6 +49,19 @@
 ********************************************************************************** */
 #define PHY_PARAMETERS_VALIDATION 1
 
+/*
+ * following defines are for LDO_ANT_TRIM settings according with framework
+ * for LDO_ANT_TRIM legal values are from 0 to 15
+ * but 3 generic use cases are used: minim, medium, maximum
+ * these are corelated also with datasheet tables
+ * which provides data only for these use cases
+ */
+#define LDO_ANT_TRIM_MINIMUM_POWER    3
+#define LDO_ANT_TRIM_MEDIUM_POWER     8
+#define LDO_ANT_TRIM_MAXIMUM_POWER    15
+
+#define TX_OUTPUT_INVALID_DBM_VALUE   127
+
 #if (TX_POWER_LIMIT_FEATURE == 1)
 #define MAX_TX_POWER_BACKOFF gPhyMaxTxPowerLevel_d
 #define MIN_TX_POWER_BACKOFF 1
@@ -61,11 +74,160 @@
 ********************************************************************************** */
 uint8_t gPhyChannelTxPowerLimits[] = gChannelTxPowerLimit_c;
 
+#if !defined(FFU_CNS_TX_PWR_TABLE_CALIBRATION) || (defined(FFU_CNS_TX_PWR_TABLE_CALIBRATION) && (FFU_CNS_TX_PWR_TABLE_CALIBRATION != 1))
+
+typedef struct {
+    uint8_t pa_slice;
+    int8_t dbm_high_rf_pwr;
+    int8_t dbm_medium_rf_pwr;
+    int8_t dbm_low_rf_pwr;
+} dbm_pa_slices_t;
+
+/*
+ * According with datasheet chapter: 3.4.3 Transmit and PLL Feature Summary
+ * output TX Power over RF is a functions of temperature and LDO_ANT_TRIM setting in XCVR registers
+ * LDO_ANT_TRIM setting in XCVR registers sets the required voltage for a desired RF output power
+ *
+ * TX Power over RF is set in PA_PWR register in PA slices
+ * PA_PWR is unsigned, legal and valid values are between 0 and 63;
+ * PA_PWR = 0 means RF power shut down;
+ * PA_PWR = 1 means minimum output RF power -22 dBm;
+ * PA_PWR = 63 means maximum output RF power +10 dBm;
+ *
+ * Note: according with datasheet prefered PA slice values are: 1,2,4,6,8, ... 60,62
+ *
+ * Following Lookup table for PA_POWER register is valid for
+ *     LDO_ANT_TRIM = 12 [voltage = 2.21 V] or above
+ *   and
+ *     temperature = 25 C
+ */
+static const uint8_t pa_pwr_lookup_table_ldo_high_rf_power[] = {
+    1,                      /* set to: -22.25 dBm; when wanted power is: -22 or bellow */
+    2, 2, 2, 2, 2, 2,       /* set to: -16.59 dBm: when wanted power is: -21 -20 -19 -18 -17 -16 */
+    4, 4, 4, 4, 4, 4,       /* set to: -10.67 dBm: when wanted power is: -15 -14 -13 -12 -11 -10 */
+    6, 6, 6,                /* set to: -7.24 dBm:  when wanted power is: -9, -8, -7 */
+    8, 8, 8,                /* set to: -4.82 dBm:  when wanted power is: -6, -5, -4 */
+    10, 10,                 /* set to: -2.93 dBm:  when wanted power is: -3, -2 */
+    12,                     /* set to: -1.43 dBm:  when wanted power is: -1 */
+    14,                     /* set to: -0.16 dBm:  when wanted power is:  0 */
+    16,                     /* set to: +1.01 dBm:  when wanted power is: +1 */
+    20,                     /* set to: +2.85 dBm:  when wanted power is: +2 */
+    22,                     /* set to: +3.62 dBm:  when wanted power is: +3 */
+    24,                     /* set to: +4.26 dBm:  when wanted power is: +4 */
+    28,                     /* set to: +5.46 dBm:  when wanted power is: +5 */
+    32,                     /* set to: +6.50 dBm:  when wanted power is: +6 */
+    36,                     /* set to: +7.36 dBm:  when wanted power is: +7 */
+    42,                     /* set to: +8.35 dBm:  when wanted power is: +8 */
+    50,                     /* set to: +9.29 dBm:  when wanted power is: +9 */
+    60                      /* set to: +10.11 dBm: when wanted power is: +10 or above */
+};
+
+/*
+ * Following Lookup table for PA_POWER register is valid for
+ *     LDO_ANT_TRIM = 8 [voltage = 1.61 V]
+ *   and
+ *     temperature = 25 C
+ */
+static const uint8_t pa_pwr_lookup_table_ldo_medium_rf_power[] = {
+    1,                      /* set to: -24.11 dBm; when wanted power is: -24 or bellow */
+    2, 2, 2, 2, 2, 2,       /* set to: -18.45 dBm: when wanted power is: -23 -22 -21 -20 -19 -18 */
+    4, 4, 4, 4, 4, 4,       /* set to: -12.54 dBm: when wanted power is: -17 -16 -15 -14 -13 -12 */
+    6, 6, 6,                /* set to: -9.11 dBm:  when wanted power is: -11 -10 -9 */
+    8, 8, 8,                /* set to: -6.68 dBm:  when wanted power is: -8 -7 -6 */
+    10, 10,                 /* set to: -4.79 dBm:  when wanted power is: -5 -4 */
+    12,                     /* set to: -3.29 dBm:  when wanted power is: -3 */
+    14,                     /* set to: -2.01 dBm:  when wanted power is: -2 */
+    16,                     /* set to: -0.85 dBm:  when wanted power is: -1 */
+    18,                     /* set to: +0.13 dBm:  when wanted power is:  0 */
+    20,                     /* set to: +0.99 dBm:  when wanted power is: +1 */
+    24,                     /* set to: +2.39 dBm:  when wanted power is: +2 */
+    26,                     /* set to: +3.03 dBm:  when wanted power is: +3 */
+    30,                     /* set to: +4.10 dBm:  when wanted power is: +4 */
+    34,                     /* set to: +5.03 dBm:  when wanted power is: +5 */
+    40,                     /* set to: +6.05 dBm:  when wanted power is: +6 */
+    50,                     /* set to: +7.15 dBm:  when wanted power is: +7 */
+    62                      /* set to: +7.96 dBm:  when wanted power is: +8 or above */
+};
+
+/*
+ * Following Lookup table for PA_POWER register is valid for
+ *     LDO_ANT_TRIM = 2 [voltage = 1.04 V] or bellow
+ *   and
+ *     temperature = 25 C
+ */
+static const uint8_t pa_pwr_lookup_table_ldo_low_rf_power[] = {
+    1,                      /* set to: -32.44 dBm; when wanted power is: -32 or bellow */
+    2, 2, 2, 2, 2, 2,       /* set to: -26.44 dBm: when wanted power is: -31 -30 -29 -28 -27 -26 */
+    4, 4, 4, 4, 4, 4,       /* set to: -20.50 dBm: when wanted power is: -25 -24 -23 -22 -21 -20 */
+    6, 6, 6,                /* set to: -17.09 dBm: when wanted power is: -19, -18, -17 */
+    8, 8, 8,                /* set to: -14.73 dBm: when wanted power is: -16, -15, -14 */
+    10, 10,                 /* set to: -12.83 dBm: when wanted power is: -13, -12 */
+    12,                     /* set to: -11.28 dBm: when wanted power is: -11 */
+    14,                     /* set to: -10.00 dBm: when wanted power is: -10 */
+    16,                     /* set to: -8.97 dBm:  when wanted power is: -9 */
+    18,                     /* set to: -7.97 dBm:  when wanted power is: -8 */
+    20,                     /* set to: -7.08 dBm:  when wanted power is: -7 */
+    22,                     /* set to: -6.30 dBm:  when wanted power is: -6 */
+    26,                     /* set to: -4.97 dBm:  when wanted power is: -5 */
+    28,                     /* set to: -4.37 dBm:  when wanted power is: -4 */
+    32,                     /* set to: -3.36 dBm:  when wanted power is: -3 */
+    38,                     /* set to: -1.98 dBm:  when wanted power is: -2 */
+    44,                     /* set to: -0.91 dBm:  when wanted power is: -1 */
+    52,                     /* set to: +0.19 dBm:  when wanted power is:  0 */
+    62                      /* set to: +1.22 dBm:  when wanted power is: +1 or above */
+};
+
+static const dbm_pa_slices_t dbm_lookup_table[]= {
+  { 1, -22, -24, -32},
+  { 2, -16, -18, -26},
+  { 4, -10, -12, -20},
+  { 6,  -7,  -9, -17},
+  { 8,  -5,  -7, -14},
+  {10,  -3,  -5, -13},
+  {12,  -1,  -3, -11},
+  {14,   0,  -2, -10},
+  {16,  +1,  -1,  -9},
+  {18,  +2,   0,  -8},
+  {20,  +3,  +1,  -7},
+  {22,  +4,  +2,  -6},
+  {24,  +4,  +2,  -5},
+  {26,  +5,  +3,  -5},
+  {28,  +5,  +3,  -4},
+  {30,  +6,  +4,  -4},
+  {32,  +6,  +4,  -3},
+  {34,  +7,  +5,  -3},
+  {36,  +7,  +5,  -2},
+  {38,  +7,  +5,  -2},
+  {40,  +8,  +6,  -2},
+  {42,  +8,  +6,  -1},
+  {44,  +8,  +6,  -1},
+  {46,  +8,  +6,  -1},
+  {48,  +9,  +7,   0},
+  {50,  +9,  +7,   0},
+  {52,  +9,  +7,   0},
+  {54,  +9,  +7,   0},
+  {56,  +9,  +7,  +1},
+  {58, +10,  +7,  +1},
+  {60, +10,  +8,  +1},
+  {62, +10,  +8,  +1}
+};
+
+#endif // #if !defined(FFU_CNS_TX_PWR_TABLE_CALIBRATION) || (defined(FFU_CNS_TX_PWR_TABLE_CALIBRATION) && (FFU_CNS_TX_PWR_TABLE_CALIBRATION != 1))
+
 /*! *********************************************************************************
 *************************************************************************************
 * Private prototypes
 *************************************************************************************
 ********************************************************************************** */
+
+#if !defined(FFU_CNS_TX_PWR_TABLE_CALIBRATION) || (defined(FFU_CNS_TX_PWR_TABLE_CALIBRATION) && (FFU_CNS_TX_PWR_TABLE_CALIBRATION != 1))
+
+static phyStatus_t PhyPlmeSetPwrLevelPASlice(uint8_t NSlice);
+static uint8_t PhyPlmeGetPwrLevelPASlice(void);
+static uint8_t PhyPlmeConvertDbmToPASlice(int8_t pwr_dbm);
+static int8_t PhyPlmeConvertPASliceToDbm(uint8_t pa_slice);
+
+#endif
 
 /*! *********************************************************************************
 *************************************************************************************
@@ -491,10 +653,12 @@ phyStatus_t PhyPlmeCcaEdRequest(Phy_PhyLocalStruct_t *ctx)
 ********************************************************************************** */
 phyStatus_t PhyPlmeSetCurrentChannelRequest(uint8_t channel, uint8_t pan)
 {
-    uint8_t txPwrDbm;
 #if (FFU_CNS_TX_PWR_TABLE_CALIBRATION == 1)
+    uint8_t txPwrDbm;
     uint8_t channelTxPowerLimit = 0;
     uint8_t minTxPower = 0;
+#else
+    uint8_t pa_slices;
 #endif
 
 #ifdef PHY_PARAMETERS_VALIDATION
@@ -503,8 +667,6 @@ phyStatus_t PhyPlmeSetCurrentChannelRequest(uint8_t channel, uint8_t pan)
         return gPhyInvalidParameter_c;
     }
 #endif /* PHY_PARAMETERS_VALIDATION */
-
-    txPwrDbm = PhyPlmeGetPwrLevelRequest();
 
     if (!pan)
     {
@@ -524,6 +686,8 @@ phyStatus_t PhyPlmeSetCurrentChannelRequest(uint8_t channel, uint8_t pan)
 #endif
 
 #if (FFU_CNS_TX_PWR_TABLE_CALIBRATION == 1)
+
+    txPwrDbm = PhyPlmeGetPwrLevelRequest();
     // txPwrDbm unit is dBm and gPhyChannelTxPowerLimits and gPhyMinTxPowerLevel_d unit is half dBm
     // a conversion is needed to have the same unit for the following comparison
     channelTxPowerLimit = gPhyChannelTxPowerLimits[channel - 11]/2;
@@ -534,12 +698,17 @@ phyStatus_t PhyPlmeSetCurrentChannelRequest(uint8_t channel, uint8_t pan)
     {
         PhyPlmeSetPwrLevelRequest(channelTxPowerLimit);
     }
+
 #else
+
+    pa_slices = PhyPlmeGetPwrLevelPASlice();
+
     /* Make sure the current Tx power doesn't exceed the Tx power limit for the new channel */
-    if (txPwrDbm > gPhyChannelTxPowerLimits[channel - 11])
+    if (pa_slices > gPhyChannelTxPowerLimits[channel - 11])
     {
-        PhyPlmeSetPwrLevelRequest(gPhyChannelTxPowerLimits[channel - 11]);
+        PhyPlmeSetPwrLevelPASlice(gPhyChannelTxPowerLimits[channel - 11]);
     }
+
 #endif
 
 #if defined(K32W1480_SERIES) || defined(CPU_KW45B41Z83AFPA_NBU) || defined(MCXW72BD_cm33_core1_SERIES) || defined(MCXW716A_SERIES) || defined(MCXW716C_SERIES)
@@ -585,26 +754,237 @@ uint8_t PhyPlmeGetCurrentChannelRequest(uint8_t pan)
     return channel;
 }
 
+#if !defined(FFU_CNS_TX_PWR_TABLE_CALIBRATION) || (defined(FFU_CNS_TX_PWR_TABLE_CALIBRATION) && (FFU_CNS_TX_PWR_TABLE_CALIBRATION != 1))
+
 /*! *********************************************************************************
-* \brief  This function will set the radio Tx power
-*
-* \param[in]   pwrStep   the Tx power (dBm)
-*
-* \return  phyStatus_t
-*
-********************************************************************************** */
-phyStatus_t PhyPlmeSetPwrLevelRequest(int8_t pwrStep)
+ * \brief Set the TX power level by selecting the PA slice.
+ *        Each PA slice adds additional power to the PA in an non-linear manner,
+ *        see datasheet & lookup table for further details.
+ *        Final output power is also dependent on analog settings.
+ *
+ * \param[in] NSlice number of PA slice to be set and used for the Tx output power
+ *                   valid values 0 - 63
+ *
+ * \return status
+ *
+ ********************************************************************************** */
+static phyStatus_t PhyPlmeSetPwrLevelPASlice(uint8_t NSlice)
+{
+    phyStatus_t status = gPhySuccess_c;
+
+    /*
+     * Check NSlice PA_PWR setting
+     * do not exceed the Tx power limit for the current channel
+     * comparing unsigned 8 bits integers which holds PA slices
+     */
+    if (NSlice > gPhyChannelTxPowerLimits[ZLL->CHANNEL_NUM0 - 11])
+    {
+        NSlice = gPhyChannelTxPowerLimits[ZLL->CHANNEL_NUM0 - 11];
+    }
+
+#ifdef CTX_SCHED
+    if (NSlice > gPhyChannelTxPowerLimits[ZLL->CHANNEL_NUM1 - 11])
+    {
+        NSlice = gPhyChannelTxPowerLimits[ZLL->CHANNEL_NUM1 - 11];
+    }
+#endif
+
+    /*
+     * Check NSlice holds valid values for PA_PWR register setting
+     * comparing unsigned 8 bits integers which holds PA slices
+     */
+    if (NSlice > gPhyMaxTxPowerLevel_d)
+    {
+      NSlice = gPhyMaxTxPowerLevel_d;
+    }
+
+    /* Set new value */
+    ZLL->PA_PWR = ZLL_PA_PWR_PA_PWR(NSlice);
+
+    return status;
+}
+
+/*! *********************************************************************************
+ * \brief Get the TX power level in PA slices
+ *
+ * \return current PA slice used for current tx output power
+ *
+ ********************************************************************************** */
+static uint8_t PhyPlmeGetPwrLevelPASlice(void)
+{
+    uint8_t ret_val = 0;
+
+    ret_val = (uint8_t)((ZLL->PA_PWR & ZLL_PA_PWR_PA_PWR_MASK) >> ZLL_PA_PWR_PA_PWR_SHIFT);
+
+    return ret_val;
+}
+
+/*! *********************************************************************************
+ * \brief Convert TX power from number of PA slices into dBm
+ *
+ * \param[in] pa_slice current TX output power setting in PA slices
+ *
+ * \return the DBM Tx output power
+ *
+ ********************************************************************************** */
+static int8_t PhyPlmeConvertPASliceToDbm(uint8_t pa_slice)
+{
+    int8_t dBm = TX_OUTPUT_INVALID_DBM_VALUE; // invalid value
+    uint8_t ldo_ant_trim = XCVR_getLdoAntTrim();
+    uint8_t i;
+
+    if ((pa_slice == 0) || (pa_slice > gPhyMaxTxPowerLevel_d))
+        return dBm; // invalid value
+
+    for ( i=0; i < (sizeof(dbm_lookup_table)/sizeof(dbm_lookup_table[0])); i++)
+    {
+        if (pa_slice <= dbm_lookup_table[i].pa_slice)
+        {
+            break;
+        }
+    }
+
+    // check index array is still in legal limits
+    if ( i >= (sizeof(dbm_lookup_table)/sizeof(dbm_lookup_table[0])) )
+    {
+        /*
+         * if pa_slice is bigger than listed datasheet values but still legal
+         * return maximum dBm for maximum listed value
+         */
+        i = (sizeof(dbm_lookup_table)/sizeof(dbm_lookup_table[0])) - 1;
+    }
+
+    if (ldo_ant_trim <= LDO_ANT_TRIM_MINIMUM_POWER)
+    { // minimum output power dBm
+        dBm = dbm_lookup_table[i].dbm_low_rf_pwr;
+    }
+    else if (ldo_ant_trim <= LDO_ANT_TRIM_MEDIUM_POWER)
+    { // medium output power
+        dBm = dbm_lookup_table[i].dbm_medium_rf_pwr;
+    }
+    else
+    { // maximum output power
+        dBm = dbm_lookup_table[i].dbm_high_rf_pwr;
+    }
+
+    return dBm;
+}
+
+/*! *********************************************************************************
+ * \brief Convert TX power from dBm into number of PA slice
+ *        dBm are converted into PA slices keeping in mind
+ *        PA voltage set by LDO_ANT_TRIM
+ *
+ * \param[in] pwr_dbm  the DBM Tx output power
+ *
+ * \return current TX output power setting in PA slices
+ *
+ ********************************************************************************** */
+static uint8_t PhyPlmeConvertDbmToPASlice(int8_t pwr_dbm)
+{
+    /*
+     * this variable is used to keep PA slices to be set in PA_PWR register
+     * slices are according with lookup table which is based on datasheet table values
+     */
+    uint8_t pa_slices_val =  0;
+
+    uint8_t ldo_ant_trim = XCVR_getLdoAntTrim();
+
+    if (ldo_ant_trim <= LDO_ANT_TRIM_MINIMUM_POWER)
+    { // minimum output power dBm
+        /*
+         * Check input parameter pwr_dbm is in legal limits
+         * since will be used in lookup table search
+         * comparing signed integers which holds dBm
+         */
+        if (pwr_dbm > gPhyMaxTxPower_low_rf_dBm_Int8_d)
+        {
+            pwr_dbm = gPhyMaxTxPower_low_rf_dBm_Int8_d;
+        }
+
+        if (pwr_dbm < gPhyMinTxPower_low_rf_dBm_Int8_d)
+        {
+            pwr_dbm = gPhyMinTxPower_low_rf_dBm_Int8_d;
+        }
+
+        /*
+         * get the right PA slices value to be set in PA_PWR
+         * for desired dBm output Tx Power according with signed input parameter pwr_dbm
+         */
+        pa_slices_val = pa_pwr_lookup_table_ldo_low_rf_power[pwr_dbm - gPhyMinTxPower_low_rf_dBm_Int8_d];
+    }
+    else if (ldo_ant_trim <= LDO_ANT_TRIM_MEDIUM_POWER)
+    { // medium output power
+        /*
+         * Check input parameter pwr_dbm is in legal limits
+         * since will be used in lookup table search
+         * comparing signed integers which holds dBm
+         */
+        if (pwr_dbm > gPhyMaxTxPower_medium_rf_dBm_Int8_d)
+        {
+            pwr_dbm = gPhyMaxTxPower_medium_rf_dBm_Int8_d;
+        }
+
+        if (pwr_dbm < gPhyMinTxPower_medium_rf_dBm_Int8_d)
+        {
+            pwr_dbm = gPhyMinTxPower_medium_rf_dBm_Int8_d;
+        }
+
+        /*
+         * get the right PA slices value to be set in PA_PWR
+         * for desired dBm output Tx Power according with signed input parameter pwr_dbm
+         */
+        pa_slices_val = pa_pwr_lookup_table_ldo_medium_rf_power[pwr_dbm - gPhyMinTxPower_medium_rf_dBm_Int8_d];
+    }
+    else
+    { // maximum output power
+        /*
+         * Check input parameter pwr_dbm is in legal limits
+         * since will be used in lookup table search
+         * comparing signed integers which holds dBm
+         */
+        if (pwr_dbm > gPhyMaxTxPower_high_rf_dBm_Int8_d)
+        {
+            pwr_dbm = gPhyMaxTxPower_high_rf_dBm_Int8_d;
+        }
+
+        if (pwr_dbm < gPhyMinTxPower_high_rf_dBm_Int8_d)
+        {
+            pwr_dbm = gPhyMinTxPower_high_rf_dBm_Int8_d;
+        }
+
+        /*
+         * get the right PA slices value to be set in PA_PWR
+         * for desired dBm output Tx Power according with signed input parameter pwr_dbm
+         */
+        pa_slices_val = pa_pwr_lookup_table_ldo_high_rf_power[pwr_dbm - gPhyMinTxPower_high_rf_dBm_Int8_d];
+    }
+
+    return pa_slices_val;
+}
+
+#endif // #if !defined(FFU_CNS_TX_PWR_TABLE_CALIBRATION) || (defined(FFU_CNS_TX_PWR_TABLE_CALIBRATION) && (FFU_CNS_TX_PWR_TABLE_CALIBRATION != 1))
+
+/*! *********************************************************************************
+ * \brief Set the TX ouput power level in dBm signed value
+ *
+ * \param[in] pwr_dbm Tx output power in dBm signed value
+ *
+ * \return status
+ *
+ ********************************************************************************** */
+phyStatus_t PhyPlmeSetPwrLevelRequest(int8_t pwr_dbm)
 {
     phyStatus_t status = gPhySuccess_c;
 
 #if (FFU_CNS_TX_PWR_TABLE_CALIBRATION == 1)
     uint8_t phyMaxTxPowerLevel = gPhyMaxTxPowerLevel_d;
     uint8_t phyTxPowerLevel = 0;
-    uint8_t t_pwrStep = pwrStep;
+    uint8_t t_pwrStep = pwr_dbm;
 
 #ifdef PHY_PARAMETERS_VALIDATION
     /* Max Tx power value supported for int8 conversion is (-64 to 63) */
-    if ((pwrStep > gPhyMaxTxPowerLevelInt8_d) || (pwrStep < gPhyMinTxPowerLevelInt8_d))
+    if ((pwr_dbm > gPhyMaxTxPowerLevelInt8_d) || (pwr_dbm < gPhyMinTxPowerLevelInt8_d))
     {
         return gPhyInvalidParameter_c; // avoid setting an invalid value
     }
@@ -662,59 +1042,43 @@ phyStatus_t PhyPlmeSetPwrLevelRequest(int8_t pwrStep)
 #else /* #if (FFU_CNS_TX_PWR_TABLE_CALIBRATION == 1) */
 
 #ifdef PHY_PARAMETERS_VALIDATION
-    if (pwrStep > gPhyMaxTxPowerLevel_d)
+    uint8_t ldo_ant_trim = XCVR_getLdoAntTrim();
+    if (
+        ((ldo_ant_trim <= LDO_ANT_TRIM_MINIMUM_POWER) && (pwr_dbm > gPhyMaxTxPower_low_rf_dBm_Int8_d))
+          ||
+        ((ldo_ant_trim <= LDO_ANT_TRIM_MEDIUM_POWER) && (pwr_dbm > gPhyMaxTxPower_medium_rf_dBm_Int8_d))
+          ||
+        (pwr_dbm > gPhyMaxTxPower_high_rf_dBm_Int8_d)
+       )
     {
         status = gPhyInvalidParameter_c;
     }
     else
 #endif /* PHY_PARAMETERS_VALIDATION */
     {
-        /* Do not exceed the Tx power limit for the current channel */
-        if (pwrStep > gPhyChannelTxPowerLimits[ZLL->CHANNEL_NUM0 - 11])
-        {
-            pwrStep = gPhyChannelTxPowerLimits[ZLL->CHANNEL_NUM0 - 11];
-        }
-
-#ifdef CTX_SCHED
-        if (pwrStep > gPhyChannelTxPowerLimits[ZLL->CHANNEL_NUM1 - 11])
-        {
-            pwrStep = gPhyChannelTxPowerLimits[ZLL->CHANNEL_NUM1 - 11];
-        }
-#endif
+        /* this variable is used to keep PA slices to be set in PA_PWR register */
+        uint8_t pa_slices = PhyPlmeConvertDbmToPASlice(pwr_dbm);
 
 #if defined(HDI_MODE) && (HDI_MODE == 1) && (defined(K32W1480_SERIES) || defined(MCXW72BD_cm33_core0_SERIES) || defined(MCXW716A_SERIES) || defined(MCXW716C_SERIES))
-        HDI_SendPowerSwitchCmd((uint32_t)pwrStep);
+        HDI_SendPowerSwitchCmd((uint32_t)pa_slices);
 #endif
 
-        if (pwrStep > 2)
-        {
-            pwrStep = (pwrStep << 1) - 2;
-        }
-        else if ( pwrStep < 0 )
-        {
-            pwrStep = pwrStep << 1;
-        }
-
-        // for FPGA, set power in half dB
-#if defined(FFU_FPGA_INTF) && (FFU_FPGA_INTF == 1)
-        FPGA_SendSetPwrLevelCmd((uint8_t)pwrStep);
-#endif
-
-        ZLL->PA_PWR = pwrStep;
+        /* Set PA slices value into PA_PWR register */
+        PhyPlmeSetPwrLevelPASlice(pa_slices);
     }
 #endif
     return status;
 }
 
 /*! *********************************************************************************
-* \brief  This function will return the radio Tx power
-*
-* \return  Power level (dBm)
-*
-********************************************************************************** */
-uint8_t PhyPlmeGetPwrLevelRequest(void)
+ * \brief Get the TX output power level in dBm signed value
+ *
+ * \return current TX output power in dBm signed value
+ *
+ ********************************************************************************** */
+int8_t PhyPlmeGetPwrLevelRequest(void)
 {
-    uint8_t pwrStep = (uint8_t)ZLL->PA_PWR;
+    int8_t pwrStep = ZLL->PA_PWR;
 
 #if (FFU_CNS_TX_PWR_TABLE_CALIBRATION == 1)
     int8_t pwrStep_signed = pwrStep;
@@ -746,10 +1110,10 @@ uint8_t PhyPlmeGetPwrLevelRequest(void)
 #endif
 
 #else /*#if (FFU_CNS_TX_PWR_TABLE_CALIBRATION == 1)*/
-    if (pwrStep > 2)
-    {
-        pwrStep = (pwrStep + 2) >> 1;
-    }
+
+    uint8_t pa_slices = PhyPlmeGetPwrLevelPASlice();
+    pwrStep = PhyPlmeConvertPASliceToDbm(pa_slices);
+
 #endif
 
     return pwrStep;

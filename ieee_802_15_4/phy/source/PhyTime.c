@@ -16,6 +16,10 @@
 #include "fsl_device_registers.h"
 
 
+/* for timeouts <= gPhyTimeMinSetupTime_c, PhyTime_ScheduleEvent() runs the event callback without delay */
+#define gPhyTimeMinSetupTime_c (4) /* symbols */
+
+
 static bool_t phy_lp_tmr_allow_sleep = TRUE;
 
 
@@ -30,7 +34,7 @@ static bool_t phy_lp_tmr_allow_sleep = TRUE;
 #include "controller_api_ll.h"
 
 
-#define PHY_LP_TMR_MIN_DT 3     /* symbols */
+#define PHY_LP_TMR_MIN_DT ((gPhyTimeMinSetupTime_c) + (gPhyTimeMinSetupTime_c) / 2)     /* symbols */
 
 #undef PHY_TMR_EXTRA
 #define PHY_TMR_EXTRA 1
@@ -102,7 +106,7 @@ static void phy_lp_tmr_process(uint32 tmp)
         id = active_head;
         dt = (int64_t)(phy_lp_tmr[id].ev.timestamp - tstp);
 
-        if (dt < PHY_LP_TMR_MIN_DT)
+        if (dt <= PHY_LP_TMR_MIN_DT)
         {
             /* event is in the past or close to current time */
             active_head = phy_lp_tmr[id].next;
@@ -161,15 +165,22 @@ static void phy_lp_tmr_callback(uint32 tmp)
 
     phyTimeEvent_t ev;
 
+    /* phy_lp_tmr_process() must run in PHY ISR context since you can't rearm
+       the BLE timer from LL ISR context */
     ev.callback = phy_lp_tmr_process;
     ev.timestamp = PHY_LP_TMR_MIN_DT + PhyTime_GetTimestamp();
     ev.parameter = 0;
 
-    if (PhyTime_ScheduleEvent(&ev) != gInvalidTimerId_c)
+    /* set state in case the phy_lp_tmr_process() is run in
+       this context (LL ISR) by PhyTime_ScheduleEvent() */
+    phy_lp_tmr_process_pending = TRUE;
+    phy_lp_tmr_allow_sleep = TRUE;
+
+    if (PhyTime_ScheduleEvent(&ev) == gInvalidTimerId_c)
     {
         /* active PHY timers prevent low power mode */
-        phy_lp_tmr_process_pending = TRUE;
-        phy_lp_tmr_allow_sleep = TRUE;
+        phy_lp_tmr_process_pending = FALSE;
+        phy_lp_tmr_allow_sleep = FALSE;
     }
 
     OSA_InterruptEnable();
@@ -182,7 +193,7 @@ static void ll_tmr_start(uint64_t to)
         to = MAX_LP_TO - 1;
     }
 
-    /* rearm */
+    /* rearm the BLE timer. It can't be done from LL ISR context */
     LL_API_AppTimerClear();
     LL_API_AppTimerSet(to, phy_lp_tmr_callback, 0);
 
@@ -266,14 +277,14 @@ phyTimeTimerId_t phy_lp_time_sched_ev(phyTimeEvent_t *ev)
     to = (ev->timestamp - tstp) * PHY_SYMBOLS_US;
     dt = (int64_t)(ev->timestamp - tstp);
 
-    if (dt < PHY_LP_TMR_MIN_DT)
+    if (dt <= PHY_LP_TMR_MIN_DT)
     {
         /* event is in the past or close to current time.
            add it to expired list */
         phy_lp_tmr[id].next = expired_head;
         expired_head = id;
 
-        /* don't wait for the active timer (if any) to expire to handle event */
+        /* don't wait for the active timer (if any) to expire to handle events */
         ll_tmr_start(PHY_LP_TMR_MIN_DT * PHY_SYMBOLS_US);
 
         OSA_InterruptEnable();
@@ -386,8 +397,6 @@ uint64_t phy_lp_time_get_timestamp()
 
 #endif  /* PHY_LP_TMR */
 
-
-#define gPhyTimeMinSetupTime_c (4) /* symbols */
 
 static phyTimeEvent_t  maPhyTimers[gMaxPhyTimers_c + PHY_TMR_EXTRA];
 static phyTimeEvent_t *pNextEvent;

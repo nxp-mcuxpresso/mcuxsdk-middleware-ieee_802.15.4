@@ -152,16 +152,6 @@
 #define gPhyMaxTxPowerLevelInt8_d     (63)
 #endif
 
-#else /* FFU_CNS_TX_PWR_TABLE_CALIBRATION */
-#ifndef gPhyDefaultTxPowerLevel_d
-#define gPhyDefaultTxPowerLevel_d     (22)
-#endif
-
-#ifndef gPhyMaxTxPowerLevel_d
-#define gPhyMaxTxPowerLevel_d         (32)
-#endif
-#endif /* FFU_CNS_TX_PWR_TABLE_CALIBRATION */
-
 /* Tx Power level limit for each individual channel */
 #ifndef gChannelTxPowerLimit_c
 #define gChannelTxPowerLimit_c { gPhyMaxTxPowerLevel_d,   /* 11 */ \
@@ -181,6 +171,100 @@
                                  gPhyMaxTxPowerLevel_d,   /* 25 */ \
                                  gPhyMaxTxPowerLevel_d }  /* 26 */
 #endif
+
+#else /* FFU_CNS_TX_PWR_TABLE_CALIBRATION */
+
+/*
+ * Following defines are used when Tx Power is in dBm (signed value)
+ *
+ * the output TX Power is depending on PA_PWR settings, Analog settings and temperature
+ *
+ * there are defined 3 sets of defines all of them for 25 C:
+ *  - low rf output power = analog setting LDO_ANT_TRIM is at minimum voltage
+ *  - medium rf output power = analog setting LDO_ANT_TRIM is at medium voltage
+ *  - high rf output power = analog setting LDO_ANT_TRIM is at highiest voltage
+ */
+#ifndef gPhyMinTxPower_low_rf_dBm_Int8_d
+#define gPhyMinTxPower_low_rf_dBm_Int8_d                (-32) // dBm
+#endif
+
+#ifndef gPhyMaxTxPower_low_rf_dBm_Int8_d
+#define gPhyMaxTxPower_low_rf_dBm_Int8_d                 (+1) // dBm
+#endif
+
+#ifndef gPhyMinTxPower_medium_rf_dBm_Int8_d
+#define gPhyMinTxPower_medium_rf_dBm_Int8_d             (-24) // dBm
+#endif
+
+#ifndef gPhyMaxTxPower_medium_rf_dBm_Int8_d
+#define gPhyMaxTxPower_medium_rf_dBm_Int8_d              (+8) // dBm
+#endif
+
+#ifndef gPhyMinTxPower_high_rf_dBm_Int8_d
+#define gPhyMinTxPower_high_rf_dBm_Int8_d               (-22) // dBm
+#endif
+
+#ifndef gPhyMaxTxPower_high_rf_dBm_Int8_d
+#define gPhyMaxTxPower_high_rf_dBm_Int8_d               (+10) // dBm
+#endif
+
+/*
+ * Following defines are used when Tx Power is in number of PA slices (unsigned value)
+ * PA slices are used for PA_PWR register settings according with datasheet
+ *
+ * Note: Odd & Even values
+ *  In Ref manual/datasheet are listed mostly even values: 0,1,2,4,6,8,...,62.
+ *  However despite all values odd and even are valid and should be legal,
+ *  will prefer and try to use only even values except 1.
+ */
+#ifndef gPhyMinTxPowerLevel_d
+#define gPhyMinTxPowerLevel_d         (0x00)   // PA slice 0, minimum no output power
+#endif
+
+#ifndef gPhyMaxTxPowerLevel_d
+#define gPhyMaxTxPowerLevel_d         (0x3F)   // PA slice 63, maximum output power
+#endif
+
+/*
+ * Default values
+ */
+#ifndef gPhyDefaultTxPower_dBm_Int8_d
+#define gPhyDefaultTxPower_dBm_Int8_d       (0) // set default tx power to 0 dBm (signed value)
+#endif
+
+#ifndef gPhyDefaultTxPowerLevel_d
+#define gPhyDefaultTxPowerLevel_d           (gPhyDefaultTxPower_dBm_Int8_d)
+#endif
+
+#ifndef gPhyMaxTxPowerLimit_dBm_Int8_d
+#ifdef gAppMaxTxPowerDbm_c
+#define gPhyMaxTxPowerLimit_dBm_Int8_d       (gAppMaxTxPowerDbm_c)  // dBm (signed value)
+#else
+#define gPhyMaxTxPowerLimit_dBm_Int8_d       (10)  // dBm (signed value)
+#endif /* gAppMaxTxPowerDbm_c */
+#endif
+
+/* Tx Power level limit for each individual channel */
+#ifndef gChannelTxPowerLimit_c
+#define gChannelTxPowerLimit_c { gPhyMaxTxPowerLimit_dBm_Int8_d,   /* 11 */ \
+                                 gPhyMaxTxPowerLimit_dBm_Int8_d,   /* 12 */ \
+                                 gPhyMaxTxPowerLimit_dBm_Int8_d,   /* 13 */ \
+                                 gPhyMaxTxPowerLimit_dBm_Int8_d,   /* 14 */ \
+                                 gPhyMaxTxPowerLimit_dBm_Int8_d,   /* 15 */ \
+                                 gPhyMaxTxPowerLimit_dBm_Int8_d,   /* 16 */ \
+                                 gPhyMaxTxPowerLimit_dBm_Int8_d,   /* 17 */ \
+                                 gPhyMaxTxPowerLimit_dBm_Int8_d,   /* 18 */ \
+                                 gPhyMaxTxPowerLimit_dBm_Int8_d,   /* 19 */ \
+                                 gPhyMaxTxPowerLimit_dBm_Int8_d,   /* 20 */ \
+                                 gPhyMaxTxPowerLimit_dBm_Int8_d,   /* 21 */ \
+                                 gPhyMaxTxPowerLimit_dBm_Int8_d,   /* 22 */ \
+                                 gPhyMaxTxPowerLimit_dBm_Int8_d,   /* 23 */ \
+                                 gPhyMaxTxPowerLimit_dBm_Int8_d,   /* 24 */ \
+                                 gPhyMaxTxPowerLimit_dBm_Int8_d,   /* 25 */ \
+                                 gPhyMaxTxPowerLimit_dBm_Int8_d }  /* 26 */
+#endif
+
+#endif /* FFU_CNS_TX_PWR_TABLE_CALIBRATION */
 
 #ifndef mPhyOverhead_d
 #define mPhyOverhead_d          (10)       /* [sym] */

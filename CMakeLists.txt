@@ -32,7 +32,22 @@ if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4)
     )
 endif()
 
-if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.split_PHY)
+if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.PHY)
+    mcux_add_source(
+        SOURCES
+            ieee_802_15_4/phy/source/ASP.c
+            ieee_802_15_4/phy/source/PhyDeviceFiltering.c
+            ieee_802_15_4/phy/source/PhyISR.c
+            ieee_802_15_4/phy/source/PhyPacket.c
+            ieee_802_15_4/phy/source/PhyPacketProcessor.c
+            ieee_802_15_4/phy/source/PhyPlmeData.c
+            ieee_802_15_4/phy/source/PhySec.c
+            ieee_802_15_4/phy/source/PhyStateMachine.c
+            ieee_802_15_4/phy/source/PhyTime.c
+    )
+endif()
+
+if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.split_PHY)
     mcux_add_source(
         SOURCES
             ieee_802_15_4/phy/source/SerialDevice/Phy.c
@@ -40,11 +55,17 @@ if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.split_P
     )
 endif()
 
-if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.split_PHY)
+if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.PHY)
     mcux_add_source(
         SOURCES
-            ieee_802_15_4/phy/source/SerialDevice/Phy.c
-            ieee_802_15_4/phy/source/SerialDevice/ASP.c
+            ieee_802_15_4/phy/source/K32W148/PhyPlatform.c
+    )
+endif()
+
+if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.MAC)
+    mcux_add_library(
+        LIBS
+            ieee_802_15_4/lib/libieee-802.15.4.a
     )
 endif()
 
@@ -59,6 +80,20 @@ if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.MAC_spl
     mcux_add_library(
         LIBS
             ieee_802_15_4/lib/libieee-802.15.4_split.a
+    )
+endif()
+
+if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.PHY)
+    mcux_add_source(
+        SOURCES
+            ieee_802_15_4/phy/source/MCXW727/PhyPlatform.c
+    )
+endif()
+
+if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.MAC)
+    mcux_add_library(
+        LIBS
+            ieee_802_15_4/lib/libieee-802.15.4_MCXW72.a
     )
 endif()
 

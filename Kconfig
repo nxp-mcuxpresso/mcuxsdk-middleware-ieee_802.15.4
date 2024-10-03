@@ -7,40 +7,107 @@ menuconfig MCUX_COMPONENT_middleware.wireless.ieee_802_15_4
     help
        Enable ieee 802.15.4 MAC/PHY
 
+
 if MCUX_COMPONENT_middleware.wireless.ieee_802_15_4
+
+# k32w1_mcxw71
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.PHY
+    bool
+    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71 && MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.PHY
+    select MCUX_COMPONENT_middleware.wireless.xcvr
+    select MCUX_COMPONENT_middleware.wireless.framework.platform.genfsk
+
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.MAC
+    bool
+    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71 && MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.MAC
+    select MCUX_COMPONENT_middleware.wireless.xcvr
+    select MCUX_COMPONENT_middleware.wireless.framework.platform.genfsk
+
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.MAC_split_PHY
+    bool
+    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71 && MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.MAC_split_PHY
+
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.split_PHY
+    bool
+    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71 && MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.split_PHY
+
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.split_MAC
+    bool
+    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71 && MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.split_MAC
+
+
+# mcxw72
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.PHY
+    bool
+    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72 && MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.PHY
+    select MCUX_COMPONENT_middleware.wireless.xcvr
+    select MCUX_COMPONENT_middleware.wireless.framework.platform.genfsk
+
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.MAC
+    bool
+    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72 && MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.MAC
+    select MCUX_COMPONENT_middleware.wireless.xcvr
+    select MCUX_COMPONENT_middleware.wireless.framework.platform.genfsk
+
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.MAC_split_PHY
+    bool
+    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72 && MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.MAC_split_PHY
+
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.split_PHY
+    bool
+    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72 && MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.split_PHY
+
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.split_MAC
+    bool
+    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72 && MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.split_MAC
+
+
+# rw61x
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.rw61x.split_MAC
+    bool
+    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.rw61x && MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.split_MAC
+
 
 choice
     prompt "ieee 802.15.4 MAC/PHY"
+    optional
 
-config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.split_PHY
-    bool "k32w1/mcxw71: PHY only on NBU core"
-    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71 || MCUX_COMPONENT_middleware.wireless.framework.platform.kw45_k32w1_mcxw71
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.PHY
+    bool "PHY only on main core"
+    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71 || \
+               MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72
+    select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.PHY if MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71
+    select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.PHY if MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72
 
-config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.split_MAC
-    bool "k32w1/mcxw71: MAC/PHY on NBU core"
-    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71 || MCUX_COMPONENT_middleware.wireless.framework.platform.kw45_k32w1_mcxw71
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.MAC
+    bool "MAC/PHY on main core"
+    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71 || \
+               MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72
+    select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.MAC if MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71
+    select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.MAC if MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72
 
-config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.MAC_split_PHY
-    bool "k32w1/mcxw71: MAC on main core, PHY on NBU core"
-    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71 || MCUX_COMPONENT_middleware.wireless.framework.platform.kw45_k32w1_mcxw71
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.MAC_split_PHY
+    bool "MAC on main core, PHY on NBU core"
+    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71 || \
+               MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72
+    select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.MAC_split_PHY if MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71
+    select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.MAC_split_PHY if MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72
 
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.split_PHY
+    bool "PHY only on NBU core"
+    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71 || \
+               MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72
+    select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.split_PHY if MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71
+    select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.split_PHY if MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72
 
-config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.split_PHY
-    bool "mcxw72: PHY only on NBU core"
-    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72 || MCUX_COMPONENT_middleware.wireless.framework.platform.kw47_mcxw72
-
-config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.split_MAC
-    bool "mcxw72: MAC/PHY on NBU core"
-    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72 || MCUX_COMPONENT_middleware.wireless.framework.platform.kw47_mcxw72
-
-config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.MAC_split_PHY
-    bool "mcxw72: MAC on main core, PHY on NBU core"
-    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72 || MCUX_COMPONENT_middleware.wireless.framework.platform.kw47_mcxw72
-
-
-config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.rw61x.split_MAC
-    bool "rw61x: MAC/PHY on NBU core"
-    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.rw61x || MCUX_COMPONENT_middleware.wireless.framework.platform.rw61x
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.split_MAC
+    bool "MAC/PHY on NBU core"
+    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71 || \
+               MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72 || \
+               MCUX_PRJSEG_middleware.wireless.framework.platform.rw61x
+    select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.split_MAC if MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71
+    select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.split_MAC if MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72
+    select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.rw61x.split_MAC if MCUX_PRJSEG_middleware.wireless.framework.platform.rw61x
 
 endchoice
 

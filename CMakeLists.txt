@@ -22,6 +22,13 @@ if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4)
             ieee_802_15_4/phy/interface/*.h
             ieee_802_15_4/phy/source/SerialDevice/*.h
             ieee_802_15_4/mac/interface/*.h
+            Include/MiniMac.h
+            Include/MMAC.h
+            Include/MiniMac_Pib.h
+            Include/tsv_pub.h
+            Include/mac_sap.h
+            Include/mac_pib.h
+            Include/AppApi.h
     )
 endif()
 

@@ -83,6 +83,13 @@ if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.MAC_spl
     )
 endif()
 
+if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.NBU_img)
+    mcux_add_source(
+        SOURCES
+            bin/k32w1_mcxw71/*.*
+    )
+endif()
+
 if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.PHY)
     mcux_add_source(
         SOURCES
@@ -108,6 +115,13 @@ if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.MAC_split_PHY
     mcux_add_library(
         LIBS
             ieee_802_15_4/lib/libieee-802.15.4_split_MCXW72.a
+    )
+endif()
+
+if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.NBU_img)
+    mcux_add_source(
+        SOURCES
+            bin/mcxw72/*.*
     )
 endif()
 

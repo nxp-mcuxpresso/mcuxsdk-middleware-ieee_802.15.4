@@ -92,9 +92,6 @@ typedef enum
 
     gMcpsPurgeIndQueueReq_c,    /*!< MCPS-PURGE indirect queue Request (NOT in spec) */
     gMcpsPurgeIndQueueCnf_c,    /*!< MCPS-PURGE indirect queue Confirm (NOT in spec) */
-
-    gMlmeMacToPlmeMessage_c,    /*!< transmit MAC_PLME message (PHY proxy) */
-    gPlatformReq_c,
 }macMessageId_t;
 
 #endif  /* _MAC_MESSAGES_H */

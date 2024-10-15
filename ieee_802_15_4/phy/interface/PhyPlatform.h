@@ -44,14 +44,6 @@
 #endif
 
 /*
-   The channel number corresponds to the number of all the channels, between 11 to 26.
-   It is used in the PhyUpdateTxPowerLimit() function which updates the power limit of
-   all the channels in the case a Front-end module is mounted with a power amplifier on
-   the narrow band path.
- */
-#define CHANNEL_NUMBER              (16)
-
-/*
  * MIN_ENERGY_LEVEL, MAX_ENERGY_LEVEL are parameters used to scale
  * energy level between values 0x00-0xFF
  */

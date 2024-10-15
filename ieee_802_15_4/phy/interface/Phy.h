@@ -959,12 +959,6 @@ uint8_t PhySetTxPowerLimit(uint8_t txPowerLimit);
  */
 uint8_t PhyGetTxPowerLimit(void);
 
-/*! *********************************************************************************
- * \brief This function will update tx power limit
- *
- * \return update txPowerLimit stored in gPhyChannelTxPowerLimits
- */
-uint8_t PhyUpdateTxPowerLimit(void);
 #endif
 
 /*! *********************************************************************************

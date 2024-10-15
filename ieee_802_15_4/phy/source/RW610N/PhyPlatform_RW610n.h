@@ -115,7 +115,7 @@ void FFU_ZIGBEE_INT_IRQHandler(void);
 #define HWINIT_USE_CCA1_FROM_RX_DIGITAL         (1)
 #define HWINIT_USE_CCA2_DECOUPLED_FROM_DEMOD    (1)
 #define HWINIT_SET_RSSI_ADJUSTEMENT             (1)
-#define HWINIT_RSSI_ADJ_NB                      (0xF2)
+#define HWINIT_RSSI_ADJ_NB                      (0xED)
 #define HWINIT_MASK_TSM_ZLL                     (1)
 #define HWINIT_ACKDELAY_VALUE                   (0x04U)
 #define HWINIT_TXDELAY_VALUE                    (0x01U)

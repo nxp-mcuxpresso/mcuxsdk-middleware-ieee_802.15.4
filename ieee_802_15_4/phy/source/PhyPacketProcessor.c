@@ -213,6 +213,35 @@ static void PhyRadioInit(void)
 *************************************************************************************
 ********************************************************************************** */
 
+#if (HWINIT_SET_RSSI_ADJUSTEMENT == 1)
+/*! *********************************************************************************
+* \brief  Adjust the RSSI value. The Energy Detect and LQI equation's are updated
+*         thanks to the RRSI ajustment, directly in the 8051 micro code.
+*
+* \param[in]  rssi_adj
+*
+********************************************************************************** */
+void PhySetRssiAdjustment(uint8_t rssi_adj)
+{
+    /* The BT_HW_INFO_ELNA_Present bit from the ANNEX100 is always set to 1.
+       So need to check gain to confirm eLNA (gain > 0) or not (gain = 0).
+           - gain > 0 : ANT2 path + external FEM
+           - gain = 0 : ANT2 path or ANT1 path + SPDT
+    */
+    if (FE_LNA_ENABLE && FE_LNA_GAIN)
+    {
+        if(rssi_adj > (4 * FE_LNA_GAIN))
+        {
+            /* compensating eLNA gain to get correct RSSI/LQI from the HW block */
+            rssi_adj = ( rssi_adj - (4 * FE_LNA_GAIN));
+        }
+    }
+
+    /* Update finetuned RSSI RSSI_ADJ_NB Offset value */
+    XCVR_SetRssiAdjustment(rssi_adj);
+}
+#endif
+
 /*! *********************************************************************************
 * \brief  Initialize the 802.15.4 Radio registers
 *
@@ -256,8 +285,7 @@ void PhyHwInit(void)
     HWINIT_CCA1_FROM_RX_DIG();
 
 #if (HWINIT_SET_RSSI_ADJUSTEMENT == 1)
-    /* Update finetuned RSSI RSSI_ADJ_NB Offset value */
-    XCVR_SetRssiAdjustment(HWINIT_RSSI_ADJ_NB);
+    PhySetRssiAdjustment(HWINIT_RSSI_ADJ_NB);
 #endif
 
     /* Prevent SEQ_MGR to automatically restart RX in case of filterfail interrupt */
@@ -1367,14 +1395,7 @@ uint8_t PhyPlmeGetRSSILevelRequest(instanceId_t instanceId)
         rssi = (ZLL->LQI_AND_RSSI & ZLL_LQI_AND_RSSI_RSSI_MASK) >> ZLL_LQI_AND_RSSI_RSSI_SHIFT;
         channel = PhyPlmeGetCurrentChannelRequest(ctx->id);
 
-        if (FE_LNA_ENABLE)
-        {
-            return (rssi + sChannelRssiOffset[channel - FIRST_CHANNEL_OFFSET] + RSSI_WITH_FELOSS - FE_LNA_GAIN);
-        }
-        else
-        {
-            return (rssi + sChannelRssiOffset[channel-FIRST_CHANNEL_OFFSET] + RSSI_WITH_FELOSS);
-        }
+        return (rssi + sChannelRssiOffset[channel-FIRST_CHANNEL_OFFSET] + RSSI_WITH_FELOSS);
     }
     else
     {

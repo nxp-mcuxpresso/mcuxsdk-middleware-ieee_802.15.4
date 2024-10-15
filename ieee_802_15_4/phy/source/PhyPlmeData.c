@@ -1,6 +1,6 @@
 /*! *********************************************************************************
 * Copyright (c) 2015, Freescale Semiconductor, Inc.
-* Copyright 2018-2021, 2023 NXP
+* Copyright 2018-2024 NXP
 * All rights reserved.
 *
 * \file
@@ -262,23 +262,29 @@ void PLME_SendMessage(Phy_PhyLocalStruct_t *ctx, phyMessageId_t msgType);
  *
  * \param txPowerLimit
  * txPowerLimit (0 or default value), No power backoff is applied
- * txPowerLimit = 1 to 44, force TX power back off to txPowerLimit
+ * txPowerLimit = 1 to PhyMaxTxPowerLevel, force TX power back off to txPowerLimit
  * (txPowerLimit = 0.5dBm step, TX power back off : 0.5dBm step )
- * If > 44 : gPhyMaxTxPowerLevel_d is used.
+ * If > PhyMaxTxPowerLevel : gPhyMaxTxPowerLevel_d is used.
  * \return txPowerLimit really stored in gPhyChannelTxPowerLimits
  */
 uint8_t PhySetTxPowerLimit(uint8_t txPowerLimit)
 {
+    uint8_t phyMaxTxPowerBackOff = MAX_TX_POWER_BACKOFF;
     uint8_t channel_index = 0; // loop index
     uint8_t tmp_limit = 0;
 
-    if ((txPowerLimit <= MAX_TX_POWER_BACKOFF) && (txPowerLimit >= MIN_TX_POWER_BACKOFF))
+    if (FE_POWER_AMPLIFIER_ENABLE && FE_POWER_AMPLIFIER_GAIN)
+    {
+        phyMaxTxPowerBackOff = gPhyMaxTxPowerLevel_With_FEM_PA_enable_d;
+    }
+
+    if ((txPowerLimit <= phyMaxTxPowerBackOff) && (txPowerLimit >= MIN_TX_POWER_BACKOFF))
     {
         tmp_limit = txPowerLimit;
     }
     else
     {
-        tmp_limit = gPhyMaxTxPowerLevel_d;
+        tmp_limit = phyMaxTxPowerBackOff;
     }
 
     // Apply TX power limit for each channel
@@ -304,25 +310,6 @@ uint8_t PhyGetTxPowerLimit(void)
     return gPhyChannelTxPowerLimits[0];
 }
 #endif
-
-/*! *********************************************************************************
- * \brief This function will update tx power limit
- *
- * \return update txPowerLimit stored in gPhyChannelTxPowerLimits
- */
-uint8_t PhyUpdateTxPowerLimit(void)
-{
-    uint8_t channel_cpt = 0;
-
-    /* The channel 26 is not updated because it is clamped to zero dBm => channel_cpt < CHANNEL_NUMBER - 1 */
-    for (channel_cpt = 0; channel_cpt < CHANNEL_NUMBER - 1; channel_cpt++)
-    {
-        gPhyChannelTxPowerLimits[channel_cpt] = gPhyMaxTxPowerLevel_With_FEM_PA_enable_d;
-    }
-
-    // The limit is supposed to be equal for all channels so return only the value for the first channel
-    return gPhyChannelTxPowerLimits[0];
-}
 
 /*! *********************************************************************************
  * \brief This function will get CCA Configuration Values
@@ -1025,12 +1012,14 @@ phyStatus_t PhyPlmeSetPwrLevelRequest(int8_t pwr_dbm)
     */
     phyTxPowerLevel = t_pwrStep + FE_LOSS_VALUE;
 
-    /* Range modification if an external power amplifier is present in the RX/TX path */
-    if (FE_POWER_AMPLIFIER_ENABLE)
+    /* Range modification if an external power amplifier is present
+       in the RX/TX path with a gain > 0
+    */
+    if (FE_POWER_AMPLIFIER_ENABLE && FE_POWER_AMPLIFIER_GAIN)
     {
         /* The FEM Power amplifier in the ANNEX100 is in dB : multiplied by 2 */
         phyTxPowerLevel -= 2 * FE_POWER_AMPLIFIER_GAIN;
-        phyMaxTxPowerLevel = PhyUpdateTxPowerLimit() + FE_LOSS_VALUE - 2 * FE_POWER_AMPLIFIER_GAIN;
+        phyMaxTxPowerLevel = gPhyMaxTxPowerLevel_With_FEM_PA_enable_d + FE_LOSS_VALUE - 2 * FE_POWER_AMPLIFIER_GAIN;
         if (ZLL->CHANNEL_NUM0 == 26)
             phyMinTxPowerLevel = 0xD4;  /* -22dBm */
     }
@@ -1129,9 +1118,11 @@ int8_t PhyPlmeGetPwrLevelRequest(void)
 
      /*
        The PA_PWR register is in half dBm
-       The FE_LOSS in the ANNEX55 is already in half dB : not multiplied by 2
+       The FE_LOSS in the ANNEX55 is already in half dB : not multiplied by 2.
+       Range modification if an external power amplifier is present
+       in the RX/TX path with a gain > 0
     */
-    if (FE_POWER_AMPLIFIER_ENABLE)
+    if (FE_POWER_AMPLIFIER_ENABLE && FE_POWER_AMPLIFIER_GAIN)
     {
         /* The FEM Power amplifier in the ANNEX100 is in dB : multiplied by 2 */
         pwrStep_signed = pwrStep_signed - FE_LOSS_VALUE + 2 * FE_POWER_AMPLIFIER_GAIN;

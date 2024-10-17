@@ -122,6 +122,8 @@ typedef enum
     gReadOnly_c               = 0xfb,        /*!< A SET/GET request was issued with the identifier of an attribute that is read only.*/
     gScanInProgress_c         = 0xfc,        /*!< A request to perform a scan operation failed because the MLME was in the process of performing a previously initiated scan operation.*/
     gSuperframeOverlap_c      = 0xfd,        /*!< The device was instructed to start sending beacons based on the timing of the beacon transmissions of its coordinator, but the instructed start time overlapped the transmission time of the beacon of its coordinator.*/
+
+    gFailure_c                = 0xff,        /*!< operation fails. */
 } resultType_t;
 
 /*! \brief The 802.15.4 addressing modes */

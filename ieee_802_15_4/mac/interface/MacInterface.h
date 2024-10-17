@@ -51,7 +51,6 @@
 
 _Static_assert(sizeof(macMessageId_t) == sizeof(uint8_t), "macMessageId_t bigger than 1 byte");
 
-
 #undef MAC_ID_SIZE
 #define MAC_ID_SIZE 5       /* valid bits from mac_id field */
 
@@ -67,20 +66,9 @@ enum
 {
     MAC_CMD = 0,
     MAC_PROXY_CMD = 1,
-    MAC_PLAT_CMD = 2
+    MAC_PLAT_CMD = 2,
+    MAC_ACK = 3
 };
-
-
-typedef struct macPlat_tag
-{
-    uint8_t msgType;        /* platform defined */
-    uint8_t mac_id;
-    uint16_t data_len;      /* length of buffer after this header */
-    uint8_t is_get;         /* data is returned into the buffer */
-} macPlatMessage_t;
-
-typedef resultType_t (* plat_handler_t) (macPlatMessage_t *pMsg, instanceId_t macInstanceId);
-
 
 /*!
  *  The number of MAC instances used
@@ -824,6 +812,27 @@ typedef MAC_STRUCT nwkMessage_tag
     } msgData;
 } nwkMessage_t;
 
+/*!  This structure describes the MAC message that enables communication from the NWK layer to platform specific feature for MACsplit interface. */
+typedef struct macPlat_tag
+{
+    uint8_t msgType;        /* platform defined */
+    uint8_t mac_id;
+    uint16_t data_len;      /* length of buffer after this header */
+    uint8_t is_get;         /* data is returned into the buffer */
+} macPlatMessage_t;
+
+typedef resultType_t (* plat_handler_t) (macPlatMessage_t *pMsg, instanceId_t macInstanceId);
+
+/*!  This structure describes the MAC message that is return as an ack for MACsplit interface. */
+typedef struct macAck_tag
+{
+    uint8_t msgType;        /* platform defined */
+    uint8_t mac_id;
+    /* MAC_ACK */
+    uint8_t identifier;     /* mac_id of the request */
+    resultType_t ret;       /* return code */
+    uint16_t payload_len;   /* length of buffer after this header */
+} macAckMessage_t;
 
 /*! *********************************************************************************
 *   Callback function type used for sending messages to upper layer.

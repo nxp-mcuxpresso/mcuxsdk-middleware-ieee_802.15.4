@@ -1,6 +1,6 @@
 /*
 * Copyright 2008-2010 Jennic Ltd
-* Copyright 2010-2022 NXP
+* Copyright 2010-2024 NXP
 * All rights reserved.
 *
 * SPDX-License-Identifier: BSD-3-Clause

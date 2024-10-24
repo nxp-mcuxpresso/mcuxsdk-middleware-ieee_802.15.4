@@ -82,7 +82,7 @@ config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.rw61x.split_MAC
     depends on MCUX_PRJSEG_middleware.wireless.framework.platform.rw61x && MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.split_MAC
 
 
-choice
+choice MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.selection
     prompt "ieee 802.15.4 MAC/PHY"
     optional
 

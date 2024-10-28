@@ -101,7 +101,7 @@
 #define gDefaultCCAThreshold_c          0x50U
 
 #if CT_Feature_Xtal_Trim
-#define gMaxTrimValue_c                 0x7FU
+#define gMaxTrimValue_c                 0x3FU
 #define gMinTrimValue_c                 0x00U
 #endif
 

@@ -43,8 +43,8 @@
 
 #if defined(K32W1480_SERIES) || defined(CPU_KW45B41Z83AFPA_NBU) || \
     defined(MCXW727C_cm33_core0_SERIES)                         || \
-        defined(MCXW727C_cm33_core1_SERIES)                     || \
-     defined(MCXW716A_SERIES) || defined(MCXW716C_SERIES)
+    defined(MCXW727C_cm33_core1_SERIES)                         || \
+    defined(MCXW716A_SERIES) || defined(MCXW716C_SERIES)
 #include "nxp2p4_xcvr.h"
 #endif
 
@@ -711,8 +711,9 @@ phyStatus_t PhyPlmeSetCurrentChannelRequest(uint8_t channel, uint8_t pan)
 
 #endif
 
-#if defined(K32W1480_SERIES) || defined(CPU_KW45B41Z83AFPA_NBU) ||             \
-    defined(MCXW727C_cm33_core0_SERIES) ||                                     \
+#if defined(K32W1480_SERIES) || defined(CPU_KW45B41Z83AFPA_NBU) || \
+    defined(MCXW727C_cm33_core0_SERIES)                         || \
+    defined(MCXW727C_cm33_core1_SERIES)                         || \
     defined(MCXW716A_SERIES) || defined(MCXW716C_SERIES)
     if (channel == 26)
     {

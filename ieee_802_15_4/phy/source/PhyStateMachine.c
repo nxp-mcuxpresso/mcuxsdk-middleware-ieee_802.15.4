@@ -52,8 +52,8 @@
 #include "nxp_xcvr_gfsk_bt_0p5_h_0p5_config.h"
 #endif
 
-#if defined(K32W1480_SERIES) || defined(CPU_KW45B41Z83AFPA_NBU) ||             \
-    defined(MCXW727C_cm33_core0_SERIES) ||                                     \
+#if defined(K32W1480_SERIES) || defined(CPU_KW45B41Z83AFPA_NBU) ||                 \
+    defined(MCXW727C_cm33_core0_SERIES) ||  defined(MCXW727C_cm33_core1_SERIES) || \
     defined(MCXW716A_SERIES) || defined(MCXW716C_SERIES)
 #include "fwk_platform_genfsk.h"
 #endif
@@ -222,8 +222,8 @@ void Phy_Init(void)
     MWS_CoexistenceRegister(gMWS_802_15_4_c, MWS_802_15_4_Callback);
 #endif
 
-#if defined(K32W1480_SERIES) || defined(CPU_KW45B41Z83AFPA_NBU) ||             \
-    defined(MCXW727C_cm33_core0_SERIES) ||                                     \
+#if defined(K32W1480_SERIES) || defined(CPU_KW45B41Z83AFPA_NBU) ||                \
+    defined(MCXW727C_cm33_core0_SERIES) || defined(MCXW727C_cm33_core1_SERIES) || \
     defined(MCXW716A_SERIES) || defined(MCXW716C_SERIES)
     PLATFORM_SetGenfskMaxTxPower(gAppMaxTxPowerDbm_c);
 #endif

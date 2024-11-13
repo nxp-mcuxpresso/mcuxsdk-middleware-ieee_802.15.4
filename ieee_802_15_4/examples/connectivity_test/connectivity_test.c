@@ -419,6 +419,7 @@ static void HandleEvents(int32_t evSignals)
 /*************************************************************************/
 void main_task(uint32_t param)
 {
+    uint8_t phy_ctx;
     static bool_t bIsInitialized = FALSE;
     static bool_t bUserInteraction = FALSE;
     //Initialize Memory Manager, Timer Manager and LEDs.
@@ -433,6 +434,14 @@ void main_task(uint32_t param)
 
         //initialize PHY
         Phy_Init();
+
+        phy_ctx = PHY_get_ctx();
+
+        /* We ignore the context since it's going to be zero */
+        if (phy_ctx != 0)
+        {
+            assert(0);
+        }
 
 #if (defined(gAppLedCnt_c) && (gAppLedCnt_c > 0))
         for (uint8_t i = 0; i < gAppLedCnt_c; i++)

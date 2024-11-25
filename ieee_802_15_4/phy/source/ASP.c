@@ -685,7 +685,6 @@ AspStatus_t ASP_TelecTest(uint8_t mode)
         pad_dly = XCVR_TX_DIG->DATA_PADDING_CTRL;
         XCVR_TX_DIG->DATA_PADDING_CTRL = 0;
 
-        XCVR_ForcePAPower(0x32);
         XCVR_DftTxCW(CH2FREQ(channel));
 
         fracSet = TRUE;

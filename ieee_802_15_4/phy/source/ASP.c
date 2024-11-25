@@ -352,14 +352,14 @@ AspStatus_t Asp_XcvrReadReq(uint8_t mode, uint16_t addr, uint8_t len, uint8_t *p
 ********************************************************************************** */
 AspStatus_t Asp_SetPowerLevel(uint8_t powerLevel)
 {
-    AspStatus_t res = gAspSuccess_c;
-
-    if (gPhySuccess_c != PhyPlmeSetPwrLevelRequest(powerLevel))
+    if (powerLevel > gPhyMaxTxPowerLevel_d)
     {
-        res = gAspInvalidParameter_c;
+        return gAspInvalidParameter_c;
     }
 
-    return res;
+    ZLL->PA_PWR = ZLL_PA_PWR_PA_PWR(powerLevel);
+
+    return gAspSuccess_c;
 }
 
 /*! *********************************************************************************

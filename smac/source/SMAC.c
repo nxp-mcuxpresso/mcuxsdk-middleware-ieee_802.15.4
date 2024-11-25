@@ -10,6 +10,7 @@
 
 #include "SMAC.h"
 #include "PhyInterface.h"
+#include "AspInterface.h"
 #include "EmbeddedTypes.h"
 
 #include "SMAC_Config.h"
@@ -1019,42 +1020,33 @@ smacErrors_t MLMEPAOutputAdjust
 uint8_t u8PaValue
 )
 {
-  macToPlmeMessage_t lMsg;
-  uint8_t errorVal;
+    AppToAspMessage_t   msg;
+    AspStatus_t         status;
+
 #if(TRUE == smacInitializationValidation_d)
-  if(FALSE == mSmacInitialized)
-  {
-    return gErrorNoValidCondition_c;
-  }
+    if(FALSE == mSmacInitialized)
+    {
+        return gErrorNoValidCondition_c;
+    }
 #endif /* TRUE == smacInitializationValidation_d */
 
-  if(mSmacStateIdle_c != maSmacAttributes[mSmacActivePan].smacState)
-  {
-    return gErrorBusy_c;
-  }
-  lMsg.ctx_id = mSmacActivePan;
-  lMsg.msgType     = gPlmeSetReq_c;
-  lMsg.msgData.setReq.PibAttribute      =  gPhyPibTransmitPower_c;
-  lMsg.msgData.setReq.PibAttributeValue =  (uint64_t) u8PaValue;
-  errorVal = MAC_PLME_SapHandler(&lMsg, 0);
-  switch (errorVal)
-  {
-  case  gPhyBusy_c:
-    return gErrorBusy_c;
-    break;
+    if(mSmacStateIdle_c != maSmacAttributes[mSmacActivePan].smacState)
+    {
+        return gErrorBusy_c;
+    }
 
-  case gPhyInvalidParameter_c:
-    return gErrorOutOfRange_c;
-    break;
+    msg.msgType                                = aspMsgTypeSetPowerLevel_c;
+    msg.msgData.aspSetPowerLevelReq.powerLevel = u8PaValue;
 
-  case gPhySuccess_c:
-    return gErrorNoError_c;
-    break;
-
-  default:
-    return gErrorOutOfRange_c;
-    break;
-  }
+    status = APP_ASP_SapHandler(&msg, 0);
+    if (status == gAspSuccess_c)
+    {
+        return gErrorNoError_c;
+    }
+    else
+    {
+        return gErrorOutOfRange_c;
+    }
 }
 
 /************************************************************************************

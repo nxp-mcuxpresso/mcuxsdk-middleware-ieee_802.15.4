@@ -86,9 +86,10 @@
 * Macros
 *************************************************************************************
 ************************************************************************************/
-#define gMaxOutputPower_c	       ( 0x20 ) 
-#define gMinOutputPower_c              ( 0x00 )
-#define gDefaultOutputPower_c          ( 0x05 )
+/* Power expressed as an index value into the register PA_PWR */
+#define gMaxOutputPower_c              ( 63 )
+#define gMinOutputPower_c              (  0 )
+#define gDefaultOutputPower_c          (  5 )
 
 #if CT_Feature_Calibration
 #define gMinAdditionalRFOffset_c       ( -1000)

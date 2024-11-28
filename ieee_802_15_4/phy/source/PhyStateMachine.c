@@ -197,6 +197,11 @@ void Phy_Init(void)
 
     OSA_InterruptEnable();
 
+#if defined(CPU_KW45B41Z83AFPA_NBU) || defined(MCXW727C_cm33_core1_SERIES)
+    int RNG_Init();
+    RNG_Init();
+#endif
+
 #if (defined(HDI_MODE) && (HDI_MODE == 1L)) && \
     defined(MCXW727C_cm33_core0_SERIES)
     PLATFORM_InitRadio();

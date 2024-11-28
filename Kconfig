@@ -26,14 +26,17 @@ config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.MAC
 config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.MAC_split_PHY
     bool
     depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71 && MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.MAC_split_PHY
+    select MCUX_COMPONENT_middleware.wireless.framework.seclib_rng
 
 config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.split_PHY
     bool
     depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71 && MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.split_PHY
+    select MCUX_COMPONENT_middleware.wireless.framework.seclib_rng
 
 config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.split_MAC
     bool
     depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71 && MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.split_MAC
+    select MCUX_COMPONENT_middleware.wireless.framework.seclib_rng
 
 config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.NBU_img
     bool
@@ -59,14 +62,17 @@ config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.MAC
 config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.MAC_split_PHY
     bool
     depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72 && MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.MAC_split_PHY
+    select MCUX_COMPONENT_middleware.wireless.framework.seclib_rng
 
 config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.split_PHY
     bool
     depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72 && MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.split_PHY
+    select MCUX_COMPONENT_middleware.wireless.framework.seclib_rng
 
 config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.split_MAC
     bool
     depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72 && MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.split_MAC
+    select MCUX_COMPONENT_middleware.wireless.framework.seclib_rng
 
 config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.NBU_img
     bool

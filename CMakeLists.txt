@@ -51,6 +51,7 @@ if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.split_PHY)
     mcux_add_source(
         SOURCES
             ieee_802_15_4/phy/source/SerialDevice/Phy.c
+            ieee_802_15_4/phy/source/PhyTime.c
             ieee_802_15_4/phy/source/SerialDevice/ASP.c
     )
 endif()

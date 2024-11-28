@@ -193,6 +193,13 @@ void Phy_Init(void)
 
     OSA_InterruptEnable();
 
+    /* prepare to send RNG seed to NBU */
+    int PLATFORM_FwkSrvInit();
+    PLATFORM_FwkSrvInit();
+
+    int RNG_Init();
+    RNG_Init();
+
     if (HAL_RpmsgInit((hal_rpmsg_handle_t)phyRpmsgHandle, &phyRpmsgConfig) != kStatus_HAL_RpmsgSuccess)
     {
         assert(0);
@@ -390,6 +397,11 @@ uint8_t PHY_get_ctx()
     } while ((ret != gPhySuccess_c) && (cnt--));
 
     assert(ret == gPhySuccess_c);
+
+    /* send RNG seed to NBU */
+    int RNG_SetSeed(void);
+    RNG_SetSeed();
+
     return (uint8_t)msg.msgData.getReq.PibAttributeValue;
 }
 

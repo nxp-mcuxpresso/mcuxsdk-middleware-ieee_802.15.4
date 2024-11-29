@@ -1308,7 +1308,7 @@ phyStatus_t PD_SMAC_SapHandler(void* pMsg, instanceId_t instance)
         pSmacMsg->msgData.dataInd.pRxPacket->instanceId =
           (smacMultiPanInstances_t)0;
 #endif
-        pSmacMsg->msgData.dataInd.u8LastRxRssi = PhyGetLastRxRssiValue(0);
+        pSmacMsg->msgData.dataInd.u8LastRxRssi = ((pdDataToMacMessage_t *)pMsg)->msgData.dataInd.ppduRssi;
         maSmacAttributes[instance].gSMAC_APP_MCPS_SapHandler(pSmacMsg, instance);
       }
       OSA_InterruptDisable();

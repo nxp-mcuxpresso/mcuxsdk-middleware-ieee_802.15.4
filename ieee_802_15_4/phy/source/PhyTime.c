@@ -34,7 +34,7 @@ static bool_t phy_lp_tmr_allow_sleep = TRUE;
 #include "controller_api_ll.h"
 
 
-#define PHY_LP_TMR_MIN_DT ((gPhyTimeMinSetupTime_c) + (gPhyTimeMinSetupTime_c) / 2)     /* symbols */
+#define PHY_LP_TMR_MIN_DT ((gPhyTimeMinSetupTime_c) * 2)     /* symbols */
 
 #undef PHY_TMR_EXTRA
 #define PHY_TMR_EXTRA 1
@@ -346,31 +346,43 @@ phyTimeStatus_t phy_lp_time_cancel_ev(phyTimeTimerId_t id)
 
     OSA_InterruptDisable();
 
+    if (active_head == INV_IDX)
+    {
+        OSA_InterruptEnable();
+        return gPhyTimeNotFound_c;
+    }
+
     /* remove timer from active list and add it to free list.
        no need to rearm */
     if (active_head == id)
     {
         active_head = phy_lp_tmr[id].next;
-    }
-    else
-    {
-        for (tmp = active_head; tmp != INV_IDX; tmp = phy_lp_tmr[tmp].next)
-        {
-            next = phy_lp_tmr[tmp].next;
 
-            if (next == id)
-            {
-                phy_lp_tmr[tmp].next = phy_lp_tmr[id].next;
-                break;
-            }
+        phy_lp_tmr[id].next = free_head;
+        free_head = id;
+
+        OSA_InterruptEnable();
+        return gPhyTimeOk_c;
+    }
+
+    for (tmp = active_head; tmp != INV_IDX; tmp = phy_lp_tmr[tmp].next)
+    {
+        next = phy_lp_tmr[tmp].next;
+
+        if (next == id)
+        {
+            phy_lp_tmr[tmp].next = phy_lp_tmr[id].next;
+
+            phy_lp_tmr[id].next = free_head;
+            free_head = id;
+
+            OSA_InterruptEnable();
+            return gPhyTimeOk_c;
         }
     }
 
-    phy_lp_tmr[id].next = free_head;
-    free_head = id;
-
     OSA_InterruptEnable();
-    return gPhyTimeOk_c;
+    return gPhyTimeNotFound_c;
 }
 
 uint64_t phy_lp_time_get_timestamp()

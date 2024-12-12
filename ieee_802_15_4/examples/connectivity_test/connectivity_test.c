@@ -342,7 +342,7 @@ smacErrors_t smacToAppMcpsSap(smacToAppDataMessage_t* pMsg, instanceId_t instanc
 
 static void HandleEvents(int32_t evSignals)
 {
-    uint16_t u16SerBytesCount = 0;
+    uint32_t u16SerBytesCount = 0;
 
     if(evSignals & gUART_RX_EVENT_c)
     {

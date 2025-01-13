@@ -1,5 +1,5 @@
 /*! *********************************************************************************
-* Copyright 2023-2024 NXP
+* Copyright 2023-2025 NXP
 * All rights reserved.
 *
 * \file Platform specific definitions. This file contains the default values for
@@ -295,13 +295,13 @@
 #endif
 
 /* External Front End module LNA (Low Noise Attenuator) enable */
-#ifndef FE_LNA_ENABLE
-#define FE_LNA_ENABLE 0
+#ifndef FEM_LNA_ENABLE
+#define FEM_LNA_ENABLE 0
 #endif
 
 /* External Front End module LNA (Low Noise Attenuator) gain (dB) */
-#ifndef FE_LNA_GAIN
-#define FE_LNA_GAIN 0
+#ifndef FEM_LNA_GAIN
+#define FEM_LNA_GAIN 0
 #endif
 
 

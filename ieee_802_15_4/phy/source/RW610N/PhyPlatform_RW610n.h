@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 NXP
+ * Copyright 2023-2025 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -72,10 +72,10 @@ void FFU_ZIGBEE_INT_IRQHandler(void);
 #define FE_POWER_AMPLIFIER_GAIN         (int8_t)(_tBlePsAnnex100.eRF_CNTL_TX_Gain)
 
 /* External Front End module LNA (Low Noise Attenuator) enable */
-#define FE_LNA_ENABLE                   (uint8_t)(_tBlePsAnnex100.eRF_CNTL_RX_Granted)
+#define FEM_LNA_ENABLE                   (uint8_t)(_tBlePsAnnex100.eRF_CNTL_RX_Granted)
 
 /* External RX gain for a LNA (Low Noise Attenuator) Front End module */
-#define FE_LNA_GAIN                     (int8_t)(_tBlePsAnnex100.eRF_CNTL_RX_Gain)
+#define FEM_LNA_GAIN                     (int8_t)(_tBlePsAnnex100.eRF_CNTL_RX_Gain)
 
 /*
  * FEATURES SUPPORT

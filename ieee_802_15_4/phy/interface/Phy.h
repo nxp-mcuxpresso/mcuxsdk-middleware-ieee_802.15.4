@@ -1,6 +1,6 @@
 /*! *********************************************************************************
 * Copyright (c) 2015, Freescale Semiconductor, Inc.
-* Copyright 2018, 2023-2024 NXP
+* Copyright 2018, 2023-2025 NXP
 * All rights reserved.
 *
 * \file
@@ -347,6 +347,14 @@ typedef struct Phy_nbRssiCtrl_tag
  *
  ********************************************************************************** */
 void PhyHwInit(void);
+
+#if defined(MFG_OT_RCP)
+/*! *********************************************************************************
+ * \brief  Update the XCVR HW
+ *
+ ********************************************************************************** */
+void PhyHwUpdate(void);
+#endif
 
 /*! *********************************************************************************
  * \brief  Enable/Disable the XCVR promiscuous mode.

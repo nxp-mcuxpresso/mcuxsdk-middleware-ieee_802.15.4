@@ -1,6 +1,6 @@
 /*! *********************************************************************************
 * Copyright (c) 2015, Freescale Semiconductor, Inc.
-* Copyright 2018-2024 NXP
+* Copyright 2018-2025 NXP
 * All rights reserved.
 *
 * \file
@@ -228,13 +228,10 @@ void PhySetRssiAdjustment(uint8_t rssi_adj)
            - gain > 0 : ANT2 path + external FEM
            - gain = 0 : ANT2 path or ANT1 path + SPDT
     */
-    if (FE_LNA_ENABLE && FE_LNA_GAIN)
+    if (FEM_LNA_ENABLE && FEM_LNA_GAIN)
     {
-        if(rssi_adj > (4 * FE_LNA_GAIN))
-        {
-            /* compensating eLNA gain to get correct RSSI/LQI from the HW block */
-            rssi_adj = ( rssi_adj - (4 * FE_LNA_GAIN));
-        }
+        /* compensating eLNA gain to get correct RSSI/LQI from the HW block */
+        rssi_adj = ( rssi_adj - (4 * FEM_LNA_GAIN));
     }
 
     /* Update finetuned RSSI RSSI_ADJ_NB Offset value */
@@ -527,6 +524,19 @@ void PhyHwInit(void)
     /* Enable Phy */
     PHY_Enable();
 }
+
+#if defined(MFG_OT_RCP)
+/*! *********************************************************************************
+* \brief  Update the 802.15.4 Radio registers
+*
+********************************************************************************** */
+void PhyHwUpdate(void)
+{
+#if (HWINIT_SET_RSSI_ADJUSTEMENT == 1)
+    PhySetRssiAdjustment(HWINIT_RSSI_ADJ_NB);
+#endif
+}
+#endif // MFG_OT_RCP
 
 /*! *********************************************************************************
 * \brief  Aborts the current sequence and force the radio to IDLE

@@ -423,15 +423,8 @@ phyStatus_t PhyPdDataRequest(Phy_PhyLocalStruct_t *ctx)
         ZLL->PHY_CTRL &= ~ZLL_PHY_CTRL_CCABFRTX_MASK;
     }
 
-    /* Slotted operation */
-    if (pTxPacket->slottedTx == gPhySlottedMode_c)
-    {
-        ZLL->PHY_CTRL |= ZLL_PHY_CTRL_SLOTTED_MASK;
-    }
-    else
-    {
-        ZLL->PHY_CTRL &= ~ZLL_PHY_CTRL_SLOTTED_MASK;
-    }
+    /* Unslotted only */
+    ZLL->PHY_CTRL &= ~ZLL_PHY_CTRL_SLOTTED_MASK;
 
     /* Perform TxRxAck sequence if required by phyTxMode */
     if ((pTxPacket->ackRequired == gPhyRxAckRqd_c) || (pTxPacket->ackRequired == gPhyEnhancedAckReq))

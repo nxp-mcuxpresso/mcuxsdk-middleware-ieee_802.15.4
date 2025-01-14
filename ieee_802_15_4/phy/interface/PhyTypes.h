@@ -128,13 +128,6 @@ typedef enum
     gPhyPendingOp                         /* dual PAN scheduler state */
 } phyStatus_t;
 
-/*! This type enumerates the possible transmission modes in respect to slotted or unslotted modes. */
-typedef enum
-{
-    gPhySlottedMode_c      = 0x0c,
-    gPhyUnslottedMode_c    = 0x0d
-}phySlottedMode_t;
-
 /*! This type is used to indicate, whether the CCA type operations are required before the transmissions, and together with phySlottedTx_t to determine, whether there are more than one needed. */
 typedef enum
 {

@@ -148,9 +148,6 @@ txPacket_t *psTxPacket        //IN:Pointer to the packet to be transmitted
   /* Fill with Phy related data */
   pMsg->ctx_id = mSmacActivePan;
   pMsg->msgType = gPdDataReq_c;
-  //SMAC doesn't use slotted mode
-  pMsg->msgData.dataReq.slottedTx = gPhyUnslottedMode_c;
-  //start transmission immediately
   pMsg->msgData.dataReq.startTime = gPhySeqStartAsap_c;
 #ifdef gPHY_802_15_4g_d
   //for sub-Gig phy handles duration in case of ACK

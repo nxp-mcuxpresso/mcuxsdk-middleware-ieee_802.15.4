@@ -1201,7 +1201,7 @@ void
 ************************************************************************************/
 phyStatus_t PD_SMAC_SapHandler(void* pMsg, instanceId_t instance)
 {
-  phyStatus_t status;
+  phyStatus_t status = gPhySuccess_c;
   smacToAppDataMessage_t* pSmacMsg;
   smacMultiPanInstances_t lSmacInstanceBackup;
 

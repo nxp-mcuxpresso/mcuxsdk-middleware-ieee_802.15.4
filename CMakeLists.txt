@@ -1,4 +1,4 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -123,6 +123,13 @@ if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.NBU_img)
     mcux_add_source(
         SOURCES
             bin/mcxw72/*.*
+    )
+endif()
+
+if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72_nbu.PHY)
+    mcux_add_source(
+        SOURCES
+            ieee_802_15_4/phy/source/K32W148N/PhyPlatform.c
     )
 endif()
 

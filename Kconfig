@@ -1,4 +1,4 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -82,6 +82,15 @@ config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.NBU_img
                  MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.split_MAC)
 
 
+# mcxw72_nbu
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72_nbu.PHY
+    bool
+    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72_nbu && MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.PHY
+    select MCUX_COMPONENT_middleware.wireless.xcvr
+    select MCUX_COMPONENT_middleware.wireless.framework.platform.genfsk
+    select MCUX_COMPONENT_middleware.wireless.framework.seclib_rng
+
+
 # rw61x
 config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.rw61x.split_MAC
     bool
@@ -95,9 +104,11 @@ choice MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.selection
 config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.PHY
     bool "PHY only on main core"
     depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71 || \
-               MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72
+               MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72 || \
+               MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72_nbu
     select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.PHY if MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71
     select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.PHY if MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72
+    select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72_nbu.PHY if MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72_nbu
 
 config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.MAC
     bool "MAC/PHY on main core"

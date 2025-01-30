@@ -1,6 +1,6 @@
 /*! *********************************************************************************
 * Copyright (c) 2015, Freescale Semiconductor, Inc.
-* Copyright 2018, 2023-2024 NXP
+* Copyright 2018, 2023-2025 NXP
 * All rights reserved.
 *
 * \file
@@ -56,6 +56,10 @@
     defined(MCXW727C_cm33_core0_SERIES) ||  defined(MCXW727C_cm33_core1_SERIES) || \
     defined(MCXW716A_SERIES) || defined(MCXW716C_SERIES)
 #include "fwk_platform_genfsk.h"
+
+#ifndef gAppMaxTxPowerDbm_c
+#define gAppMaxTxPowerDbm_c 10
+#endif
 #endif
 
 #if defined(FFU_DEVICE_LIMIT_VISIBILITY)

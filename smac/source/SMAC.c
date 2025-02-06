@@ -1020,6 +1020,9 @@ uint8_t u8PaValue
     AppToAspMessage_t   msg;
     AspStatus_t         status;
 
+    /* To silence IAR/GCC wrongly complaining about unused var */
+    NOT_USED(msg);
+
 #if(TRUE == smacInitializationValidation_d)
     if(FALSE == mSmacInitialized)
     {

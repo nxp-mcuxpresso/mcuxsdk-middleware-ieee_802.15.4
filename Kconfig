@@ -99,10 +99,6 @@ config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.rw61x.split_MAC
 
 choice MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.selection
     prompt "ieee 802.15.4 MAC/PHY"
-    default MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.interface
-
-config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.interface
-    bool "ieee 802.15.4 MAC/PHY interface"
 
 config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.PHY
     bool "PHY only on main core"
@@ -148,6 +144,9 @@ config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.split_MAC
     select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.rw61x.split_MAC if MCUX_PRJSEG_middleware.wireless.framework.platform.rw61x
     select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.NBU_img if MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71
     select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.NBU_img if MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72
+
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.interface
+    bool "ieee 802.15.4 MAC/PHY interface"
 
 endchoice
 

@@ -1,6 +1,6 @@
 /*! *********************************************************************************
 * Copyright (c) 2015, Freescale Semiconductor, Inc.
-* Copyright 2018-2024 NXP
+* Copyright 2018-2025 NXP
 * All rights reserved.
 *
 * \file
@@ -982,10 +982,11 @@ phyStatus_t PhyPlmeSetPwrLevelRequest(int8_t pwr_dbm)
     phyStatus_t status = gPhySuccess_c;
 
 #if (FFU_CNS_TX_PWR_TABLE_CALIBRATION == 1)
-    uint8_t phyMinTxPowerLevel = gPhyMinTxPowerLevel_d;
-    uint8_t phyMaxTxPowerLevel = gPhyMaxTxPowerLevel_d;
-    uint8_t phyTxPowerLevel = 0;
-    uint8_t t_pwrStep = pwr_dbm;
+    int8_t phyMinTxPowerLevel = gPhyMinTxPowerLevel_d;
+    int8_t phyMaxTxPowerLevel = gPhyMaxTxPowerLevel_d;
+    int8_t phyTxPowerLevel = 0;
+    int8_t t_pwrStep = pwr_dbm;
+    uint8_t uPhyTxPowerLevel = 0;
 
 #ifdef PHY_PARAMETERS_VALIDATION
     /* Max Tx power value supported for int8 conversion is (-64 to 63) */
@@ -1013,21 +1014,14 @@ phyStatus_t PhyPlmeSetPwrLevelRequest(int8_t pwr_dbm)
     {
         /* The FEM Power amplifier in the ANNEX100 is in dB : multiplied by 2 */
         phyTxPowerLevel -= 2 * FE_POWER_AMPLIFIER_GAIN;
-        phyMaxTxPowerLevel = gPhyMaxTxPowerLevel_With_FEM_PA_enable_d + FE_LOSS_VALUE - 2 * FE_POWER_AMPLIFIER_GAIN;
+        phyMaxTxPowerLevel = 2 * FEM_INPUT_MAX_GAIN;
         if (ZLL->CHANNEL_NUM0 == 26)
-            phyMinTxPowerLevel = 0xD4;  /* -22dBm */
+            phyMinTxPowerLevel += 2 * FEM_INPUT_MAX_GAIN;
     }
 
 #ifdef PHY_PARAMETERS_VALIDATION
-    if ((FE_POWER_AMPLIFIER_ENABLE == 0)
-        &&
-        ((phyTxPowerLevel < phyMinTxPowerLevel) && (phyTxPowerLevel > phyMaxTxPowerLevel)))
-    {
-        status = gPhyInvalidParameter_c;
-    }
-    else if ((FE_POWER_AMPLIFIER_ENABLE==1)
-             &&
-             ((phyTxPowerLevel < phyMinTxPowerLevel) || (phyTxPowerLevel > phyMaxTxPowerLevel)))
+    if (phyTxPowerLevel < phyMinTxPowerLevel ||
+        phyTxPowerLevel > phyMaxTxPowerLevel)
     {
         status = gPhyInvalidParameter_c;
     }
@@ -1035,25 +1029,29 @@ phyStatus_t PhyPlmeSetPwrLevelRequest(int8_t pwr_dbm)
 #endif /* PHY_PARAMETERS_VALIDATION */
     {
         /* Do not exceed the Tx power limit for the current channel */
-        /* As the TX power is encoded on a uint8_t and represents a int8_t, then the min value
-        (which is negative) is superior to the max value.
-        Then an incorrect value is superior to the max but inferior to the min value.
-         |--------|----------------------|--------|
-         0------max-----error value------min----255 */
-        if (t_pwrStep > gPhyChannelTxPowerLimits[ZLL->CHANNEL_NUM0 - 11]
-            && t_pwrStep < phyMinTxPowerLevel)
+        if (t_pwrStep < phyMinTxPowerLevel ||
+            t_pwrStep > gPhyChannelTxPowerLimits[ZLL->CHANNEL_NUM0 - 11])
         {
             return gPhyInvalidParameter_c; // avoid setting an invalid value
         }
 #ifdef CTX_SCHED
-        if (t_pwrStep > gPhyChannelTxPowerLimits[ZLL->CHANNEL_NUM1 - 11]
-            && t_pwrStep < phyMinTxPowerLevel)
+        if (t_pwrStep < phyMinTxPowerLevel ||
+            t_pwrStep > gPhyChannelTxPowerLimits[ZLL->CHANNEL_NUM1 - 11])
         {
             return gPhyInvalidParameter_c; // avoid setting an invalid value
         }
 #endif
-
-        ZLL->PA_PWR = phyTxPowerLevel & 0x7F; //ZLL->PA_PWR is of 7bits [6:0]
+        // Convert signed to unsigned value
+        if (phyTxPowerLevel >= 0)
+        {
+            uPhyTxPowerLevel = phyTxPowerLevel;
+        }
+        else
+        {
+            uPhyTxPowerLevel = 0xFF + phyTxPowerLevel;
+            uPhyTxPowerLevel += 1;
+        }
+        ZLL->PA_PWR = uPhyTxPowerLevel & 0x7F; //ZLL->PA_PWR is of 7bits [6:0]
     }
 #else /* #if (FFU_CNS_TX_PWR_TABLE_CALIBRATION == 1) */
 

@@ -68,6 +68,13 @@ void FFU_ZIGBEE_INT_IRQHandler(void);
 /* External Front End module Power Amplifier gain enable */
 #define FE_POWER_AMPLIFIER_ENABLE       (uint8_t)(_tBlePsAnnex100.eRF_CNTL_TX_Granted)
 
+/* External maximum internal power level Front End Module acceptable (dBm) */
+/* FEM_INPUT_MAX_GAIN=-2 correspond to the current SKY66403-11 FEM
+ * This definition shall be replaced by an ANNEX100 field as follows :
+ * #define FEM_INPUT_MAX_GAIN (int8_t)(_tBlePsAnnex100.eRF_INPUT_MAX_TX_Gain)
+ */
+#define FEM_INPUT_MAX_GAIN -2
+
 /* External TX Power Amplifier gain for a Front End module */
 #define FE_POWER_AMPLIFIER_GAIN         (int8_t)(_tBlePsAnnex100.eRF_CNTL_TX_Gain)
 

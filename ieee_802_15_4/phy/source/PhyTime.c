@@ -197,9 +197,7 @@ static void ll_tmr_start(uint64_t to)
     LL_API_AppTimerClear();
     LL_API_AppTimerSet(to, phy_lp_tmr_callback, 0);
 
-    /* exit from low power fails randomly */
-    /* phy_lp_tmr_allow_sleep = (to >= MIN_LP_TO); */
-    phy_lp_tmr_allow_sleep = FALSE;
+    phy_lp_tmr_allow_sleep = (to >= MIN_LP_TO);
 }
 
 phyTimeStatus_t phy_lp_time_init(void (*cb)())

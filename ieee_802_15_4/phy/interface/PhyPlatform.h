@@ -289,6 +289,11 @@
 #define FE_POWER_AMPLIFIER_ENABLE 0
 #endif
 
+/* External maximum internal power level Front End Module acceptable (dBm) */
+#ifndef FEM_INPUT_MAX_GAIN
+#define FEM_INPUT_MAX_GAIN 0
+#endif
+
 /* External Front End module Power Amplifier gain (dB) */
 #ifndef FE_POWER_AMPLIFIER_GAIN
 #define FE_POWER_AMPLIFIER_GAIN 0

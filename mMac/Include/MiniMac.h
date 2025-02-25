@@ -181,6 +181,8 @@ typedef enum PACK
     MAC_MCPS_DCFM_PURGE,
     MAC_MCPS_IND_DATA,
     NUM_MAC_MCPS_IND,
+    MAC_MCPS_TXNULL  = 0xFC,
+    MAC_MCPS_RXNULL  = 0xFD,
     MAC_MCPS_REJECT  = 0xFE,
     MAC_MCPS_INVALID = 0xFF
 } MAC_McpsDcfmIndType_e;

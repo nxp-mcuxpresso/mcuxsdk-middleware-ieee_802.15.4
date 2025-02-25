@@ -1,5 +1,5 @@
 /*! *********************************************************************************
-* Copyright (c) 2015, Freescale Semiconductor, Inc.
+* Copyright (c) 2015-2025, Freescale Semiconductor, Inc.
 * Copyright 2016-2024 NXP
 * All rights reserved.
 *
@@ -297,8 +297,7 @@ void fsciMcpsReqHandler(void *pData, void* param, uint32_t interfaceId)
             pMcpsReq->msgData.dataReq.securityLevel = gMacSecurityNone_c;
             p += 11;
 #endif
-            pMcpsReq->msgData.dataReq.pMsdu = (uint8_t*)&pMcpsReq->msgData.dataReq.pMsdu +
-                        sizeof(pMcpsReq->msgData.dataReq.pMsdu);
+            pMcpsReq->msgData.dataReq.pMsdu = (uint8_t*)pMcpsReq + sizeof(nwkToMcpsMessage_t);
             FLib_MemCpy(pMcpsReq->msgData.dataReq.pMsdu, p,
                         pMcpsReq->msgData.dataReq.msduLength);
         }
@@ -431,8 +430,7 @@ void fsciMcpsCnfHandler(void *pData, void* param, uint32_t interfaceId)
         pMcpsCnf->msgData.dataInd.securityLevel = gMacSecurityNone_c;
         p += 11;
 #endif
-        pMcpsCnf->msgData.dataInd.pMsdu = (uint8_t*)&pMcpsCnf->msgData.dataInd.pMsdu + 
-                                          sizeof(pMcpsCnf->msgData.dataInd.pMsdu);
+        pMcpsCnf->msgData.dataInd.pMsdu = (uint8_t*)pMcpsCnf + sizeof(mcpsToNwkMessage_t);
         FLib_MemCpy(pMcpsCnf->msgData.dataInd.pMsdu, p,
                     pMcpsCnf->msgData.dataInd.msduLength);
         break;
@@ -447,8 +445,7 @@ void fsciMcpsCnfHandler(void *pData, void* param, uint32_t interfaceId)
         p += sizeof(pMcpsCnf->msgData.promInd.timeStamp);
         
         pMcpsCnf->msgData.promInd.msduLength = *p++;
-        pMcpsCnf->msgData.promInd.pMsdu = (uint8_t*)&pMcpsCnf->msgData.promInd.pMsdu + 
-                                          sizeof(pMcpsCnf->msgData.promInd.pMsdu);
+        pMcpsCnf->msgData.promInd.pMsdu = (uint8_t*)pMcpsCnf + sizeof(mcpsToNwkMessage_t);
         FLib_MemCpy(pMcpsCnf->msgData.promInd.pMsdu, p,
                     pMcpsCnf->msgData.promInd.msduLength);
         break;

@@ -1,5 +1,5 @@
 /*! *********************************************************************************
-* Copyright (c) 2014 - 2015, Freescale Semiconductor, Inc.
+* Copyright (c) 2014 - 2025, Freescale Semiconductor, Inc.
 * Copyright 2016-2024 NXP
 * All rights reserved.
 *
@@ -182,8 +182,7 @@ txPacket_t *psTxPacket        //IN:Pointer to the packet to be transmitted
   }
 #endif
   pMsg->msgData.dataReq.psduLength = psTxPacket->u8DataLength + gSmacHeaderBytes_c + gPhyFCSSize_c; // include FCS bytes in data psdu length
-  pMsg->msgData.dataReq.pPsdu = (uint8_t*)&pMsg->msgData.dataReq.pPsdu +
-    sizeof(pMsg->msgData.dataReq.pPsdu);
+  pMsg->msgData.dataReq.pPsdu = (uint8_t*)pMsg + sizeof(macToPdDataMessage_t);
 
   FLib_MemCpy(pMsg->msgData.dataReq.pPsdu, &(psTxPacket->smacHeader), gSmacHeaderBytes_c);
   FLib_MemCpy(pMsg->msgData.dataReq.pPsdu + gSmacHeaderBytes_c,

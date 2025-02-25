@@ -568,7 +568,7 @@ phyStatus_t MAC_PD_SapHandler(macToPdDataMessage_t *pMsg, instanceId_t phyInstan
              * macToPdDataMessage_t structure (pPsdu is the last member)
              * where the buffer is located.
              */
-            pMacToPdMsg->msgData.dataReq.pPsdu = (uint8_t *)&pMacToPdMsg->msgData.dataReq.pPsdu + sizeof(pMacToPdMsg->msgData.dataReq.pPsdu);
+            pMacToPdMsg->msgData.dataReq.pPsdu = (uint8_t *)pMacToPdMsg + sizeof(macToPdDataMessage_t);
             // The Phy queue is init as unlimited so there is no risc for error in adding msg to Phy queue regarding maximum size
             // if it will be a memory shortage it will remains without memory buffers first (i.e. pMacToPlmeMsg should be NULL)
             // so the case of MSG_Queue return error it is highly unlikely and even so the root would be from another place

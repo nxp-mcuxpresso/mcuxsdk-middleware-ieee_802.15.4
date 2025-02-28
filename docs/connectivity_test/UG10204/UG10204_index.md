@@ -11,5 +11,4 @@ topics/building_and_flashing_the_connectivity_test_applic.md
 topics/running_the_connectivity_test_application.md
 topics/note_source_code.md
 topics/revision_history.md
-topics/legal_information.md
 `````````

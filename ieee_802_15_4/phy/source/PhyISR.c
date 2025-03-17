@@ -1,6 +1,6 @@
 /*! *********************************************************************************
 * Copyright (c) 2015, Freescale Semiconductor, Inc.
-* Copyright 2018, 2023-2024 NXP
+* Copyright 2018, 2023-2025 NXP
 * All rights reserved.
 *
 * \file
@@ -1101,6 +1101,14 @@ void RF_802_15_4_IRQHandler(void)
     /* wrap 802.15.4 interrupt */
     PHY_InterruptHandler();
 }
+#elif defined(KW43B43ZC7_SERIES)
+void RF_ZIGBEE_IRQHandler(void)
+{
+    /* wrap 802.15.4 interrupt */
+    PHY_InterruptHandler();
+}
+#else
+#warning "No 802.15.4 ISR handler specified"
 #endif
 
 void PHY_InterruptHandler_base(

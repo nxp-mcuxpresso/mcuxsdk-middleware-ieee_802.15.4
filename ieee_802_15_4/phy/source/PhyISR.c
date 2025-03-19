@@ -1071,8 +1071,9 @@ int8_t PhyConvertLQIToRSSI(uint8_t lqi)
 ********************************************************************************** */
 /* No vector table in RAM for now in OpenThread build
    So we need to implement directly the handler defined in the startup code */
-#if defined(CPU_KW45B41Z83AFPA_NBU) || \
-    defined(MCXW727C_cm33_core1_SERIES)
+#if defined(CPU_KW45B41Z83AFPA_NBU)     || \
+    defined(MCXW727C_cm33_core1_SERIES) || \
+    defined(KW43B43ZC7_NBU_SERIES)
 void ZIGBEE_INT_IRQHandler(void)
 {
     /* wrap 802.15.4 interrupt */

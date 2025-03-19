@@ -35,7 +35,8 @@
 
 // TODO Should be moved to platform file
 #if defined(KW45B41Z83_NBU_SERIES) ||                                          \
-    defined(MCXW727C_cm33_core1_SERIES)
+    defined(MCXW727C_cm33_core1_SERIES) ||                                     \
+    defined(KW43B43ZC7_NBU_SERIES)
     #define gPhyIrqNo_d (ZIGBEE_INT_IRQn)
 #elif defined(K32W1480_SERIES) ||                                              \
       defined(MCXW716C_SERIES) || defined(MCXW716A_SERIES) ||                  \

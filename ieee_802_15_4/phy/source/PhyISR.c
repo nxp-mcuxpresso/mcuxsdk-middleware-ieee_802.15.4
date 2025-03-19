@@ -26,8 +26,6 @@
 
 #include "nxp2p4_xcvr.h"
 
-#include "fsl_ltc.h"
-
 #if defined(FFU_PHY_ONLY_OVER_IMU)
 #include "os_if.h"
 #endif

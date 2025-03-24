@@ -1542,6 +1542,8 @@ static void PD_SendMessage(Phy_PhyLocalStruct_t *ctx, phyMessageId_t msgType)
         pMsg->msgType = gPdDataCnf_c;
         pMsg->msgData.dataCnf.status = status;
         pMsg->msgData.dataCnf.ackLength = ctx->rxParams.psduLength;
+        pMsg->msgData.dataCnf.ppduLinkQuality = ctx->rxParams.linkQuality;  /* valid if AR=1 */
+        pMsg->msgData.dataCnf.ppduRssi = ctx->rxParams.rssi;                /* valid if AR=1 */
 
         /* SFD detection timestamp */
         pMsg->msgData.dataCnf.timeStamp = ctx->rxParams.timeStamp & gPhyTimeMask_c;

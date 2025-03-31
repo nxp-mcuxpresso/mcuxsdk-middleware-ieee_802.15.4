@@ -56,6 +56,13 @@ if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.split_PHY)
     )
 endif()
 
+if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw70.PHY)
+    mcux_add_source(
+        SOURCES
+            ieee_802_15_4/phy/source/MCXW70/PhyPlatform.c
+    )
+endif()
+
 if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.PHY)
     mcux_add_source(
         SOURCES

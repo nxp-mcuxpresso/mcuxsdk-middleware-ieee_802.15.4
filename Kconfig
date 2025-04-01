@@ -141,6 +141,7 @@ config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.PHY
            if MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72
     select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72_nbu.PHY \
            if MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72_nbu
+    select MCUX_COMPONENT_driver.ltc
 
 config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.MAC
     bool "MAC/PHY on main core"

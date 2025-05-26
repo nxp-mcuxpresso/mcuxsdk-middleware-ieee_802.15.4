@@ -13,9 +13,6 @@
 #include "fsl_adapter_rpmsg.h"
 #include "fsl_os_abstraction.h"
 #include "fwk_platform.h"
-#if defined(HDI_MODE) && (HDI_MODE == 1)
-#include "hdi.h"
-#endif
 #if (defined(HWINIT_DEBUG_DTEST) && (HWINIT_DEBUG_DTEST == 1L))
 #include "dtest.h"
 #endif
@@ -298,16 +295,6 @@ phyStatus_t MAC_PLME_SapHandler(macToPlmeMessage_t *pMsg, instanceId_t phyInstan
             OSA_EventWait(get_event, 1, 1, osaWaitNone_c, &flags);
             wait_phy_rsp = TRUE;
         }
-
-#if defined(HDI_MODE) && (HDI_MODE == 1)
-        if ((pMsg->msgType == gPlmeSetReq_c) && (pMsg->msgData.setReq.PibAttribute == gPhyPibCurrentChannel_c))
-        {
-            if (pMsg->msgData.setReq.PibAttribute == gPhyPibCurrentChannel_c)
-            {
-                HDI_SendChannelSwitchCmd((uint32_t)pMsg->msgData.setReq.PibAttributeValue);
-            }
-        }
-#endif
 
         if (HAL_RpmsgSend((hal_rpmsg_handle_t)phyRpmsgHandle, (uint8_t *)pMsg, sizeof(macToPlmeMessage_t)) != kStatus_HAL_RpmsgSuccess)
         {

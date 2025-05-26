@@ -13,9 +13,6 @@
 #include "fsl_os_abstraction.h"
 #include "fwk_platform.h"
 #include "fwk_platform_zb.h"
-#if defined(HDI_MODE) && (HDI_MODE == 1)
-#include "hdi.h"
-#endif
 #if (defined(HWINIT_DEBUG_DTEST) && (HWINIT_DEBUG_DTEST == 1L))
 #include "dtest.h"
 #endif
@@ -164,16 +161,6 @@ phyStatus_t MAC_PLME_SapHandler(macToPlmeMessage_t *pMsg, instanceId_t phyInstan
     {
         OSA_EventWait(plmeEventHandle, 1, 1, osaWaitNone_c, &flags);
     }
-
-#if defined(HDI_MODE) && (HDI_MODE == 1)
-    if ((pMsg->msgType == gPlmeSetReq_c) && (pMsg->msgData.setReq.PibAttribute == gPhyPibCurrentChannel_c))
-    {
-        if (pMsg->msgData.setReq.PibAttribute == gPhyPibCurrentChannel_c)
-        {
-            HDI_SendChannelSwitchCmd((uint32_t)pMsg->msgData.setReq.PibAttributeValue);
-        }
-    }
-#endif
 
     if(PLATFORM_SendZbPhyMessage((uint8_t *)pMsg, sizeof(macToPlmeMessage_t)) != 0)
     {

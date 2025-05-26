@@ -667,12 +667,6 @@ phyStatus_t PhyPlmeSetCurrentChannelRequest(uint8_t channel, uint8_t pan)
         ZLL->CHANNEL_NUM1 = channel;
     }
 
-#if defined(HDI_MODE) && (HDI_MODE == 1) &&                                    \
-    (defined(K32W1480_SERIES) ||                                               \
-     defined(MCXW727C_cm33_core0_SERIES) ||                                    \
-     defined(MCXW716A_SERIES) || defined(MCXW716C_SERIES))
-    HDI_SendChannelSwitchCmd((uint32_t)channel);
-#endif
 
 #if defined(FFU_FPGA_INTF) && (FFU_FPGA_INTF == 1)
     FPGA_SendChannelSwitchCmd((uint32_t)channel);
@@ -1077,12 +1071,6 @@ phyStatus_t PhyPlmeSetPwrLevelRequest(int8_t pwr_dbm)
         /* this variable is used to keep PA slices to be set in PA_PWR register */
         uint8_t pa_slices = PhyPlmeConvertDbmToPASlice(pwr_dbm);
 
-#if defined(HDI_MODE) && (HDI_MODE == 1) &&                                    \
-     (defined(K32W1480_SERIES) ||                                              \
-      defined(MCXW727C_cm33_core0_SERIES) ||                                   \
-      defined(MCXW716A_SERIES) || defined(MCXW716C_SERIES))
-        HDI_SendPowerSwitchCmd((uint32_t)pa_slices);
-#endif
 
         /* Set PA slices value into PA_PWR register */
         PhyPlmeSetPwrLevelPASlice(pa_slices);

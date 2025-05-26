@@ -24,11 +24,13 @@
 #include "dbg_io.h"
 #include "fsl_component_mem_manager.h"
 #include "fsl_component_messaging.h"
-#if (defined(HDI_MODE) && (HDI_MODE == 1L)) &&                                 \
-     defined(MCXW727C_cm33_core0_SERIES)
+
+#if (defined(HDI_MODE) && (HDI_MODE == 1L))
+#if (defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES))
 #include "hdi.h"
-#include "board.h"
 #endif
+#endif
+
 #if defined(PHY_WLAN_COEX)
 #include "PhyWlanCoex.h"
 #endif
@@ -206,9 +208,11 @@ void Phy_Init(void)
     RNG_Init();
 #endif
 
-#if (defined(HDI_MODE) && (HDI_MODE == 1L)) && \
-    defined(MCXW727C_cm33_core0_SERIES)
-    PLATFORM_InitRadio();
+#if (defined(HDI_MODE) && (HDI_MODE == 1L))
+#if (defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES))
+    HDI_Init();
+    HDI_Set_Mode_Zigbee();
+#endif
 #endif
 
     /* ISR registration. Must be done before IRQ enablement (PHY_Enable()).

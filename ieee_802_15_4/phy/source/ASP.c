@@ -1,7 +1,6 @@
 /*! *********************************************************************************
 * Copyright (c) 2015, Freescale Semiconductor, Inc.
 * Copyright 2016-2021, 2023-2025 NXP
-* All rights reserved.
 *
 * \file
 *
@@ -30,9 +29,9 @@
 #include "AspInterface.h"
 #include "fsl_component_mem_manager.h"
 #include "FunctionLib.h"
-#include "fsl_adapter_rpmsg.h"
 
 #if MFG_ENABLE
+#include "fsl_adapter_rpmsg.h"
 #include "fsl_adapter_rfimu.h"
 #endif
 

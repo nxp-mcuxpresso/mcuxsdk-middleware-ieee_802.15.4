@@ -1,6 +1,5 @@
 /*
- * Copyright 2021 NXP
- * All rights reserved.
+ * Copyright 2021-2025 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -60,6 +59,8 @@
    Extend Heap usage beyond the size defined by MinimalHeapSize_c*/
 #define MinimalHeapSize_c        (uint32_t)8192
 #define gMemManagerLightExtendHeapAreaUsage 0
+#else
+#define gMemManagerLightExtendHeapAreaUsage 1
 #endif
 
 #endif /* _APP_PREINCLUDE_H_ */

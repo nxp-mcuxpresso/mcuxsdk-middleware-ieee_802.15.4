@@ -32,7 +32,7 @@ if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4)
     )
 endif()
 
-if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.PHY)
+if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.generic_PHY)
     mcux_add_source(
         SOURCES
             ieee_802_15_4/phy/source/ASP.c
@@ -44,6 +44,13 @@ if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.PHY)
             ieee_802_15_4/phy/source/PhySec.c
             ieee_802_15_4/phy/source/PhyStateMachine.c
             ieee_802_15_4/phy/source/PhyTime.c
+    )
+endif()
+
+if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.generic_PHY.NBU)
+    mcux_add_source(
+        SOURCES
+            ieee_802_15_4/phy/source/K32W148N/PhyPlatform.c
     )
 endif()
 
@@ -98,6 +105,13 @@ if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.NBU_img
     )
 endif()
 
+if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71_nbu.MAC)
+    mcux_add_library(
+        LIBS
+            ../ieee-802.15.4_private/ieee_802_15_4/lib/libieee-802.15.4_NBU.a
+    )
+endif()
+
 if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.PHY)
     mcux_add_source(
         SOURCES
@@ -133,10 +147,10 @@ if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.NBU_img)
     )
 endif()
 
-if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72_nbu.PHY)
-    mcux_add_source(
-        SOURCES
-            ieee_802_15_4/phy/source/K32W148N/PhyPlatform.c
+if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72_nbu.MAC)
+    mcux_add_library(
+        LIBS
+            ieee_802_15_4/lib/libieee-802.15.4_NBU_MCXW72.a
     )
 endif()
 

@@ -10,6 +10,25 @@ menuconfig MCUX_COMPONENT_middleware.wireless.ieee_802_15_4
 
 if MCUX_COMPONENT_middleware.wireless.ieee_802_15_4
 
+# Hidden config for internal usage
+# This generic PHY config is used to gather dependencies and to compile PHY files
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.generic_PHY
+    bool
+    select MCUX_COMPONENT_driver.ltc
+    select MCUX_COMPONENT_component.messaging
+    select MCUX_COMPONENT_middleware.wireless.xcvr
+    select MCUX_COMPONENT_component.mem_manager
+    select MCUX_COMPONENT_middleware.wireless.framework.function_lib
+    select MCUX_COMPONENT_component.osa
+    imply MCUX_COMPONENT_middleware.wireless.framework.mws
+    imply MCUX_COMPONENT_middleware.wireless.framework.platform.genfsk
+
+# This generic NBU PHY config is used to gather dependencies and compile NBU platform PHY files.
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.generic_PHY.NBU
+    bool
+    select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.generic_PHY
+    select MCUX_COMPONENT_middleware.wireless.framework.seclib_rng
+
 # mcxw70
 config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw70.PHY
     bool
@@ -28,8 +47,6 @@ config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.PHY
     bool
     depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71 && \
                MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.PHY
-    select MCUX_COMPONENT_middleware.wireless.xcvr
-    select MCUX_COMPONENT_middleware.wireless.framework.platform.genfsk
 
 config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.MAC
     bool
@@ -63,14 +80,24 @@ config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.NBU_img
                  MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.split_PHY || \
                  MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.split_MAC)
 
+# mcxw71_nbu
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71_nbu.PHY
+    bool
+    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_mcxw71_nbu
+    select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.generic_PHY.NBU
+
+# MAC NBU libs are built without the PHY files. k32w1_mcxw71_nbu.PHY is selected to add the PHY.
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71_nbu.MAC
+    bool
+    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_mcxw71_nbu && \
+               MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.MAC
+    select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71_nbu.PHY
 
 # mcxw72
 config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.PHY
     bool
     depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72 && \
                MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.PHY
-    select MCUX_COMPONENT_middleware.wireless.xcvr
-    select MCUX_COMPONENT_middleware.wireless.framework.platform.genfsk
 
 config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.MAC
     bool
@@ -108,19 +135,21 @@ config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.NBU_img
 # mcxw72_nbu
 config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72_nbu.PHY
     bool
-    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72_nbu && \
-               MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.PHY
-    select MCUX_COMPONENT_middleware.wireless.xcvr
-    select MCUX_COMPONENT_middleware.wireless.framework.platform.genfsk
-    select MCUX_COMPONENT_middleware.wireless.framework.seclib_rng
+    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72_nbu
+    select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.generic_PHY.NBU
 
+# MAC NBU libs are built without the PHY files. mcxw72_nbu.PHY is selected to add the PHY.
+config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72_nbu.MAC
+    bool
+    depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72_nbu && \
+               MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.MAC
+    select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72_nbu.PHY
 
 # rw61x
 config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.rw61x.split_MAC
     bool
     depends on MCUX_PRJSEG_middleware.wireless.framework.platform.rw61x && \
                MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.split_MAC
-
 
 choice MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.selection
     prompt "ieee 802.15.4 MAC/PHY"
@@ -130,7 +159,8 @@ config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.PHY
     depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw43_mcxw70 || \
                MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71 || \
                MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72 || \
-               MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72_nbu
+               MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72_nbu || \
+               MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_mcxw71_nbu
     select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw70.PHY \
            if MCUX_PRJSEG_middleware.wireless.framework.platform.kw43_mcxw70
     select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.PHY \
@@ -139,14 +169,22 @@ config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.PHY
            if MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72
     select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72_nbu.PHY \
            if MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72_nbu
-    select MCUX_COMPONENT_driver.ltc
+    select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71_nbu.PHY \
+           if MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_mcxw71_nbu
+    select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.generic_PHY
 
 config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.MAC
     bool "MAC/PHY on main core"
     depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71 || \
+               MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_mcxw71_nbu || \
+               MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72_nbu || \
                MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72
     select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.MAC \
            if MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_k32w1_mcxw71
+    select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71_nbu.MAC \
+           if MCUX_PRJSEG_middleware.wireless.framework.platform.kw45_mcxw71_nbu
+    select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72_nbu.MAC \
+           if MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72_nbu
     select MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.MAC \
            if MCUX_PRJSEG_middleware.wireless.framework.platform.kw47_mcxw72
     select MCUX_COMPONENT_driver.ltc

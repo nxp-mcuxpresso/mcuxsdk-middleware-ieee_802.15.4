@@ -606,27 +606,57 @@ AspStatus_t ASP_TelecSendRawData(uint8_t *dataPtr)
 ********************************************************************************** */
 AspStatus_t ASP_TelecTest(uint8_t mode)
 {
-    uint8_t channel;
-    AspStatus_t status = gAspSuccess_c;
+#if !defined(RW610N_BT_CM3_SERIES)
+    uint32_t tx_pwr = 0;
+#endif
+    uint8_t channel = 11; /* force initialization here to avoid C4017W */
     static bool_t fracSet = FALSE;
-    static uint32_t pad_dly;
-
-    /* Get current channel number */
-    channel = PhyPlmeGetCurrentChannelRequest(0);
-
-    if (fracSet)
+    AspStatus_t status = gAspSuccess_c;
+#if !defined(RW610N_BT_CM3_SERIES)
+    extern  xcvr_coding_config_t xcvr_ble_uncoded_config;
+    extern xcvr_config_t xcvr_oqpsk_802p15p4_250kbps_full_config;
+    extern xcvr_config_t xcvr_gfsk_bt_0p5_h_0p5_1mbps_full_config;
+    const xcvr_coding_config_t *xcvr_coding_config  = &xcvr_ble_uncoded_config;
+    const xcvr_config_t *xcvr_oqpsk_config =
+                                       &xcvr_oqpsk_802p15p4_250kbps_full_config;
+    const xcvr_config_t *xcvr_gfsk_config =
+                                      &xcvr_gfsk_bt_0p5_h_0p5_1mbps_full_config;
+#endif /* !defined(RW610N_BT_CM3_SERIES) */
+    /*
+     * When returning from TX un-modulated mode, the ZLL is not clocked, since
+     * the LL is changed to GFSK. As such, an access to any register will result
+     * in a bus fault (i.e. in PhyPlmeGetCurrentChannelRequest()).
+     */
+#if !defined(RW610N_BT_CM3_SERIES)
+    if (XCVR_GetActiveLL() != XCVR_ACTIVE_LL_GENFSK)
+#endif
     {
-        ASP_TelecSetFreq(channel);
-        fracSet = FALSE;
+      /* Get current channel number */
+      channel = PhyPlmeGetCurrentChannelRequest(0);
+
+      if (fracSet)
+      {
+          ASP_TelecSetFreq(channel);
+          fracSet = FALSE;
+      }
     }
 
     switch (mode)
     {
     case gTestForceIdle_c:  /* ForceIdle() */
         XCVR_DftTxOff();
-        /* CONNRF-1310 */
-        XCVR_TX_DIG->DATA_PADDING_CTRL = pad_dly;
+#if !defined(RW610N_BT_CM3_SERIES)
+        /* TX unmod uses GENFSK */
+        if (XCVR_GetActiveLL() == XCVR_ACTIVE_LL_GENFSK)
+        {
+            XCVR_SetPLLBand(XCVR_BAND_SEL_BTLE);
+            XCVR_SetActiveLL(XCVR_ACTIVE_LL_BTLE);
+            XCVR_ChangeMode(&xcvr_oqpsk_config, &xcvr_coding_config);
 
+            /* Restore the channel */
+            ASP_TelecSetFreq(PhyPlmeGetCurrentChannelRequest(0));
+        }
+#endif /* !defined(RW610N_BT_CM3_SERIES) */
         /* Stop Tx interval timer (if started) */
         PhyTime_CancelEvent(mAsp_TxTimer);
         PhyAbort();
@@ -675,16 +705,22 @@ AspStatus_t ASP_TelecTest(uint8_t mode)
         break;
 
     case gTestContinuousTxNoMod_c: /* Sets the device to continuously transmit an unmodulated CW */
+#if !defined(RW610N_BT_CM3_SERIES)
         /*
-         * As per CONNRF-1310, there's a HW issue, that's
-         * present on both KW45 as well as KW47. The short version
-         * is that the data padding is incorrectly being added as
-         * an offset to the PLL numerator in this DFT mode.
-         * As a W/A save it and restore it when exiting DFT.
+         * Get the current PA_PWR from ZLL and convert it to
+         * XCVR_TX_DIG->PA_CTRL[PA_TGT_POWER] , which goes 0..63 (even numbers
+         * only , applies only for radio gen < 450; the radio driver handles
+         * both cases).
          */
-        pad_dly = XCVR_TX_DIG->DATA_PADDING_CTRL;
-        XCVR_TX_DIG->DATA_PADDING_CTRL = 0;
+        tx_pwr = (ZLL->PA_PWR & ZLL_PA_PWR_PA_PWR_MASK) >> ZLL_PA_PWR_PA_PWR_SHIFT;
+        XCVR_ChangeMode(&xcvr_gfsk_config, &xcvr_coding_config);
 
+        XCVR_SetActiveLL(XCVR_ACTIVE_LL_GENFSK);
+
+        XCVR_SetPLLBand(XCVR_BAND_SEL_GENERIC);
+
+        XCVR_ForcePAPower(tx_pwr >> 1);
+#endif /* !defined(RW610N_BT_CM3_SERIES) */
         XCVR_DftTxCW(CH2FREQ(channel));
 
         fracSet = TRUE;

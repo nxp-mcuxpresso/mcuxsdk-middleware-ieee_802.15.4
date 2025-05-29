@@ -16,14 +16,12 @@ config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw70.PHY
     depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw43_mcxw70 && \
                MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.PHY
     select MCUX_COMPONENT_middleware.wireless.xcvr
-    select MCUX_COMPONENT_middleware.wireless.xcvr.gen475
 
 config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw70.split_PHY
     bool
     depends on MCUX_PRJSEG_middleware.wireless.framework.platform.kw43_mcxw70 && \
                MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.split_PHY
     select MCUX_COMPONENT_middleware.wireless.framework.seclib_rng
-    select MCUX_COMPONENT_middleware.wireless.framework.seclib_rng_port.sw
 
 # k32w1_mcxw71
 config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.PHY

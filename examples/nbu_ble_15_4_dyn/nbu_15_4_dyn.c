@@ -194,6 +194,39 @@ phyStatus_t Plme_Mac_SapHandler(plmeToMacMessage_t *pMsg, instanceId_t instanceI
 }
 
 #ifdef MAC_ENABLED
+#include <fsl_ltc.h>
+#include "SecLib.h"
+
+uint8_t AES_128_CCM(const uint8_t *pInput,
+                    uint16_t       inputLen,
+                    const uint8_t *pAuthData,
+                    uint16_t       authDataLen,
+                    const uint8_t *pNonce,
+                    uint8_t        nonceSize,
+                    const uint8_t *pKey,
+                    uint8_t       *pOutput,
+                    uint8_t       *pCbcMac,
+                    uint8_t        macSize,
+                    uint32_t       flags)
+{
+    uint8_t status;
+
+    if ((flags & gSecLib_CCM_Decrypt_c) == gSecLib_CCM_Decrypt_c)
+    {
+        status = (uint8_t)(LTC_AES_DecryptTagCcm(LTC0, pInput, pOutput, (uint32_t)inputLen, pNonce, (uint32_t)nonceSize,
+                                                 pAuthData, (uint32_t)authDataLen, pKey, AES_BLOCK_SIZE, pCbcMac,
+                                                 (uint32_t)macSize));
+    }
+    else
+    {
+        status = (uint8_t)(LTC_AES_EncryptTagCcm(LTC0, pInput, pOutput, (uint32_t)inputLen, pNonce, (uint32_t)nonceSize,
+                                                 pAuthData, (uint32_t)authDataLen, pKey, AES_BLOCK_SIZE, pCbcMac,
+                                                 (uint32_t)macSize));
+    }
+
+    return status;
+}
+
 void panic(uint32_t id, uint32_t location, uint32_t extra1, uint32_t extra2)
 {
 }

@@ -1,6 +1,6 @@
 /*! *********************************************************************************
 * Copyright (c) 2015, Freescale Semiconductor, Inc.
-* Copyright 2016-2017, 2023-2024 NXP
+* Copyright 2016-2017, 2023-2025 NXP
 * All rights reserved.
 *
 * \file
@@ -30,6 +30,9 @@
 
 #include "fsl_os_abstraction.h"
 
+#if !defined(gAspNoHWParameters_c) || (gAspNoHWParameters_c == 0)
+#include "HWParameter.h"
+#endif
 /************************************************************************************
 *************************************************************************************
 * Private macros
@@ -263,6 +266,9 @@ void AspSapMonitor(void *pData, void* param, uint32_t interfaceId)
 #if gFsciIncluded_c && gAspCapability_d
     clientPacket_t *pFsciPacket = MEM_BufferAlloc( sizeof(clientPacket_t) );
     AppToAspMessage_t *pReq = (AppToAspMessage_t*)pData;
+#if !defined(gAspNoHWParameters_c) || (gAspNoHWParameters_c == 0)
+    hardwareParameters_t *pHWParams = NULL;
+#endif
     uint8_t *p;
 
     if( NULL == pFsciPacket )
@@ -357,6 +363,17 @@ void AspSapMonitor(void *pData, void* param, uint32_t interfaceId)
                 FLib_MemCpy( p, pReq->msgData.aspXcvrData.data, pReq->msgData.aspXcvrData.len );
                 p += pReq->msgData.aspXcvrData.len;
                 break;
+#if !defined(gAspNoHWParameters_c) || (gAspNoHWParameters_c == 0)
+            case aspMsgTypeSetXtalTrimReq_c:
+                (void)NV_ReadHWParameters(&pHWParams);
+                if(pHWParams->xtalTrim != pReq->msgData.aspXtalTrim.trim)
+                {
+                   pHWParams->xtalTrim = pReq->msgData.aspXtalTrim.trim;
+                   (void)NV_WriteHWParameters();
+                }
+                break;
+#endif
+
             default:
                 break;
             }

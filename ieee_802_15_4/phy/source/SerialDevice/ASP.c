@@ -1,5 +1,5 @@
 /*! *********************************************************************************
-* Copyright 2021-2024 NXP
+* Copyright 2021-2025 NXP
 * All rights reserved.
 *
 * \file
@@ -193,6 +193,17 @@ AspStatus_t APP_ASP_SapHandler(AppToAspMessage_t *pMsg, instanceId_t phyInstance
 		assert(0);
 	}
 	
+    /* Must update status accordingly for these responses */
+    switch(pMsg->msgType)
+    {
+       case aspMsgTypeGetXtalTrimReq_c:
+           status = (AspStatus_t)pMsg->msgData.aspXtalTrim.trim;
+           break;
+
+       default:
+           break;
+    }
+
 #if gFsciIncluded_c
     FSCI_Monitor(gFSCI_AspSapId_c, pMsg, (void *)&status, fsciGetAspInterfaceId(phyInstance));
 #endif

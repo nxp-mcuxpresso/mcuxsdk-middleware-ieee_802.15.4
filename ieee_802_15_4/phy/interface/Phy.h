@@ -127,9 +127,6 @@ static volatile uint8_t * const TX_PB = (uint8_t *)(TX_PACKET_RAM_BASE);
 static const uint32_t RX_WTMRK_START = 3;  /* frame length + FCF */
 
 
-/* XCVR idle power mode */
-#define gPhyDefaultIdlePwrMode_c   gPhyPwrIdle_c
-
 /*! *********************************************************************************
 *************************************************************************************
 * Public type definitions
@@ -173,37 +170,12 @@ enum
     g_ZSM_TSM_WD    = 0x1F
 };
 
-/* PHY channel state */
-enum
-{
-    gChannelIdle_c,
-    gChannelBusy_c
-};
-
 /* PANCORDNTR bit in PP */
 enum
 {
     gMacRole_DeviceOrCoord_c,
     gMacRole_PanCoord_c
 };
-
-/* Cca types */
-enum
-{
-    gCcaED_c,         /* energy detect - CCA bit not active, not to be used for T and CCCA sequences */
-    gCcaCCA_MODE1_c,  /* energy detect - CCA bit ACTIVE */
-    gCcaCCA_MODE2_c,  /* 802.15.4 compliant signal detect - CCA bit ACTIVE */
-    gCcaCCA_MODE3_c,  /* 802.15.4 compliant signal detect and energy detect - CCA bit ACTIVE */
-    gInvalidCcaType_c /* illegal type */
-};
-
-enum
-{
-    gNormalCca_c,
-    gContinuousCca_c
-};
-
-
 
 #ifdef CTX_SCHED
 
@@ -1017,8 +989,6 @@ void Radio_Phy_TimeRxTimeoutIndication(Phy_PhyLocalStruct_t *ctx);
 void Radio_Phy_AbortIndication(Phy_PhyLocalStruct_t *ctx);
 
 void Radio_Phy_PdDataIndication(Phy_PhyLocalStruct_t *ctx);
-
-void Radio_Phy_TimeStartEventIndication(Phy_PhyLocalStruct_t *ctx);
 
 void Radio_Phy_PlmeCcaConfirm(phyStatus_t phyChannelStatus, Phy_PhyLocalStruct_t *ctx);
 

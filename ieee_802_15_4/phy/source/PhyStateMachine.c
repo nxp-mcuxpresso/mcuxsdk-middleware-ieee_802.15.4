@@ -224,8 +224,6 @@ void Phy_Init(void)
 
     ctx_init();
 
-    PhyPlmeSetPwrState(gPhyDefaultIdlePwrMode_c);
-
 #if gMWS_Enabled_d
     MWS_Register(gMWS_802_15_4_c, MWS_802_15_4_Callback);
 #endif
@@ -1258,18 +1256,6 @@ void Radio_Phy_AbortIndication(Phy_PhyLocalStruct_t *ctx)
     }
 }
 
-/*! *********************************************************************************
-* \brief  This function signals the PHY task that the programmed sequence has started
-*
-* \param[in]  instanceId The instance of the PHY
-*
-* \return  None.
-*
-********************************************************************************** */
-void Radio_Phy_TimeStartEventIndication(Phy_PhyLocalStruct_t *ctx)
-{
-}
-
 /* Update reception timeout */
 void Radio_Phy_PlmeRxWatermark(uint32_t frameLength, uint16_t fcf)
 {
@@ -1674,7 +1660,7 @@ static uint32_t MWS_802_15_4_Callback(mwsEvents_t event)
             {
             /* Doesn't look right */
             case gCCA_c:
-                if (gCcaED_c == (ZLL->PHY_CTRL & ZLL_PHY_CTRL_CCATYPE_MASK) >> ZLL_PHY_CTRL_CCATYPE_SHIFT)
+                if (gPhyEnergyDetectMode_c == (ZLL->PHY_CTRL & ZLL_PHY_CTRL_CCATYPE_MASK) >> ZLL_PHY_CTRL_CCATYPE_SHIFT)
                 {
                     ctx->channelParams.energyLeveldB = (ZLL->LQI_AND_RSSI & ZLL_LQI_AND_RSSI_CCA1_ED_FNL_MASK) >> ZLL_LQI_AND_RSSI_CCA1_ED_FNL_SHIFT;
                     PLME_SendMessage(ctx, gPlmeEdCnf_c);

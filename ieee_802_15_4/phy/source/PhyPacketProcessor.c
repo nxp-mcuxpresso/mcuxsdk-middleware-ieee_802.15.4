@@ -43,8 +43,6 @@
 * Private macros
 *************************************************************************************
 ********************************************************************************** */
-#define mPhyDSM_GuardTime_d  (5) /* DSM_TIME ticks (32.768KHz) */
-
 #ifndef gPhyUseHwSAMTable
 /*
  * SAM bitmask is used as an optmization for cases where the indirect queue
@@ -134,11 +132,6 @@ uint32_t PhyTime_GetNextEvent(void);
 * Public memory declarations
 *************************************************************************************
 ********************************************************************************** */
-const uint8_t gPhyIdlePwrState = gPhyDefaultIdlePwrMode_c;
-const uint8_t gPhyActivePwrState = gPhyPwrIdle_c; /* Do not change! */
-#if 0
-static uint32_t mPhyDSMDuration = 0xFFFFF0;
-#endif
 
 /* Accept FrameVersion 0, 1 and 2 packets, reject all others (FRM_VER[11:8] = b0111)
  * Accept Beacon, Data and MAC command frame types. */
@@ -392,7 +385,7 @@ void PhyHwInit(void)
 #endif
 
     /* Disable all timers, enable AUTOACK, mask all interrupts */
-    ZLL->PHY_CTRL = (gCcaCCA_MODE1_c << ZLL_PHY_CTRL_CCATYPE_SHIFT) |
+    ZLL->PHY_CTRL = (gPhyCCAMode1_c << ZLL_PHY_CTRL_CCATYPE_SHIFT) |
 #if (HWINIT_MASK_TSM_ZLL == 1)
                     ZLL_PHY_CTRL_TSM_MSK_MASK                       |
 #endif
@@ -1857,161 +1850,4 @@ uint8_t PhyRemoveFromSamTable(instanceId_t instanceId, uint8_t *pAddr, uint8_t a
         return 0;
     }
     return 1;
-}
-
-/*! *********************************************************************************
-* \brief  Change the XCVR DSM duration
-*
-* \param[in]  duration  the new XCVR sleep duration
-*
-********************************************************************************** */
-void PhyPlmeSetDSMDuration(uint32_t duration)
-{
-#if 0
-    /* Minimum DSM duration */
-    mPhyDSMDuration = (RSIM->DSM_WAKEUP & RSIM_DSM_WAKEUP_DSM_POWER_OFFSET_TIME_MASK) >> RSIM_DSM_WAKEUP_DSM_POWER_OFFSET_TIME_SHIFT;
-    mPhyDSMDuration += mPhyDSM_GuardTime_d;
-
-    if (duration > mPhyDSMDuration)
-    {
-        mPhyDSMDuration = duration;
-    }
-#endif
-}
-
-#if 0
-/*! *********************************************************************************
-* \brief  Get remaining time until the next ZLL event
-*
-* \return  time in symbols until the next programmed event
-*
-********************************************************************************** */
-uint32_t PhyTime_GetNextEvent(void)
-{
-    uint32_t currentTime = ZLL->EVENT_TMR >> ZLL_EVENT_TMR_EVENT_TMR_SHIFT;
-    uint32_t minTime = 0x00FFFFFF;
-    uint32_t t;
-
-    if (ZLL->PHY_CTRL & ZLL_PHY_CTRL_TMR1CMP_EN_MASK)
-    {
-        t = (ZLL->T1CMP - currentTime) & ZLL_T1CMP_T1CMP_MASK;
-
-        if (t < minTime)
-        {
-            minTime = t;
-        }
-    }
-
-    if (ZLL->PHY_CTRL & ZLL_PHY_CTRL_TMR2CMP_EN_MASK)
-    {
-        t = (ZLL->T2CMP - currentTime) & ZLL_T2CMP_T2CMP_MASK;
-
-        if (t < minTime)
-        {
-            minTime = t;
-        }
-    }
-
-    if (ZLL->PHY_CTRL & ZLL_PHY_CTRL_TMR3CMP_EN_MASK)
-    {
-        t = (ZLL->T3CMP - currentTime) & ZLL_T3CMP_T3CMP_MASK;
-
-        if (t < minTime)
-        {
-            minTime = t;
-        }
-    }
-
-    if (ZLL->PHY_CTRL & ZLL_PHY_CTRL_TMR4CMP_EN_MASK)
-    {
-        t = (ZLL->T4CMP - currentTime) & ZLL_T4CMP_T4CMP_MASK;
-
-        if (t < minTime)
-        {
-            minTime = t;
-        }
-    }
-
-    return minTime - 10;
-}
-#endif
-
-/*! *********************************************************************************
-* \brief  Change the XCVR power state
-*
-* \param[in]  state  the new XCVR power state
-*
-* \return  phyStatus_t
-*
-********************************************************************************** */
-phyStatus_t PhyPlmeSetPwrState( uint8_t state )
-{
-    static uint8_t mPhyPwrState = gPhyPwrIdle_c;
-    phyStatus_t status = gPhySuccess_c;
-#if 0
-    uint32_t offset;
-#endif
-
-    /* Parameter validation */
-    if (state > gPhyPwrReset_c)
-    {
-        status = gPhyInvalidParameter_c;
-    }
-    /* Check if the new power state = old power state */
-    else if (state == mPhyPwrState)
-    {
-        status = gPhyBusy_c;
-    }
-    else
-    {
-#if 0
-        // TODO: Update DSM handling using RFMC (RSIM not existing)
-        offset = (RSIM->DSM_WAKEUP & RSIM_DSM_WAKEUP_DSM_POWER_OFFSET_TIME_MASK) >> RSIM_DSM_WAKEUP_DSM_POWER_OFFSET_TIME_SHIFT;
-
-        switch (state)
-        {
-        case gPhyPwrIdle_c:
-            /* Check if XCVR is preparing to enter DSM, and wait for confirm. */
-            if (RSIM->DSM_CONTROL & RSIM_DSM_CONTROL_DSM_MAN_READY_MASK)
-            {
-                while (!(RSIM->DSM_CONTROL & RSIM_DSM_CONTROL_MAN_DEEP_SLEEP_STATUS_MASK));
-            }
-            /* Set XCVR in run mode if not allready */
-            if (RSIM->DSM_CONTROL & RSIM_DSM_CONTROL_MAN_DEEP_SLEEP_STATUS_MASK)
-            {
-                /* Force DSM wake-up. The WAKE_IRQ will trigger and update the EVENT_TMR register */
-                RSIM->MAN_WAKE = (RSIM->DSM_TIMER + offset + 1);
-                while (RSIM->DSM_CONTROL & RSIM_DSM_CONTROL_MAN_DEEP_SLEEP_STATUS_MASK);
-                ZLL->DSM_CTRL = 0;
-            }
-            break;
-
-        case gPhyPwrDSM_c:
-            /* Set XCVR in low power mode if not allready */
-            if (!(RSIM->DSM_CONTROL & RSIM_DSM_CONTROL_MAN_DEEP_SLEEP_STATUS_MASK))
-            {
-                /* Convert from symbols to microseconds (<< 4), and then to 32768 (<< 15) ticks. */
-                uint32_t dsm_time = ((uint64_t)(PhyTime_GetNextEvent() << 4) << 15) / 1000000;
-
-                if (dsm_time > (offset + mPhyDSM_GuardTime_d))
-                {
-                    RSIM->MAN_SLEEP = RSIM->DSM_TIMER + mPhyDSM_GuardTime_d;
-                    RSIM->MAN_WAKE = RSIM->DSM_TIMER + dsm_time;
-                    ZLL->DSM_CTRL = ZLL_DSM_CTRL_ZIGBEE_SLEEP_REQUEST_MASK;
-                }
-            }
-            break;
-
-        default:
-            status = gPhyInvalidPrimitive_c;
-            /* do not change current state */
-            state = mPhyPwrState;
-            break;
-        }
-#endif
-
-        mPhyPwrState = state;
-    }
-
-    return status;
 }

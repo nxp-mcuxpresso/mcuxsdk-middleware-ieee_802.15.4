@@ -1143,35 +1143,6 @@ void PHY_InterruptHandler_base(
     /* Clear ZLL interrupts. The TX, RX, CCA and TC3 IRQs will be handled on SEQIRQ and must not be cleared. */
     ZLL->IRQSTS = irqStatus & ~(ZLL_IRQSTS_TMR3IRQ_MASK | ZLL_IRQSTS_CCAIRQ_MASK | ZLL_IRQSTS_RXIRQ_MASK | ZLL_IRQSTS_TXIRQ_MASK);
 
-#if !defined(RW610N_BT_CM3_SERIES)
-#if defined(gPhyUseExternalCoexistence_d) && (gPhyUseExternalCoexistence_d == 1)
-    if(irqStatus & ZLL_IRQSTS_ARB_GRANT_DEASSERTION_IRQ_MASK)
-    {
-        // TODO: software should probably react to an external RF NOT ALLOWED signal
-        // See Jira ticket: KFOURWONE-382
-    }
-#endif
-#endif /* !defined(RW610N_BT_CM3_SERIES) */
-
-    /* WAKE IRQ */
-    if (irqStatus & ZLL_IRQSTS_WAKE_IRQ_MASK)
-    {
-#if defined(DEEP_SLEEP_MODE_FEATURE) && (DEEP_SLEEP_MODE_FEATURE == 1)
-        PhyResetDSM();
-#endif
-
-#if 0
-        // TODO: Update DSM handling using RFMC (RSIM not existing)
-        uint32_t timeAdjust = RSIM->MAN_WAKE;
-        /* Adjust the 802.15.4 EVENT_TMR */
-        timeAdjust = (uint64_t)(timeAdjust - RSIM->MAN_SLEEP) * 1000000U / 32768; /* [us] */
-        ZLL->EVENT_TMR = ((timeAdjust >> 0x4) << ZLL_EVENT_TMR_EVENT_TMR_SHIFT)      | /* [symbols]: divide by 16 */
-                         ((timeAdjust & 0x0F) << ZLL_EVENT_TMR_EVENT_TMR_FRAC_SHIFT) | /* [us]: modulo 16 */
-                         ZLL_EVENT_TMR_EVENT_TMR_ADD_MASK;
-        ZLL->DSM_CTRL = 0;
-#endif
-    }
-
     /* Flter Fail IRQ */
     if (irqStatus & ZLL_IRQSTS_FILTERFAIL_IRQ_MASK)
     {
@@ -1479,7 +1450,7 @@ void PHY_InterruptHandler_base(
                 break;
 
             case gCCA_c:
-                if (gCcaED_c == ((ZLL->PHY_CTRL & ZLL_PHY_CTRL_CCATYPE_MASK) >> ZLL_PHY_CTRL_CCATYPE_SHIFT))
+                if (gPhyEnergyDetectMode_c == ((ZLL->PHY_CTRL & ZLL_PHY_CTRL_CCATYPE_MASK) >> ZLL_PHY_CTRL_CCATYPE_SHIFT))
                 {
                     Radio_Phy_PlmeEdConfirm(ctx, (ZLL->LQI_AND_RSSI & ZLL_LQI_AND_RSSI_CCA1_ED_FNL_MASK) >> ZLL_LQI_AND_RSSI_CCA1_ED_FNL_SHIFT);
 
@@ -1536,11 +1507,6 @@ void PHY_InterruptHandler_base(
         if ((irqStatus & ZLL_IRQSTS_TMR2IRQ_MASK) && (!(irqStatus & ZLL_IRQSTS_TMR2MSK_MASK)))
         {
             PhyTimeDisableEventTrigger();
-
-            if (gIdle_c != xcvseqCopy)
-            {
-                Radio_Phy_TimeStartEventIndication(ctx);
-            }
         }
 
         /* Timer 3 Compare Match */

@@ -1564,6 +1564,69 @@ void Radio_Phy_Notify(Phy_PhyLocalStruct_t *ctx)
 }
 
 #if (gMWS_Enabled_d) || (gMWS_UseCoexistence_d)
+static void mode_switch_ZB()
+{
+    const xcvr_config_t *xcvrConfig = &xcvr_oqpsk_802p15p4_250kbps_full_config;
+    const xcvr_coding_config_t *rbmeConfig = &xcvr_ble_uncoded_config;
+
+    if (XCVR_GetActiveLL() == XCVR_ACTIVE_LL_ZIGBEE_LL)
+    {
+        return;
+    }
+
+    XCVR_ChangeMode(&xcvrConfig, &rbmeConfig);
+    XCVR_SetActiveLL(XCVR_ACTIVE_LL_ZIGBEE_LL);
+
+    /*
+     * Also restore the settings that need to be overridden (i.e. parameters
+     * that are different from the default ones available in the OQPSK config)
+     */
+    PhyPlatformHwInit();
+
+    /*
+     * In the process of dynamically changing modes between BLE and 15.4 Phy,
+     *  BLE may change LDO_ANT_TRIM value
+     *  restore LDO ANT TRIM to value maintained and expected by 15.4
+     */
+    XCVR_setLdoAntTrim(g_ldo_ant_trim_15_4);
+
+    /* Reset TX state machine -> MATTER-256. This is a software workaround to reset the TX done
+    signal that remains asserted when the ZB LL starts a transmission during BLE active time.
+    This transmission is triggered by TSM tx_dig_enable signal that is common for both BLE and 15.4.
+    The first real TX that will happen will complete immediately because the TX done signal
+    is already asserted. */
+    uint32_t *resetReg = (uint32_t *)TX_DONE_RESET_REGISTER;
+    *resetReg |= TX_DONE_RESET_REGISTER_MASK;
+    *resetReg &= ~TX_DONE_RESET_REGISTER_MASK;
+
+#if gMWS_UseCoexistence_d && gMWS_Enabled_d
+    /* Restore Pin settings */
+    MWS_CoexistenceInit(&gCoexistence_RfDeny, &gCoexistence_RfActive, &gCoexistence_RfStatus);
+#endif
+}
+
+static void mode_switch_BLE()
+{
+    const xcvr_config_t           *xcvrConfigBLE = &xcvr_gfsk_bt_0p5_h_0p5_1mbps_full_config;
+    const xcvr_coding_config_t    *rbmeConfigBLE = &xcvr_ble_coded_s8_config;
+
+    if (XCVR_GetActiveLL() == XCVR_ACTIVE_LL_BTLE)
+    {
+        return;
+    }
+
+    XCVR_ChangeMode(&xcvrConfigBLE, &rbmeConfigBLE);
+    XCVR_SetActiveLL(XCVR_ACTIVE_LL_BTLE);
+
+    /*
+     * In the process of dynamically changing modes between BLE and 15.4 Phy,
+     * 15.4 Phy Layer may change LDO_ANT_TRIM value
+     * restore LDO ANT TRIM to value maintained and expected by BLE
+     */
+    extern void Controller_RestoreLdoAntTrim(void);
+    Controller_RestoreLdoAntTrim();
+}
+
 /*! *********************************************************************************
 * \brief  This function represents the callback used by the MWS module to signal
 *         events to the 802.15.4 PHY
@@ -1575,152 +1638,45 @@ void Radio_Phy_Notify(Phy_PhyLocalStruct_t *ctx)
 ********************************************************************************** */
 static uint32_t MWS_802_15_4_Callback(mwsEvents_t event)
 {
-    Phy_PhyLocalStruct_t *ctx = ctx_get_current();
-    uint32_t status = 0;
-    uint8_t xcvrState;
+    uint32_t status = gMWS_Success_c;
+
+    OSA_InterruptDisable();
 
     switch (event)
     {
-    case gMWS_Init_c:
-
-        mXcvrAcquired = 0;
-        break;
-
     case gMWS_Active_c:
-
-        OSA_InterruptDisable();
-
-        if ((RADIO_CTRL_LL_CTRL_ACTIVE_LL_MASK & RADIO_CTRL->LL_CTRL) != 0x01)
-        {
-          const xcvr_config_t *xcvrConfig = &xcvr_oqpsk_802p15p4_250kbps_full_config;
-          const xcvr_coding_config_t *rbmeConfig = &xcvr_ble_uncoded_config;
-
-          XCVR_SetActiveLL(XCVR_ACTIVE_LL_ALL_DISABLED);
-          XCVR_ChangeMode(&xcvrConfig, &rbmeConfig);
-
-          /*
-           * Also restore the settings that need to be overridden (i.e. parameters
-           * that are different from the default ones available in the OQPSK config)
-           */
-          PhyPlatformHwInit();
-
-          /*
-           * In the process of dynamically changing modes between BLE and 15.4 Phy,
-           *  BLE may change LDO_ANT_TRIM value
-           *  restore LDO ANT TRIM to value maintained and expected by 15.4
-           */
-          XCVR_setLdoAntTrim(g_ldo_ant_trim_15_4);
-
-          XCVR_SetActiveLL(XCVR_ACTIVE_LL_ZIGBEE_LL);
-
-          /* Reset TX state machine -> MATTER-256. This is a software workaround to reset the TX done
-          signal that remains asserted when the ZB LL starts a transmission during BLE active time.
-          This transmission is triggered by TSM tx_dig_enable signal that is common for both BLE and 15.4.
-          The first real TX that will happen will complete immediately because the TX done signal
-          is already asserted. */
-          uint32_t *resetReg = (uint32_t *)TX_DONE_RESET_REGISTER;
-          *resetReg |= TX_DONE_RESET_REGISTER_MASK;
-          *resetReg &= ~TX_DONE_RESET_REGISTER_MASK;
-
-        }
+        mode_switch_ZB();
         mXcvrAcquired = 1;
-
-        OSA_InterruptEnable();
-
-#if gMWS_UseCoexistence_d && gMWS_Enabled_d
-        /* Restore Pin settings */
-        MWS_CoexistenceInit(&gCoexistence_RfDeny, &gCoexistence_RfActive, &gCoexistence_RfStatus);
-#endif
         break;
 
     case gMWS_Idle_c:
-
-        Phy24Task(ctx);
+        PHY_ForceIrqPending();  /* run the PHY state machine from PHY ISR context only */
         break;
 
     case gMWS_Abort_c:
+        PHY_sw_abort();
 
-        xcvrState = PhyPpGetState_base(ctx);
+    case gMWS_Release_c:
+        mode_switch_BLE();
 
-        if ((xcvrState == gTX_c) || (xcvrState == gTR_c))
-        { // this should never happen
-           status = gMWS_Denied_c;
-           break;
-        }
-
-        OSA_InterruptDisable();
+    case gMWS_Init_c:
         mXcvrAcquired = 0;
-        PhyAbort_base(ctx);
-        OSA_InterruptEnable();
-
-        if (xcvrState != gIdle_c)
-        {
-
-            switch(xcvrState)
-            {
-            /* Doesn't look right */
-            case gCCA_c:
-                if (gPhyEnergyDetectMode_c == (ZLL->PHY_CTRL & ZLL_PHY_CTRL_CCATYPE_MASK) >> ZLL_PHY_CTRL_CCATYPE_SHIFT)
-                {
-                    ctx->channelParams.energyLeveldB = (ZLL->LQI_AND_RSSI & ZLL_LQI_AND_RSSI_CCA1_ED_FNL_MASK) >> ZLL_LQI_AND_RSSI_CCA1_ED_FNL_SHIFT;
-                    PLME_SendMessage(ctx, gPlmeEdCnf_c);
-                    break;
-                }
-            case gTX_c:
-            case gTR_c:
-                ctx->channelParams.channelStatus = gPhyChannelBusy_c;
-                PLME_SendMessage(ctx, gPlmeCcaCnf_c);
-                break;
-            case gRX_c:
-                break;
-            default:
-                PLME_SendMessage(ctx, gPlmeTimeoutInd_c);
-                break;
-            }
-            PHY_ForceIrqPending();
-        }
         break;
 
     case gMWS_GetInactivityDuration_c:
-
-        /* Default status is 0 (Busy)  */
-        if (gIdle_c == PhyPpGetState_base(ctx))
+        status = 0;     /* Default status is 0 (Busy)  */
+        if (gIdle_c == PhyPpGetState())
         {
-            status = 0xFFFFFFFF;
-        }
-        break;
-
-    case gMWS_Release_c:
-        {
-          const xcvr_config_t           *xcvrConfigBLE = &xcvr_gfsk_bt_0p5_h_0p5_1mbps_full_config;
-          const xcvr_coding_config_t    *rbmeConfigBLE = &xcvr_ble_coded_s8_config;
-
-          OSA_InterruptDisable();
-
-          mXcvrAcquired = 0;
-
-          XCVR_ChangeMode(&xcvrConfigBLE, &rbmeConfigBLE);
-
-          /*
-           * In the process of dynamically changing modes between BLE and 15.4 Phy,
-           * 15.4 Phy Layer may change LDO_ANT_TRIM value
-           * restore LDO ANT TRIM to value maintained and expected by BLE
-           */
-          extern void Controller_RestoreLdoAntTrim(void);
-          Controller_RestoreLdoAntTrim();
-
-          XCVR_SetActiveLL(XCVR_ACTIVE_LL_BTLE);
-
-          OSA_InterruptEnable();
+            status = 0xFFFFFFFFu;
         }
         break;
 
     default:
-
         status = gMWS_InvalidParameter_c;
         break;
     }
 
+    OSA_InterruptEnable();
     return status;
 }
 

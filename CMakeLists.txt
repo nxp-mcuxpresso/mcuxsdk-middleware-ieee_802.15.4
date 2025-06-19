@@ -66,6 +66,7 @@ endif()
 if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw70.PHY)
     mcux_add_source(
         SOURCES
+            ieee_802_15_4/phy/source/PhyPpme.c
             ieee_802_15_4/phy/source/MCXW70/PhyPlatform.c
     )
 endif()

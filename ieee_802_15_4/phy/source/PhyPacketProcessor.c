@@ -566,15 +566,10 @@ void PhyAbort(void)
     /* Mask SEQ interrupt */
     ZLL->PHY_CTRL |= ZLL_PHY_CTRL_SEQMSK_MASK;
 
-    /* Disable timer trigger (for scheduled XCVSEQ) */
-    if (ZLL->PHY_CTRL & ZLL_PHY_CTRL_TMRTRIGEN_MASK)
-    {
-        ZLL->PHY_CTRL &= ~ZLL_PHY_CTRL_TMRTRIGEN_MASK;
-        /* give the FSM enough time to start if it was triggered */
-        while ((XCVR_MISC->XCVR_CTRL & XCVR_MISC_XCVR_STATUS_TSM_COUNT_MASK) == 0)
-        {
-        }
-    }
+    /* Disable timer trigger (for scheduled XCVSEQ).
+       Stop timers */
+    PhyTimeDisableEventTrigger();
+    PhyTimeDisableEventTimeout();
 
     /* If XCVR is not idle, abort current SEQ */
     if (ZLL->PHY_CTRL & ZLL_PHY_CTRL_XCVSEQ_MASK)
@@ -600,10 +595,6 @@ void PhyAbort(void)
     MWS_CoexistenceReleaseAccess();
 #endif
 
-    /* Stop timers */
-    ZLL->PHY_CTRL &= ~(ZLL_PHY_CTRL_TMR2CMP_EN_MASK |
-                       ZLL_PHY_CTRL_TMR3CMP_EN_MASK |
-                       ZLL_PHY_CTRL_TC3TMOUT_MASK );
     /* clear all PP IRQ bits to avoid unexpected interrupts( do not change TMR1 and TMR4 IRQ status )
      * also avoid clearing ARB_GRANT_DEASSERTION_IRQ status in case external coexistence is used (gPhyUseExternalCoexistence_d) */
     ZLL->IRQSTS &= ~(ZLL_IRQSTS_TMR1IRQ_MASK | ZLL_IRQSTS_TMR4IRQ_MASK | ZLL_IRQSTS_ARB_GRANT_DEASSERTION_IRQ_MASK);

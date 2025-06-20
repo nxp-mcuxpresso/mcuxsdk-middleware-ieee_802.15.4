@@ -515,6 +515,8 @@ uint8_t PhyPpGetState(void);
  ********************************************************************************** */
 void PhyAbort(void);
 
+void PHY_sw_abort();
+
 bool_t PHY_graceful_idle();
 
 /* PHY PLME & DATA primitives */

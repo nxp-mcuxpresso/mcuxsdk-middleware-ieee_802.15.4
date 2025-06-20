@@ -1124,13 +1124,7 @@ void PHY_InterruptHandler_base(
     uint32_t crc_valid;
     uint16_t rxFcf;
     Phy_PhyLocalStruct_t *ctx = ctx_get_current();
-
-#if (ARB_GRANT_DEASSERTION_SUPPORT == 1)
-#if defined(gPhyUseExternalCoexistence_d) && (gPhyUseExternalCoexistence_d == 1)
-    uint32_t seqCtrlStatus;
-    seqCtrlStatus = ZLL->SEQ_CTRL_STS;
-#endif /* defined(gPhyUseExternalCoexistence_d) && (gPhyUseExternalCoexistence_d == 1) */
-#endif //(ARB_GRANT_DEASSERTION_SUPPORT == 1)
+    uint32_t seqCtrlStatus = ZLL->SEQ_CTRL_STS;
 
 #ifndef CTX_SCHED
     /* Read current XCVRSEQ and interrup status */
@@ -1267,8 +1261,14 @@ void PHY_InterruptHandler_base(
     /* Sequencer interrupt, the autosequence has completed */
     if ((!(ZLL->PHY_CTRL & ZLL_PHY_CTRL_SEQMSK_MASK)) && (irqStatus & ZLL_IRQSTS_SEQIRQ_MASK))
     {
+        if (seqCtrlStatus & ZLL_SEQ_CTRL_STS_SW_ABORTED_MASK)
+        {
+            PhyIsrSeqCleanup();
+            PhyIsrTimeoutCleanup();
+            Radio_Phy_AbortIndication(ctx);
+        }
         /* PLL unlock, the autosequence has been aborted due to PLL unlock */
-        if (irqStatus & ZLL_IRQSTS_PLL_UNLOCK_IRQ_MASK)
+        else if (irqStatus & ZLL_IRQSTS_PLL_UNLOCK_IRQ_MASK)
         {
             PhyIsrSeqCleanup();
 #if gMWS_UseCoexistence_d

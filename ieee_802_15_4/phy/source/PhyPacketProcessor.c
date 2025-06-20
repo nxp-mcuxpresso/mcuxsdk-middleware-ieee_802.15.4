@@ -546,12 +546,10 @@ void PhyHwUpdate(void)
 }
 #endif // MFG_OT_RCP
 
-/*! *********************************************************************************
-* \brief  Aborts the current sequence and force the radio to IDLE
-*
-********************************************************************************** */
-void PhyAbort(void)
+static void phy_abort_helper(bool_t sw_abort)
 {
+    uint32_t irq_sts_tmp = ZLL_IRQSTS_TMR1IRQ_MASK | ZLL_IRQSTS_TMR4IRQ_MASK | ZLL_IRQSTS_ARB_GRANT_DEASSERTION_IRQ_MASK;
+
     OSA_InterruptDisable();
 
     /* Disable all 15.4 IRQ sources before starting abort sequence.
@@ -561,10 +559,17 @@ void PhyAbort(void)
      * this leads to ARB_GRANT_DEASSERTION_IRQ being raised before sequence is in idle state
      * To workaround this, we disable all IRQs sources, we wait the sequence to be idle, and then
      * we release the interrupts. This makes sure the sequence is IDLE before processing interrupts */
-    ProtectFromXcvrInterrupt();
+    if (!sw_abort)
+    {
+        ProtectFromXcvrInterrupt();
 
-    /* Mask SEQ interrupt */
-    ZLL->PHY_CTRL |= ZLL_PHY_CTRL_SEQMSK_MASK;
+        /* Mask SEQ interrupt */
+        ZLL->PHY_CTRL |= ZLL_PHY_CTRL_SEQMSK_MASK;
+    }
+    else
+    {
+        irq_sts_tmp |= ZLL_IRQSTS_SEQIRQ_MASK;
+    }
 
     /* Disable timer trigger (for scheduled XCVSEQ).
        Stop timers */
@@ -597,14 +602,32 @@ void PhyAbort(void)
 
     /* clear all PP IRQ bits to avoid unexpected interrupts( do not change TMR1 and TMR4 IRQ status )
      * also avoid clearing ARB_GRANT_DEASSERTION_IRQ status in case external coexistence is used (gPhyUseExternalCoexistence_d) */
-    ZLL->IRQSTS &= ~(ZLL_IRQSTS_TMR1IRQ_MASK | ZLL_IRQSTS_TMR4IRQ_MASK | ZLL_IRQSTS_ARB_GRANT_DEASSERTION_IRQ_MASK);
+    ZLL->IRQSTS &= ~irq_sts_tmp;
 
     ZLL->RX_WTR_MARK = RX_WTMRK_START;
 
-    PHY_allow_sleep();
+    if (!sw_abort)
+    {
+        PHY_allow_sleep();
 
-    UnprotectFromXcvrInterrupt();
+        UnprotectFromXcvrInterrupt();
+    }
+
     OSA_InterruptEnable();
+}
+
+/*! *********************************************************************************
+* \brief  Aborts the current sequence and force the radio to IDLE
+*
+********************************************************************************** */
+void PhyAbort(void)
+{
+    phy_abort_helper(FALSE);
+}
+
+void PHY_sw_abort()
+{
+    phy_abort_helper(TRUE);
 }
 
 bool_t PHY_graceful_idle()

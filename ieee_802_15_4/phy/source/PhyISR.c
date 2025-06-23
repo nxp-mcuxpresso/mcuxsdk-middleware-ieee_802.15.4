@@ -63,7 +63,6 @@ extern Phy_nbRssiCtrl_t nbRssiCtrlReg;
 *************************************************************************************
 ********************************************************************************** */
 static void PhyIsrSeqCleanup(void);
-static void PhyIsrTimeoutCleanup(void);
 static void Phy_GetRxInfo(Phy_PhyLocalStruct_t *ctx);
 static uint8_t Phy_LqiConvert(uint8_t hwLqi);
 
@@ -917,64 +916,30 @@ static void PHY_TransformUint16ToArray(volatile uint8_t *pArray, uint16_t value)
 }
 
 /*! *********************************************************************************
-* \brief  Clear and mask PHY IRQ, set sequence to Idle
+* \brief  Disable triggers, clear and mask PHY IRQ, set sequence to Idle
 *
 ********************************************************************************** */
 static void PhyIsrSeqCleanup(void)
 {
     uint32_t irqStatus;
 
+    /* Disable timer trigger (for scheduled XCVSEQ).
+       Stop timers */
+    PhyTimeDisableEventTrigger();
+    PhyTimeDisableEventTimeout();
+
+    /* Mask SEQ interrupt */
+    ZLL->PHY_CTRL |= ZLL_PHY_CTRL_SEQMSK_MASK;
+
     /* Set the PHY sequencer back to IDLE */
     ZLL->PHY_CTRL &= ~ZLL_PHY_CTRL_XCVSEQ_MASK;
-    /* Mask SEQ, RX, TX and CCA interrupts */
-    ZLL->PHY_CTRL |= ZLL_PHY_CTRL_CCAMSK_MASK |
-                     ZLL_PHY_CTRL_RXMSK_MASK  |
-                     ZLL_PHY_CTRL_TXMSK_MASK  |
-                     ZLL_PHY_CTRL_SEQMSK_MASK;
 
     while (ZLL->SEQ_STATE & ZLL_SEQ_STATE_SEQ_STATE_MASK)
     {
     }
 
+    /* Clear transceiver interrupts except TMR1IRQ and TMR4IRQ */
     irqStatus = ZLL->IRQSTS;
-    /* Mask TMR3 interrupt */
-    irqStatus |= ZLL_IRQSTS_TMR3MSK_MASK;
-    /* Clear transceiver interrupts except TMRxIRQ */
-    irqStatus &= ~( ZLL_IRQSTS_TMR1IRQ_MASK |
-                    ZLL_IRQSTS_TMR2IRQ_MASK |
-                    ZLL_IRQSTS_TMR3IRQ_MASK |
-                    ZLL_IRQSTS_TMR4IRQ_MASK );
-    ZLL->IRQSTS = irqStatus;
-
-    ZLL->SAM_TABLE &= ~(ZLL_SAM_TABLE_ACK_FRM_PND_CTRL_MASK);
-}
-
-/*! *********************************************************************************
-* \brief  Clear and mask PHY IRQ, disable timeout, set sequence to Idle
-*
-********************************************************************************** */
-static void PhyIsrTimeoutCleanup(void)
-{
-    uint32_t irqStatus;
-
-    /* Set the PHY sequencer back to IDLE and disable TMR3 comparator and timeout */
-    ZLL->PHY_CTRL &= ~(ZLL_PHY_CTRL_TMR3CMP_EN_MASK |
-                       ZLL_PHY_CTRL_TC3TMOUT_MASK   |
-                       ZLL_PHY_CTRL_XCVSEQ_MASK);
-    /* Mask SEQ, RX, TX and CCA interrupts */
-    ZLL->PHY_CTRL |= ZLL_PHY_CTRL_CCAMSK_MASK |
-                     ZLL_PHY_CTRL_RXMSK_MASK  |
-                     ZLL_PHY_CTRL_TXMSK_MASK  |
-                     ZLL_PHY_CTRL_SEQMSK_MASK;
-
-    while (ZLL->SEQ_STATE & ZLL_SEQ_STATE_SEQ_STATE_MASK)
-    {
-    }
-
-    irqStatus = ZLL->IRQSTS;
-    /* Mask TMR3 interrupt */
-    irqStatus |= ZLL_IRQSTS_TMR3MSK_MASK;
-    /* Clear transceiver interrupts except TMR1IRQ and TMR4IRQ. */
     irqStatus &= ~(ZLL_IRQSTS_TMR1IRQ_MASK | ZLL_IRQSTS_TMR4IRQ_MASK);
     ZLL->IRQSTS = irqStatus;
 
@@ -1261,16 +1226,15 @@ void PHY_InterruptHandler_base(
     /* Sequencer interrupt, the autosequence has completed */
     if ((!(ZLL->PHY_CTRL & ZLL_PHY_CTRL_SEQMSK_MASK)) && (irqStatus & ZLL_IRQSTS_SEQIRQ_MASK))
     {
+        PhyIsrSeqCleanup();
+
         if (seqCtrlStatus & ZLL_SEQ_CTRL_STS_SW_ABORTED_MASK)
         {
-            PhyIsrSeqCleanup();
-            PhyIsrTimeoutCleanup();
             Radio_Phy_AbortIndication(ctx);
         }
         /* PLL unlock, the autosequence has been aborted due to PLL unlock */
         else if (irqStatus & ZLL_IRQSTS_PLL_UNLOCK_IRQ_MASK)
         {
-            PhyIsrSeqCleanup();
 #if gMWS_UseCoexistence_d
             MWS_CoexistenceReleaseAccess();
 #endif
@@ -1282,9 +1246,6 @@ void PHY_InterruptHandler_base(
         else if((seqCtrlStatus & ZLL_SEQ_CTRL_STS_ARB_GRANT_DEASSERTION_ABORTED_MASK) ||
                 (irqStatus & ZLL_IRQSTS_ARB_GRANT_DEASSERTION_IRQ_MASK))
         {
-            PhyIsrSeqCleanup();
-            PhyIsrTimeoutCleanup();
-
 #if gMWS_UseCoexistence_d
             MWS_CoexistenceReleaseAccess();
 #endif
@@ -1309,8 +1270,6 @@ void PHY_InterruptHandler_base(
         /* COEX Timeout, the autosequence has been aborted due to COEX Timeout */
         else if (ZLL->COEX_CTRL & ZLL_COEX_CTRL_COEX_TIMEOUT_IRQ_MASK)
         {
-            PhyIsrSeqCleanup();
-            PhyIsrTimeoutCleanup();
 #if gMWS_UseCoexistence_d
             MWS_CoexistenceReleaseAccess();
 #endif
@@ -1332,7 +1291,6 @@ void PHY_InterruptHandler_base(
                  (!(irqStatus & ZLL_IRQSTS_RXIRQ_MASK)) &&
                  (gTX_c != xcvseqCopy))
         {
-            PhyIsrTimeoutCleanup();
 #if gMWS_UseCoexistence_d
             MWS_CoexistenceReleaseAccess();
 #endif
@@ -1340,8 +1298,6 @@ void PHY_InterruptHandler_base(
         }
         else
         {
-            PhyIsrSeqCleanup();
-
 #if gMWS_UseCoexistence_d
             MWS_CoexistenceReleaseAccess();
 #endif
@@ -1403,10 +1359,6 @@ void PHY_InterruptHandler_base(
                 else
                 {
                     // if SEQIRQ is raised but RxIRQ not, then an error happened
-                    // Do Cleanup before abort
-                    PhyIsrSeqCleanup();
-                    PhyIsrTimeoutCleanup();
-
 #if gMWS_UseCoexistence_d
                     MWS_CoexistenceReleaseAccess();
 #endif

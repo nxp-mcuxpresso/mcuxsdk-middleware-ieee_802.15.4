@@ -530,18 +530,6 @@ phyStatus_t PhyPlmeRxRequest(Phy_PhyLocalStruct_t *ctx)
     return gPhySuccess_c;
 }
 
-static void Phy_EdScanTimeoutHandler(uint32_t param)
-{
-    Phy_PhyLocalStruct_t *ctx = ctx_get(param);
-
-    PhyAbort_base(ctx);
-
-    ctx->ccaParams.edScanDurationSym = 0;
-    ctx->ccaParams.timer = gInvalidTimerId_c;
-
-    PLME_SendMessage(ctx, gPlmeEdCnf_c);
-}
-
 /*! *********************************************************************************
 * \brief  This function will start a CCA / CCCA sequence
 *
@@ -593,38 +581,22 @@ phyStatus_t PhyPlmeCcaEdRequest(Phy_PhyLocalStruct_t *ctx)
     /* Ensure that no spurious interrupts are raised(do not change TMR1 and TMR4 IRQ status) */
     irqSts = ZLL->IRQSTS;
     irqSts &= ~(ZLL_IRQSTS_TMR1IRQ_MASK | ZLL_IRQSTS_TMR4IRQ_MASK);
-    irqSts |= ZLL_IRQSTS_TMR3MSK_MASK;
     ZLL->IRQSTS = irqSts;
+
     /* Unmask SEQ interrupt */
     ZLL->PHY_CTRL &= ~ZLL_PHY_CTRL_SEQMSK_MASK;
 
+    /* start CCA immediately */
+    PhyTimeDisableEventTrigger();
+    PhyTimeDisableEventTimeout();
+
     if (ctx->ccaParams.cccaMode == gPhyContCcaEnabled) /* continuous CCA */
     {
-        /* start the continuous CCA sequence immediately or by TC2', depending on a previous PhyTimeSetEventTrigger() call) */
         ZLL->PHY_CTRL |= gCCCA_c;
     }
     else /* normal CCA */
     {
-        /* start the CCA or ED sequence (this depends on CcaType used) immediately or by TC2', depending on a previous PhyTimeSetEventTrigger() call) */
         ZLL->PHY_CTRL |= gCCA_c;
-    }
-
-    /* At the end of the scheduled sequence, an interrupt will occur: CCA , SEQ or TMR3 */
-
-    if ((ctx->ccaParams.msgType == gPlmeEdReq_c) &&
-        (ctx->ccaParams.timer == gInvalidTimerId_c) &&
-        (ctx->ccaParams.edScanDurationSym != 0))
-    {
-        phyTimeEvent_t ev;
-        ev.parameter = ctx->id;
-        ev.callback = Phy_EdScanTimeoutHandler;
-        ev.timestamp = PhyTime_GetTimestamp() + ctx->ccaParams.edScanDurationSym;
-        ctx->ccaParams.timer = PhyTime_ScheduleEvent(&ev);
-
-        if (ctx->ccaParams.timer == gInvalidTimerId_c)
-        {
-            ctx->ccaParams.edScanDurationSym = 0;
-        }
     }
 
     PHY_disallow_sleep();

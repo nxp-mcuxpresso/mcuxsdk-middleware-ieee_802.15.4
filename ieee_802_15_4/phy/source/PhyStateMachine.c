@@ -478,8 +478,7 @@ static void Phy24Task(Phy_PhyLocalStruct_t *ctx)
                 status = Phy_Handle_PlmeCcaEdRequest(ctx, (macToPlmeMessage_t *)pMsgIn);
                 if ((gPhySuccess_c != status) && (gPhyPendingOp != status))
                 {
-                    ctx->ccaParams.edScanDurationSym = 0;
-                    PLME_SendMessage(ctx, gPlmeEdCnf_c);
+                    PLME_SendMessage(ctx, gPlmeAbortInd_c);
                 }
                 break;
 
@@ -870,12 +869,10 @@ static phyStatus_t Phy_Handle_PdDataReq(Phy_PhyLocalStruct_t *ctx, macToPdDataMe
 static phyStatus_t Phy_Handle_PlmeCcaEdRequest(Phy_PhyLocalStruct_t *ctx, macToPlmeMessage_t *pMsg)
 {
     phyStatus_t status = gPhySuccess_c;
+    uint32_t cca_time = gPhyRxWuTimeSym + gCCATime_c + gPhyRxWdTimeSym;
 
     ctx->channelParams.maxEnergyLeveldB = -127;     /* set maxEnergyLeveldB to minimum value */
     ctx->channelParams.energyLeveldB = 0;
-
-    ctx->ccaParams.edScanDurationSym = 0;
-    ctx->ccaParams.timer = gInvalidTimerId_c;
 
     if (!pMsg)
     {
@@ -899,7 +896,10 @@ static phyStatus_t Phy_Handle_PlmeCcaEdRequest(Phy_PhyLocalStruct_t *ctx, macToP
         ctx->ccaParams.msgType = gPlmeEdReq_c;
         ctx->ccaParams.ccaParam = gPhyEnergyDetectMode_c;
         ctx->ccaParams.cccaMode = gPhyContCcaDisabled;
-        ctx->ccaParams.edScanDurationSym = pMsg->msgData.edReq.measureDurationSym;
+
+        /* convert the ED time to CCA measurements */
+        ctx->ccaParams.edScanMaxCnt = (pMsg->msgData.edReq.measureDurationSym + cca_time - 1) / cca_time;
+        ctx->ccaParams.edScanCnt = 0;
         break;
 
     default:
@@ -1209,10 +1209,15 @@ void Radio_Phy_PlmeEdConfirm(Phy_PhyLocalStruct_t *ctx, int8_t energyLeveldB)
         ctx->channelParams.maxEnergyLeveldB = energyLeveldB;
     }
 
-    if (ctx->ccaParams.edScanDurationSym == 0)
+    ctx->ccaParams.edScanCnt++;
+    if (ctx->ccaParams.edScanCnt >= ctx->ccaParams.edScanMaxCnt)
     {
-        PhyTimeDisableEventTimeout();
         PLME_SendMessage(ctx, gPlmeEdCnf_c);
+    }
+    else if (PhyPlmeCcaEdRequest(ctx) != gPhySuccess_c)
+    {
+        PLME_SendMessage(ctx, gPlmeAbortInd_c);
+
     }
 }
 
@@ -2241,24 +2246,14 @@ void sched_abort_current()
         scheduler.current->filter_fail = 0;
         scheduler.current->rx_ongoing = FALSE;
 
-        if (scheduler.current->op == TX_OP)
+        if ((scheduler.current->op == TX_OP) ||
+            ((scheduler.current->op == CCA_OP) &&
+             (scheduler.current->ccaParams.msgType == gPlmeEdReq_c)))
         {
             scheduler.current->op = NONE_OP;
 
             /* send notification to MAC */
             Radio_Phy_AbortIndication(scheduler.current);
-        }
-        else if ((scheduler.current->op == CCA_OP) &&
-                 (scheduler.current->ccaParams.msgType == gPlmeEdReq_c))
-        {
-            PhyTime_CancelEvent(scheduler.current->ccaParams.timer);
-
-            scheduler.current->ccaParams.timer = gInvalidTimerId_c;
-            scheduler.current->ccaParams.edScanDurationSym = 0;
-
-            scheduler.current->op = NONE_OP;
-
-            PLME_SendMessage(scheduler.current, gPlmeEdCnf_c);
         }
     }
 }

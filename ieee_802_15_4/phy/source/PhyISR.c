@@ -1405,18 +1405,6 @@ void PHY_InterruptHandler_base(
                 if (gPhyEnergyDetectMode_c == ((ZLL->PHY_CTRL & ZLL_PHY_CTRL_CCATYPE_MASK) >> ZLL_PHY_CTRL_CCATYPE_SHIFT))
                 {
                     Radio_Phy_PlmeEdConfirm(ctx, (ZLL->LQI_AND_RSSI & ZLL_LQI_AND_RSSI_CCA1_ED_FNL_MASK) >> ZLL_LQI_AND_RSSI_CCA1_ED_FNL_SHIFT);
-
-                    if (ctx && (ctx->ccaParams.edScanDurationSym != 0))
-                    {
-                        /* Restart the energy scan here when scan duration is different from 0 */
-                        phyStatus_t status = PhyPlmeCcaEdRequest(ctx);
-
-                        if (ctx && (gPhySuccess_c != status))
-                        {
-                            ctx->ccaParams.edScanDurationSym = 0;
-                            /* Don't disable timeout timer, wait for it to expire */
-                        }
-                    }
                 }
                 else /* CCA */
                 {

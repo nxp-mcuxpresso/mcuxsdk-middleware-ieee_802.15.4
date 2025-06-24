@@ -391,8 +391,8 @@ typedef struct phyCcaParams_tag
     phyMessageId_t msgType;
     phyCCAType_t ccaParam;
     phyContCCAMode_t cccaMode;
-    uint32_t edScanDurationSym;
-    phyTimeTimerId_t timer;
+    uint32_t edScanCnt;
+    uint32_t edScanMaxCnt;
 } phyCcaParams_t;
 
 /*! PHY data service callback type */

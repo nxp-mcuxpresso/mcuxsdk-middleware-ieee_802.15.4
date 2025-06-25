@@ -1261,10 +1261,6 @@ void Radio_Phy_PlmeRxWatermark(uint32_t frameLength, uint16_t fcf)
     phyTime_t currentTime;
     uint32_t rx_time = frameLength * gPhySymbolsPerOctet_c + mPhyOverhead_d;     /* symbols */
 
-#if (gMWS_Enabled_d) || (gMWS_UseCoexistence_d)
-    uint32_t inactiveTime = MWS_GetInactivityDuration(gMWS_802_15_4_c) / 16; /* [symbols] */
-#endif
-
     if (fcf & phyFcfAckRequest)
     {
         rx_time += gPhyTurnaroundTime_c + gPhySHRDuration_c + gPhyPHRDuration_c;
@@ -1279,27 +1275,10 @@ void Radio_Phy_PlmeRxWatermark(uint32_t frameLength, uint16_t fcf)
         }
     }
 
-    OSA_InterruptDisable();
-
-    /* Read currentTime and Timeout values [sym] */
+    /* update timeout */
     currentTime = PhyTime_ReadClock();
-
-#if (gMWS_Enabled_d) || (gMWS_UseCoexistence_d)
-    if (inactiveTime > rx_time)
-#endif
-    {
-        /* Disable TMR3 compare */
-        CLR_PHYCTRL_FIELD(ZLL_PHY_CTRL_TMR3CMP_EN);
-
-        /* Write new TMR3 compare value */
-        currentTime = (currentTime + rx_time) & gPhyTimeMask_c;
-        ZLL->T3CMP = currentTime;
-
-        /* Enable TMR3 compare */
-        SET_PHYCTRL_FIELD(ZLL_PHY_CTRL_TMR3CMP_EN);
-    }
-
-    OSA_InterruptEnable();
+    currentTime = (currentTime + rx_time) & gPhyTimeMask_c;
+    PhyTimeSetEventTimeout(currentTime);
 }
 
 /*! *********************************************************************************

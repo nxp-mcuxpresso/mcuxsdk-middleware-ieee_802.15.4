@@ -498,34 +498,32 @@ phyStatus_t PhyPlmeRxRequest(Phy_PhyLocalStruct_t *ctx)
     ctx->rxParams.ackedWithSecEnhAck = FALSE;
 
     ctx_set_rx_ongoing(ctx, FALSE);
-
-    Phy_SetSequenceTiming(&ctx->rxParams.startTime, ctx->rxParams.duration, 0);
-
-	/* Slotted operation is not suppported */
-    ZLL->PHY_CTRL &= ~ZLL_PHY_CTRL_SLOTTED_MASK;
-
-    /* Ensure that no spurious interrupts are raised, but do not change TMR1 and TMR4 IRQ status */
-    irqSts = ZLL->IRQSTS;
-    irqSts &= ~(ZLL_IRQSTS_TMR1IRQ_MASK | ZLL_IRQSTS_TMR4IRQ_MASK);
-    irqSts |= ZLL_IRQSTS_TMR3MSK_MASK;
-    ZLL->IRQSTS = irqSts;
-
-    /* Filter ACK frames during RX sequence */
-    ZLL->RX_FRAME_FILTER &= ~(ZLL_RX_FRAME_FILTER_ACK_FT_MASK);
+    prepare_for_rx(ctx);
 
 #if (RADIO_COEX_METRICS_ENABLE==1)
     PhyUpdateCoexSwMetricsRx();
 #endif
 
-    prepare_for_rx(ctx);
+    /* Slotted operation is not suppported */
+    ZLL->PHY_CTRL &= ~ZLL_PHY_CTRL_SLOTTED_MASK;
 
-	/* Start the RX sequence */
-	ZLL->PHY_CTRL |= gRX_c;
+    /* Filter ACK frames during RX sequence */
+    ZLL->RX_FRAME_FILTER &= ~(ZLL_RX_FRAME_FILTER_ACK_FT_MASK);
 
-	/* unmask SEQ interrupt */
-	ZLL->PHY_CTRL &= ~ZLL_PHY_CTRL_SEQMSK_MASK;
+    /* Ensure that no spurious interrupts are raised, but do not change TMR1 and TMR4 IRQ status */
+    irqSts = ZLL->IRQSTS;
+    irqSts &= ~(ZLL_IRQSTS_TMR1IRQ_MASK | ZLL_IRQSTS_TMR4IRQ_MASK);
+    ZLL->IRQSTS = irqSts;
 
-	PHY_disallow_sleep();
+    /* unmask SEQ interrupt */
+    ZLL->PHY_CTRL &= ~ZLL_PHY_CTRL_SEQMSK_MASK;
+
+    Phy_SetSequenceTiming(&ctx->rxParams.startTime, ctx->rxParams.duration, gPhyRxWuTimeSym);
+
+    /* Start the RX sequence */
+    ZLL->PHY_CTRL |= gRX_c;
+
+    PHY_disallow_sleep();
 
     return gPhySuccess_c;
 }

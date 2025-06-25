@@ -389,6 +389,10 @@ phyStatus_t PhyPdDataRequest(Phy_PhyLocalStruct_t *ctx)
 
     ctx_set_rx_ongoing(ctx, FALSE);
 
+#if (RADIO_COEX_METRICS_ENABLE==1)
+    PhyUpdateCoexSwMetricsTx();
+#endif
+
     /* Load data into Packet Buffer byte by byte to avoid memory access issues.
        psduLength should include the 2 FCS bytes (gPhyFCSSize_c) */
     PHY_MemCpyVerify(TX_PB, &pTxPacket->psduLength, sizeof(pTxPacket->psduLength));
@@ -444,20 +448,15 @@ phyStatus_t PhyPdDataRequest(Phy_PhyLocalStruct_t *ctx)
     /* Ensure that no spurious interrupts are raised(do not change TMR1 and TMR4 IRQ status) */
     irqSts = ZLL->IRQSTS;
     irqSts &= ~(ZLL_IRQSTS_TMR1IRQ_MASK | ZLL_IRQSTS_TMR4IRQ_MASK);
-    irqSts |= ZLL_IRQSTS_TMR3MSK_MASK;
     ZLL->IRQSTS = irqSts;
 
-#if (RADIO_COEX_METRICS_ENABLE==1)
-    PhyUpdateCoexSwMetricsTx();
-#endif
+    /* Unmask SEQ interrupt */
+    ZLL->PHY_CTRL &= ~ZLL_PHY_CTRL_SEQMSK_MASK;
 
     Phy_SetSequenceTiming(&pTxPacket->startTime, pTxPacket->txDuration, ccaOverheadSym);
 
     /* Start the TX / TRX sequence */
     ZLL->PHY_CTRL |= xcvseq;
-
-    /* Unmask SEQ interrupt */
-    ZLL->PHY_CTRL &= ~ZLL_PHY_CTRL_SEQMSK_MASK;
 
 #if gMWS_UseCoexistence_d
     if (gMWS_Success_c != MWS_CoexistenceRequestAccess(gMWS_TxState_c))

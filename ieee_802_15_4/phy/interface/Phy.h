@@ -883,7 +883,7 @@ void PhyPlmeSetRxOnWhenIdle(bool_t state, instanceId_t instanceId);
 * \param[in] seqDuration - sequence duration in symbols
 *
 ********************************************************************************** */
-void Phy_SetSequenceTiming(phyTime_t *startTime, uint32_t seqDuration, uint32_t overhead);
+void Phy_SetSequenceTiming(phyTime_t startTime, uint32_t seqDuration, uint32_t overhead);
 
 /*! *********************************************************************************
 * \brief  Scales energy level to 0-255

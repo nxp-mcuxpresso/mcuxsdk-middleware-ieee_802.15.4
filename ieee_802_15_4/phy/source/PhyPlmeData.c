@@ -453,7 +453,7 @@ phyStatus_t PhyPdDataRequest(Phy_PhyLocalStruct_t *ctx)
     /* Unmask SEQ interrupt */
     ZLL->PHY_CTRL &= ~ZLL_PHY_CTRL_SEQMSK_MASK;
 
-    Phy_SetSequenceTiming(&pTxPacket->startTime, pTxPacket->txDuration, ccaOverheadSym);
+    Phy_SetSequenceTiming(pTxPacket->startTime, pTxPacket->txDuration, ccaOverheadSym);
 
     /* Start the TX / TRX sequence */
     ZLL->PHY_CTRL |= xcvseq;
@@ -517,7 +517,7 @@ phyStatus_t PhyPlmeRxRequest(Phy_PhyLocalStruct_t *ctx)
     /* unmask SEQ interrupt */
     ZLL->PHY_CTRL &= ~ZLL_PHY_CTRL_SEQMSK_MASK;
 
-    Phy_SetSequenceTiming(&ctx->rxParams.startTime, ctx->rxParams.duration, gPhyRxWuTimeSym);
+    Phy_SetSequenceTiming(ctx->rxParams.startTime, ctx->rxParams.duration, gPhyRxWuTimeSym);
 
     /* Start the RX sequence */
     ZLL->PHY_CTRL |= gRX_c;
@@ -584,8 +584,7 @@ phyStatus_t PhyPlmeCcaEdRequest(Phy_PhyLocalStruct_t *ctx)
     ZLL->PHY_CTRL &= ~ZLL_PHY_CTRL_SEQMSK_MASK;
 
     /* start CCA immediately */
-    PhyTimeDisableEventTrigger();
-    PhyTimeDisableEventTimeout();
+    Phy_SetSequenceTiming(gPhySeqStartAsap_c, 0xFFFFFFFFU, gPhyRxWuTimeSym);
 
     if (ctx->ccaParams.cccaMode == gPhyContCcaEnabled) /* continuous CCA */
     {

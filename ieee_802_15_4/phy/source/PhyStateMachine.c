@@ -940,7 +940,7 @@ static phyStatus_t Phy_Handle_PlmeCcaEdRequest(Phy_PhyLocalStruct_t *ctx, macToP
 *             If seqDuration is 0xFFFFFFFF, the timeout is disabled.
 *
 ********************************************************************************** */
-void Phy_SetSequenceTiming(phyTime_t *startTime, uint32_t seqDuration, uint32_t overhead)
+void Phy_SetSequenceTiming(phyTime_t startTime, uint32_t seqDuration, uint32_t overhead)
 {
     phyTime_t endTime;
     uint32_t delta;
@@ -948,25 +948,25 @@ void Phy_SetSequenceTiming(phyTime_t *startTime, uint32_t seqDuration, uint32_t 
     OSA_InterruptDisable();
 
     /* Check if there is enough time for delayed operation */
-    if (*startTime != gPhySeqStartAsap_c)
+    if (startTime != gPhySeqStartAsap_c)
     {
-        *startTime = *startTime & gPhyTimeMask_c;
+        startTime = startTime & gPhyTimeMask_c;
 
         /* 24bit timer. Do modulo operations */
-        delta = ((*startTime & gPhyTimeMask_c) - (PhyTime_ReadClock() & gPhyTimeMask_c)) & gPhyTimeMask_c;
+        delta = ((startTime & gPhyTimeMask_c) - (PhyTime_ReadClock() & gPhyTimeMask_c)) & gPhyTimeMask_c;
 
         if ((delta  < overhead) || (delta > DELAYED_TX_RANGE))
         {
-            *startTime = gPhySeqStartAsap_c;
+            startTime = gPhySeqStartAsap_c;
         }
         else
         {
-            *startTime -= overhead;
-            *startTime = *startTime & gPhyTimeMask_c;
+            startTime -= overhead;
+            startTime = startTime & gPhyTimeMask_c;
         }
     }
 
-    if (gPhySeqStartAsap_c == *startTime)
+    if (gPhySeqStartAsap_c == startTime)
     {
         endTime = PhyTime_ReadClock();
 
@@ -974,9 +974,9 @@ void Phy_SetSequenceTiming(phyTime_t *startTime, uint32_t seqDuration, uint32_t 
     }
     else
     {
-        endTime = *startTime & gPhyTimeMask_c;
+        endTime = startTime & gPhyTimeMask_c;
 
-        PhyTimeSetEventTrigger(*startTime);
+        PhyTimeSetEventTrigger(startTime);
     }
 
     if (0xFFFFFFFFU != seqDuration)

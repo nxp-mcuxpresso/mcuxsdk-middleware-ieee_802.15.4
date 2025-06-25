@@ -409,33 +409,7 @@ static void Phy24Task(Phy_PhyLocalStruct_t *ctx)
             /* Check if Radio is busy */
             if ((status == gPhySuccess_c) && !PHY_graceful_idle_base(ctx))
             {
-                if (pMsgIn->msgType == gPdDataReq_c)
-                {
-                    macToPdDataMessage_t *pPD = (macToPdDataMessage_t*)pMsgIn;
-
-                    if ((pPD->msgData.dataReq.CCABeforeTx != gPhyNoCCABeforeTx_c) &&
-                        (pPD->msgData.dataReq.startTime == gPhySeqStartAsap_c))
-                    {
-                        if (ctx->flags & gPhyFlagDeferTx_c)
-                        {
-                            /* Postpone TX until the Rx has finished */
-                            ctx->flags |= gPhyFlaqReqPostponed_c;
-                            status = gPhyBusy_c;
-                        }
-                        else
-                        {
-                            ctx->channelParams.channelStatus = gPhyChannelBusy_c;
-                            PLME_SendMessage(ctx, gPlmeCcaCnf_c);
-                            status = gPhyBusyRx_c;
-                        }
-                    }
-                }
-                else if (pMsgIn->msgType == gPlmeCcaReq_c)
-                {
-                    ctx->channelParams.channelStatus = gPhyChannelBusy_c;
-                    PLME_SendMessage(ctx, gPlmeCcaCnf_c);
-                    status = gPhyBusyRx_c;
-                }
+                status = gPhyBusy_c;
             }
         }
 
@@ -453,7 +427,7 @@ static void Phy24Task(Phy_PhyLocalStruct_t *ctx)
         {
             PhyAbort_base(ctx);
 
-            ctx->flags &= ~(gPhyFlagIdleRx_c | gPhyFlaqReqPostponed_c);
+            ctx->flags &= ~gPhyFlagIdleRx_c;
 
             switch (pMsgIn->msgType)
             {
@@ -1307,21 +1281,6 @@ void Radio_Phy_PlmeFilterFailRx(Phy_PhyLocalStruct_t *ctx)
         return;
     }
 
-    if (ctx->flags & gPhyFlaqReqPostponed_c)
-    {
-        macToPdDataMessage_t *pMsg;
-
-        /* The Rx packet is not intended for the current device.
-         * Signal a Channel Busy event, and discard the Tx request */
-        ctx->flags &= ~(gPhyFlaqReqPostponed_c);
-
-        pMsg = MSG_DeQueue(&ctx->macPhyInputQueue);
-        if (pMsg)
-        {
-            MSG_Free(pMsg);
-            Radio_Phy_PlmeCcaConfirm(gPhyChannelBusy_c, ctx);
-        }
-    }
 #if defined(FFU_FMTM_APP)       // This is used for 15.4 FW testing with FMTM
     PLME_SendMessage(ctx, gPlme_FilterFailInd_c);
 #endif
@@ -1342,8 +1301,6 @@ void PLME_SendMessage(Phy_PhyLocalStruct_t *ctx, phyMessageId_t msgType)
     {
         return;
     }
-
-    ctx->flags &= ~(gPhyFlaqReqPostponed_c);
 
     if (!ctx->PLME_MAC_SapHandler)
     {
@@ -1431,31 +1388,6 @@ static void PD_SendMessage(Phy_PhyLocalStruct_t *ctx, phyMessageId_t msgType)
 
         memcpy(pMsg->msgData.dataInd.pPsdu, ctx->trx_buff, ctx->rxParams.psduLength);
 
-        if (ctx->flags & gPhyFlaqReqPostponed_c)
-        {
-            uint8_t *pPsdu = pMsg->msgData.dataInd.pPsdu;
-            uint8_t  dstAddrMode = (pPsdu[mFrameCtrlHi_d] & mDstAddrModeMask_d) >> mDstAddrModeShift_d;
-
-            /* Skip over FrameControl, SeqNo and PanID */
-            pPsdu += mAddressingFields_d + 2;
-
-            if ((dstAddrMode == mShortAddr_d) && (pPsdu[0] == 0xFF) && (pPsdu[1] == 0xFF))
-            {
-                macToPdDataMessage_t *pMacToPdDataMsg;
-
-                /* The Rx packet is a broadcast message.
-                 * Signal a Channel Busy event, and discard the Tx request */
-                ctx->flags &= ~(gPhyFlaqReqPostponed_c);
-                pMacToPdDataMsg = MSG_DeQueue(&ctx->macPhyInputQueue);
-                if (pMacToPdDataMsg)
-                {
-                    MSG_Free(pMacToPdDataMsg);
-                    ctx->channelParams.channelStatus = gPhyChannelBusy_c;
-                    PLME_SendMessage(ctx, gPlmeCcaCnf_c);
-                }
-            }
-        }
-
         pMsg->msgType = gPdDataInd_c;
         pMsg->msgData.dataInd.ppduLinkQuality = ctx->rxParams.linkQuality;
         pMsg->msgData.dataInd.ppduRssi = ctx->rxParams.rssi;
@@ -1504,8 +1436,6 @@ static void PD_SendMessage(Phy_PhyLocalStruct_t *ctx, phyMessageId_t msgType)
             ctx->flags &= ~(gPhyFlagRxFP_c);
             status = gPhyFramePending_c;
         }
-
-        ctx->flags &= ~(gPhyFlaqReqPostponed_c);
 
         pMsg->msgType = gPdDataCnf_c;
         pMsg->msgData.dataCnf.status = status;
@@ -1804,8 +1734,6 @@ void ctx_init_single(uint8_t id)
     ctx = ctx_get(id);
 
     ctx->id = id;
-
-    ctx->flags = gPhyFlagDeferTx_c;
 
     /* Prepare input queues.*/
     MSG_QueueInit(&ctx->macPhyInputQueue);

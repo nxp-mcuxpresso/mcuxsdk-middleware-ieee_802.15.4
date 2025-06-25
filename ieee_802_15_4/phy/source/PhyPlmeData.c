@@ -1175,16 +1175,6 @@ phyStatus_t PhyPlmeSetPIBRequest(phyPibId_t pibId, uint64_t pibValue, instanceId
     case gPhyPibFrameWaitTime_c:
         break;
     case gPhyPibDeferTxIfRxBusy_c:
-        {
-            if (pibValue)
-            {
-                ctx->flags |= gPhyFlagDeferTx_c;
-            }
-            else
-            {
-                ctx->flags &= ~gPhyFlagDeferTx_c;
-            }
-        }
         break;
     case gPhyPibLastTxAckFP_c:
         {
@@ -1296,9 +1286,6 @@ phyStatus_t PhyPlmeGetPIBRequest(phyPibId_t pibId, uint8_t *pibValue, instanceId
     case gPhyPibFrameWaitTime_c:
         break;
     case gPhyPibDeferTxIfRxBusy_c:
-        {
-            value = !!(ctx->flags & gPhyFlagDeferTx_c);
-        }
         break;
     case gPhyPibLastTxAckFP_c:
         {

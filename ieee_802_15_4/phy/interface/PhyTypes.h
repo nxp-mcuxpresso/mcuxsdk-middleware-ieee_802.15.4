@@ -67,12 +67,6 @@
 #define gPhyFlagRxFP_c          (1u << 2)
 /*! PHY flag that reflects the state of the FP bit of the last ACK frame transmitted */
 #define gPhyFlagTxAckFP_c       (1u << 3)
-/*! If set, a TX operation may be postponed if a packet reception is in progress */
-#define gPhyFlagDeferTx_c       (1u << 4)
-/*! PHY flag that indicate that the requested TX has been postponed */
-#define gPhyFlaqReqPostponed_c  (1u << 5)
-/*! PHY flag that indicate CSL RX: allow multipurpose frames, send Enh-ACKs */
-#define gPhyFlagCslRx_c         (1u << 6)
 /*! PHY flag that indicates FP was set as result of no neighbour table entry found */
 #define gPhyFlagNbTblRxAckFP_c  (1u << 7)
 

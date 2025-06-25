@@ -1130,8 +1130,6 @@ bool_t PhyIsIdleRx(instanceId_t instanceId)
 ********************************************************************************** */
 void Radio_Phy_PdDataConfirm(Phy_PhyLocalStruct_t *ctx, bool_t framePending)
 {
-    PhyTimeDisableEventTimeout();
-
     if (!ctx)
     {
         return;
@@ -1157,8 +1155,6 @@ void Radio_Phy_PdDataConfirm(Phy_PhyLocalStruct_t *ctx, bool_t framePending)
 ********************************************************************************** */
 void Radio_Phy_PdDataIndication(Phy_PhyLocalStruct_t *ctx)
 {
-    PhyTimeDisableEventTimeout();
-
     PD_SendMessage(ctx, gPdDataInd_c);
 
     ctx_data_ind_all(ctx);
@@ -1175,8 +1171,6 @@ void Radio_Phy_PdDataIndication(Phy_PhyLocalStruct_t *ctx)
 ********************************************************************************** */
 void Radio_Phy_PlmeCcaConfirm(phyStatus_t phyChannelStatus, Phy_PhyLocalStruct_t *ctx)
 {
-    PhyTimeDisableEventTimeout();
-
     if (!ctx)
     {
         return;

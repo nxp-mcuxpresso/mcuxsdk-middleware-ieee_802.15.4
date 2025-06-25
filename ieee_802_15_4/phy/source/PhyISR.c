@@ -1440,29 +1440,6 @@ void PHY_InterruptHandler_base(
         ZLL->RX_WTR_MARK = RX_WTMRK_START;
     }
 
-    /* Timers interrupt */
-    else
-    {
-        /* Timer 2 Compare Match */
-        if ((irqStatus & ZLL_IRQSTS_TMR2IRQ_MASK) && (!(irqStatus & ZLL_IRQSTS_TMR2MSK_MASK)))
-        {
-            PhyTimeDisableEventTrigger();
-        }
-
-        /* Timer 3 Compare Match */
-        if ((irqStatus & ZLL_IRQSTS_TMR3IRQ_MASK) && (!(irqStatus & ZLL_IRQSTS_TMR3MSK_MASK)))
-        {
-            PhyTimeDisableEventTimeout();
-
-            /* Ensure that we're not issuing TimeoutIndication while the Automated sequence is still in progress */
-            /* TMR3 can expire during R-T turnaround for example, case in which the sequence is not interrupted */
-            if (gIdle_c == xcvseqCopy)
-            {
-                Radio_Phy_TimeRxTimeoutIndication(ctx);
-            }
-        }
-    }
-
     Radio_Phy_Notify(ctx);
 }
 

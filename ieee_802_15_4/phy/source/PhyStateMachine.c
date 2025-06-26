@@ -73,10 +73,6 @@
 * Private macros
 *************************************************************************************
 ********************************************************************************** */
-#define mPhyMaxIdleRxDuration_c (0xF00000) /* [sym] */
-#define mPhyAckFrameDuration_c  (22)       /* [sym] */
-#define mPhyMinRxDuration_d (gPhyTurnaroundTime_c + mPhyAckFrameDuration_c)
-
 #define MSG_Pending(anchor)             ((anchor)->head != 0)
 #define MSG_DeQueue(anchor)             MSG_QueueRemoveHead((anchor))
 #define MSG_Queue(anchor, element)      MSG_QueueAddTail((anchor), (element))
@@ -117,7 +113,6 @@ static void Phy_SendLatePLME(uint32_t param);
 
 #if (gMWS_Enabled_d) || (gMWS_UseCoexistence_d)
 static uint32_t MWS_802_15_4_Callback(mwsEvents_t event);
-static uint32_t Phy_GetSeqDuration(phyMessageHeader_t *pMsg);
 #endif
 
 #ifdef CTX_SCHED
@@ -376,38 +371,14 @@ static void Phy24Task(Phy_PhyLocalStruct_t *ctx)
         {
             pMsgIn = MSG_DeQueue(&ctx->macPhyInputQueue);
 
-            if(pMsgIn == NULL)
+            if (pMsgIn == NULL)
             {
                 /* Crash observed when this if is not present. */
                 break;
             }
 
-
-#if gMWS_Enabled_d
-            /* Dual Mode */
-            if ((Phy_GetSeqDuration(pMsgIn) + mPhyOverhead_d) <= (MWS_GetInactivityDuration(gMWS_802_15_4_c) / 16))
-            {
-                if (!mXcvrAcquired)
-                {
-                    if (gMWS_Success_c != MWS_Acquire(gMWS_802_15_4_c, FALSE))
-                    {
-                        status = gPhyBusy_c;
-                    }
-                }
-            }
-            else
-            {
-                status = gPhyBusy_c;
-
-                if (mXcvrAcquired && (state == gIdle_c))
-                {
-                    MWS_Release(gMWS_802_15_4_c);
-                }
-            }
-#endif
-
             /* Check if Radio is busy */
-            if ((status == gPhySuccess_c) && !PHY_graceful_idle_base(ctx))
+            if (!PHY_graceful_idle_base(ctx))
             {
                 status = gPhyBusy_c;
             }
@@ -485,21 +456,7 @@ static void Phy24Task(Phy_PhyLocalStruct_t *ctx)
     /* Check if PHY can enter Idle state (when a context switch is not in progress) */
     if ((status != gPhyPendingOp) && (gIdle_c == PhyPpGetState_base(ctx)))
     {
-        bool_t do_idle = TRUE;
-
-#if gMWS_Enabled_d
-        mwsProtocols_t eActiveProtocol = MWS_GetActiveProtocol();
-
-        if ((eActiveProtocol != gMWS_802_15_4_c) && (eActiveProtocol != gMWS_None_c))
-        {
-            do_idle = FALSE;
-        }
-#endif
-
-        if (do_idle)
-        {
-            Phy_EnterIdle(ctx);
-        }
+        Phy_EnterIdle(ctx);
     }
 
     UnprotectFromXcvrInterrupt_base(ctx);
@@ -999,45 +956,10 @@ int8_t PHY_handle_get_RSSI(Phy_PhyLocalStruct_t *ctx)
 ********************************************************************************** */
 static void Phy_EnterIdle(Phy_PhyLocalStruct_t *ctx)
 {
-    uint32_t t = mPhyMaxIdleRxDuration_c;
-
     if (ctx->flags & gPhyFlagRxOnWhenIdle_c)
     {
-#if gMWS_Enabled_d
-        t = MWS_GetInactivityDuration(gMWS_802_15_4_c) / 16; /* convert to symbols */
-
-        if (t < (mPhyMinRxDuration_d + mPhyOverhead_d))
-        {
-            ctx->flags &= ~(gPhyFlagIdleRx_c);
-            if (mXcvrAcquired)
-            {
-                MWS_Release(gMWS_802_15_4_c);
-            }
-        }
-        else
-        {
-            if (t > (mPhyMaxIdleRxDuration_c + mPhyOverhead_d))
-            {
-                t = mPhyMaxIdleRxDuration_c;
-            }
-            else
-            {
-                t -= mPhyOverhead_d;
-            }
-
-            if (!mXcvrAcquired)
-            {
-                MWS_Acquire(gMWS_802_15_4_c, FALSE);
-            }
-        }
-
-        if (mXcvrAcquired)
-#endif
-        {
-            ctx->flags |= gPhyFlagIdleRx_c;
-
-            Phy_Handle_RxReq(ctx, NULL);
-        }
+        ctx->flags |= gPhyFlagIdleRx_c;
+        Phy_Handle_RxReq(ctx, NULL);
     }
     else
     {
@@ -1596,36 +1518,6 @@ static uint32_t MWS_802_15_4_Callback(mwsEvents_t event)
     OSA_InterruptEnable();
     return status;
 }
-
-/*! *********************************************************************************
-* \brief  This function returns the duration of the PHY request in symbols
-*
-* \param[in]  pMsg Pointer to the PHY request message
-*
-* \return  seq duration in symbols
-*
-********************************************************************************** */
-static uint32_t Phy_GetSeqDuration(phyMessageHeader_t *pMsg)
-{
-    uint32_t duration;
-
-    /* Compute the duration of the sequence */
-    switch (pMsg->msgType)
-    {
-    case gPdDataReq_c:
-        duration = ((3 + ((macToPdDataMessage_t *)pMsg)->msgData.dataReq.psduLength) * 2) + 18;
-        break;
-    case gPlmeCcaReq_c:
-    case gPlmeEdReq_c:
-        duration = gCCATime_c + gPhyTurnaroundTime_c;
-        break;
-    default:
-        duration = 0;
-    }
-
-    return duration;
-}
-
 #endif
 
 

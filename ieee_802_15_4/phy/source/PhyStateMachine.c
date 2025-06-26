@@ -653,8 +653,10 @@ phyStatus_t MAC_PLME_SapHandler(macToPlmeMessage_t *pMsg, instanceId_t phyInstan
         }
         else if (gPhyForceTRxOff_c == pMsg->msgData.setTRxStateReq.state)
         {
-            ctx->flags &= ~(gPhyFlagIdleRx_c);
             PhyAbort_base(ctx);
+
+            /* disable rx when idle */
+            ctx->flags &= ~(gPhyFlagRxOnWhenIdle_c | gPhyFlagIdleRx_c);
         }
         break;
 

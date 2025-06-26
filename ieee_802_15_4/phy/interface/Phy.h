@@ -283,7 +283,7 @@ typedef struct Phy_PhyLocalStruct_tag
     proto_state state;
     proto_op op;   /* rx / tx / CCA */
 
-    bool_t tx_cca_pending;
+    bool_t op_pending;
     bool_t rx_ongoing;
 
     pdDataReq_t tx_data_req;

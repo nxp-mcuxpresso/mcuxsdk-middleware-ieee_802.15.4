@@ -1771,7 +1771,7 @@ void ctx_init_single(uint8_t id)
     ctx->state = E_SCHED_PROTO_OFF;
     ctx->op = NONE_OP;
 
-    ctx->tx_cca_pending = FALSE;
+    ctx->op_pending = FALSE;
     ctx->rx_ongoing = FALSE;
 
     ctx->priority = E_SCHED_MIN_PRIORITY;
@@ -1886,7 +1886,7 @@ bool_t sched_is_auto_rx()
 
 void ctx_set_pending(Phy_PhyLocalStruct_t *ctx)
 {
-    ctx->tx_cca_pending = TRUE;
+    ctx->op_pending = TRUE;
 }
 
 bool_t ctx_is_active(Phy_PhyLocalStruct_t *ctx)
@@ -2395,9 +2395,9 @@ void sched_update_ctx_pending()
     {
         ctx = ctx_get(id);
 
-        if ((ctx->state == E_SCHED_PROTO_INACTIVE) && ctx->tx_cca_pending)
+        if ((ctx->state == E_SCHED_PROTO_INACTIVE) && ctx->op_pending)
         {
-            ctx->tx_cca_pending = FALSE;
+            ctx->op_pending = FALSE;
 
             Phy24Task(ctx);
         }

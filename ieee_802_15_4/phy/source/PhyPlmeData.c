@@ -1114,18 +1114,24 @@ phyStatus_t PhyPlmeSetPIBRequest(phyPibId_t pibId, uint64_t pibValue, instanceId
     Phy_PhyLocalStruct_t *ctx = ctx_get(instanceId);
     phyStatus_t result = gPhySuccess_c;
 
+    (void)ctx;
+
     switch (pibId)
     {
     case gPhyPibCurrentChannel_c:
         {
-            bool_t value = !!(ctx->flags & gPhyFlagRxOnWhenIdle_c);
+            OSA_InterruptDisable();
 
-            if (gRX_c == PhyPpGetState_base(ctx))
-            {
-                PhyAbort_base(ctx);
-            }
+            PhyAbort_base(ctx);
+
             result = PhyPlmeSetCurrentChannelRequest((uint8_t) pibValue, instanceId);
-            PhyPlmeSetRxOnWhenIdle(value, instanceId);
+
+            ctx_set_pending(ctx);
+
+            /* run the PHY state machine from PHY ISR context only */
+            PHY_ForceIrqPending();
+
+            OSA_InterruptEnable();
         }
         break;
     case gPhyPibTransmitPower_c:

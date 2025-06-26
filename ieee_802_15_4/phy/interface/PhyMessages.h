@@ -39,6 +39,7 @@ typedef enum
     gPlmeEdCnf_c,           /*!< Channel Energy Detect Confirm */
 
     gPlmeSetTRxStateReq_c,  /*!< Set Transceiver State request */
+    gPlmeRxReq_c = gPlmeSetTRxStateReq_c,
 
     gPlmeSetReq_c,          /*!< Set PHY PIB request */
     gPlmeSetCnf_c,          /*!< Unused */

@@ -100,7 +100,7 @@
 ********************************************************************************** */
 static void Phy24Task(Phy_PhyLocalStruct_t *ctx);
 
-static phyStatus_t Phy_Handle_RxReq(Phy_PhyLocalStruct_t *ctx);
+static phyStatus_t Phy_Handle_RxReq(Phy_PhyLocalStruct_t *ctx, macToPlmeMessage_t *pMsg);
 
 static phyStatus_t Phy_Handle_PdDataReq(Phy_PhyLocalStruct_t *ctx, macToPdDataMessage_t *pMsg);
 
@@ -439,6 +439,14 @@ static void Phy24Task(Phy_PhyLocalStruct_t *ctx)
                 }
                 break;
 
+            case gPlmeRxReq_c:
+                status = Phy_Handle_RxReq(ctx, (macToPlmeMessage_t *)pMsgIn);
+                if ((gPhySuccess_c != status) && (gPhyPendingOp != status))
+                {
+                    PLME_SendMessage(ctx, gPlmeAbortInd_c);
+                }
+                break;
+
             case gPlmeCcaReq_c:
                 status = Phy_Handle_PlmeCcaEdRequest(ctx, (macToPlmeMessage_t *)pMsgIn);
                 if ((gPhySuccess_c != status) && (gPhyPendingOp != status))
@@ -625,41 +633,23 @@ phyStatus_t MAC_PLME_SapHandler(macToPlmeMessage_t *pMsg, instanceId_t phyInstan
     case gPlmeSetTRxStateReq_c:
         if (gPhySetRxOn_c == pMsg->msgData.setTRxStateReq.state)
         {
-            /* Compensate Rx warmup time */
-            if (pMsg->msgData.setTRxStateReq.startTime != gPhySeqStartAsap_c)
-            {
-                pMsg->msgData.setTRxStateReq.startTime -= gPhyRxWuTimeSym;
-            }
+            pMacToPlmeMsg = (macToPlmeMessage_t *)MSG_Alloc(sizeof(macToPlmeMessage_t));
 
-            pMsg->msgData.setTRxStateReq.rxDuration += gPhyRxWuTimeSym;
+            if (NULL != pMacToPlmeMsg)
+            {
+                memcpy((uint8_t*) pMacToPlmeMsg, (uint8_t*)pMsg, sizeof(macToPlmeMessage_t));
 
-#if gMWS_Enabled_d
-            if ((MWS_GetInactivityDuration(gMWS_802_15_4_c) / 16) < (pMsg->msgData.setTRxStateReq.rxDuration + mPhyOverhead_d))
-            {
-                result = gPhyBusy_c;
-                break;
-            }
-#endif
-            if (PhyIsIdleRx(phyInstance))
-            {
-                PhyAbort_base(ctx);
+                MSG_Queue(&ctx->macPhyInputQueue, pMacToPlmeMsg);
+
+                ctx_set_pending(ctx);
+
+                /* run the PHY state machine from PHY ISR context only */
+                PHY_ForceIrqPending();
             }
             else
             {
-                if (gIdle_c != PhyPpGetState_base(ctx))
-                {
-                    result = gPhyBusy_c;
-                    break;
-                }
+                result = gPhyBusy_c;
             }
-
-            ctx->flags &= ~(gPhyFlagIdleRx_c);
-
-            ctx->rxParams.startTime = pMsg->msgData.setTRxStateReq.startTime;
-            ctx->rxParams.duration = pMsg->msgData.setTRxStateReq.rxDuration;
-
-            result = Phy_Handle_RxReq(ctx);
-            break;
         }
         else if (gPhyForceTRxOff_c == pMsg->msgData.setTRxStateReq.state)
         {
@@ -779,9 +769,20 @@ phyStatus_t MAC_PLME_SapHandler(macToPlmeMessage_t *pMsg, instanceId_t phyInstan
     return result;
 }
 
-static phyStatus_t Phy_Handle_RxReq(Phy_PhyLocalStruct_t *ctx)
+static phyStatus_t Phy_Handle_RxReq(Phy_PhyLocalStruct_t *ctx, macToPlmeMessage_t *pMsg)
 {
     phyStatus_t status = gPhySuccess_c;
+
+    if (pMsg)
+    {
+        ctx->rxParams.startTime = pMsg->msgData.setTRxStateReq.startTime;
+        ctx->rxParams.duration = pMsg->msgData.setTRxStateReq.rxDuration;
+    }
+    else
+    {
+        ctx->rxParams.startTime = gPhySeqStartAsap_c;
+        ctx->rxParams.duration = 0xFFFFFFFFU;
+    }
 
     OSA_InterruptDisable();
     ProtectFromXcvrInterrupt_base(ctx);
@@ -792,8 +793,12 @@ static phyStatus_t Phy_Handle_RxReq(Phy_PhyLocalStruct_t *ctx)
     {
         status = PhyPlmeRxRequest(ctx);
     }
+    else if (ctx_is_paused(ctx))
+    {
+        status = gPhyPendingOp;
+    }
 
-    if (gPhySuccess_c != status)
+    if ((gPhySuccess_c != status) && (gPhyPendingOp != status))
     {
         PhyAbort_base(ctx);
     }
@@ -1029,10 +1034,7 @@ static void Phy_EnterIdle(Phy_PhyLocalStruct_t *ctx)
         {
             ctx->flags |= gPhyFlagIdleRx_c;
 
-            ctx->rxParams.startTime = gPhySeqStartAsap_c;
-            ctx->rxParams.duration = t;
-
-            Phy_Handle_RxReq(ctx);
+            Phy_Handle_RxReq(ctx, NULL);
         }
     }
     else
@@ -1052,12 +1054,19 @@ static void Phy_EnterIdle(Phy_PhyLocalStruct_t *ctx)
 ********************************************************************************** */
 void PhyPlmeSetRxOnWhenIdle(bool_t state, instanceId_t instanceId)
 {
+    OSA_InterruptDisable();
+
     Phy_PhyLocalStruct_t *ctx = ctx_get(instanceId);
     uint8_t radioState = PhyPpGetState_base(ctx);
 
     if (state)
     {
         ctx->flags |= gPhyFlagRxOnWhenIdle_c;
+
+        ctx_set_pending(ctx);
+
+        /* run the PHY state machine from PHY ISR context only */
+        PHY_ForceIrqPending();
     }
     else
     {
@@ -1065,14 +1074,12 @@ void PhyPlmeSetRxOnWhenIdle(bool_t state, instanceId_t instanceId)
 
         if ((ctx->flags & gPhyFlagIdleRx_c) && (radioState == gRX_c))
         {
+            ctx->flags &= ~gPhyFlagIdleRx_c;
             PhyAbort_base(ctx);
         }
     }
 
-    if (gIdle_c == PhyPpGetState_base(ctx))
-    {
-        Phy_EnterIdle(ctx);
-    }
+    OSA_InterruptEnable();
 }
 
 /*! *********************************************************************************

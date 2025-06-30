@@ -343,7 +343,6 @@ void Phy_RegisterSapHandlers(PD_MAC_SapHandler_t pPD_MAC_SapHandler,
 ********************************************************************************** */
 static void Phy24Task(Phy_PhyLocalStruct_t *ctx)
 {
-    uint8_t state;
     phyMessageHeader_t *pMsgIn = NULL;
     phyStatus_t status = gPhySuccess_c;
 
@@ -353,103 +352,64 @@ static void Phy24Task(Phy_PhyLocalStruct_t *ctx)
     }
 
     OSA_InterruptDisable();
-    ProtectFromXcvrInterrupt_base(ctx);
 
     /* Handling messages from upper layer */
     while (MSG_Pending(&ctx->macPhyInputQueue))
     {
         status = gPhySuccess_c;
-        state = PhyPpGetState_base(ctx);
 
-        /* Check if PHY is busy */
-        if ((state != gIdle_c) && (state != gRX_c))
+        /* abort just rx in certain cases */
+        if (!PHY_graceful_idle_base(ctx))
         {
+            /* skip enter idle */
             status = gPhyBusy_c;
+            break;
+        }
+
+        pMsgIn = MSG_DeQueue(&ctx->macPhyInputQueue);
+        if (pMsgIn == NULL)
+        {
+            /* fail safe */
+            continue;
+        }
+
+        /* PHY is idle */
+        ctx->flags &= ~gPhyFlagIdleRx_c;
+
+        switch (pMsgIn->msgType)
+        {
+        case gPdDataReq_c:
+            status = Phy_Handle_PdDataReq(ctx, (macToPdDataMessage_t *)pMsgIn);
+            break;
+
+        case gPlmeRxReq_c:
+            status = Phy_Handle_RxReq(ctx, (macToPlmeMessage_t *)pMsgIn);
+            break;
+
+        case gPlmeCcaReq_c:
+            status = Phy_Handle_PlmeCcaEdRequest(ctx, (macToPlmeMessage_t *)pMsgIn);
+            break;
+
+        case gPlmeEdReq_c:
+            status = Phy_Handle_PlmeCcaEdRequest(ctx, (macToPlmeMessage_t *)pMsgIn);
+            break;
+
+        default:
+            status = gPhyInvalidPrimitive_c;
+            break;
+        }
+
+        MSG_Free(pMsgIn);
+
+        if ((status == gPhySuccess_c) || (status == gPhyPendingOp))
+        {
+            /* Just started rx/tx/CCA */
             break;
         }
         else
         {
-            pMsgIn = MSG_DeQueue(&ctx->macPhyInputQueue);
-
-            if (pMsgIn == NULL)
-            {
-                /* Crash observed when this if is not present. */
-                break;
-            }
-
-            /* Check if Radio is busy */
-            if (!PHY_graceful_idle_base(ctx))
-            {
-                status = gPhyBusy_c;
-            }
-        }
-
-        if (gPhyBusy_c == status)
-        {
-            /* Will be triggered on the next event */
-            if (pMsgIn)
-            {
-                MSG_QueueHead(&ctx->macPhyInputQueue, pMsgIn);
-                pMsgIn = NULL;
-            }
-            break;
-        }
-        else if (status == gPhySuccess_c)
-        {
-            PhyAbort_base(ctx);
-
-            ctx->flags &= ~gPhyFlagIdleRx_c;
-
-            switch (pMsgIn->msgType)
-            {
-            case gPdDataReq_c:
-                status = Phy_Handle_PdDataReq(ctx, (macToPdDataMessage_t *)pMsgIn);
-                if ((gPhySuccess_c != status) && (gPhyPendingOp != status))
-                {
-                    PLME_SendMessage(ctx, gPlmeAbortInd_c);
-                }
-                break;
-
-            case gPlmeRxReq_c:
-                status = Phy_Handle_RxReq(ctx, (macToPlmeMessage_t *)pMsgIn);
-                if ((gPhySuccess_c != status) && (gPhyPendingOp != status))
-                {
-                    PLME_SendMessage(ctx, gPlmeAbortInd_c);
-                }
-                break;
-
-            case gPlmeCcaReq_c:
-                status = Phy_Handle_PlmeCcaEdRequest(ctx, (macToPlmeMessage_t *)pMsgIn);
-                if ((gPhySuccess_c != status) && (gPhyPendingOp != status))
-                {
-                    ctx->channelParams.channelStatus = gPhyChannelBusy_c;
-                    PLME_SendMessage(ctx, gPlmeCcaCnf_c);
-                }
-                break;
-
-            case gPlmeEdReq_c:
-                status = Phy_Handle_PlmeCcaEdRequest(ctx, (macToPlmeMessage_t *)pMsgIn);
-                if ((gPhySuccess_c != status) && (gPhyPendingOp != status))
-                {
-                    PLME_SendMessage(ctx, gPlmeAbortInd_c);
-                }
-                break;
-
-            default:
-                status = gPhyInvalidPrimitive_c;
-                break;
-            }
-        }
-
-        if (pMsgIn)
-        {
-            MSG_Free(pMsgIn);
-        }
-
-        if ((status == gPhySuccess_c) || (status == gPhyPendingOp))
-        {
-            /* Just started tx/CCA */
-            break;
+            PLME_SendMessage(ctx, gPlmeAbortInd_c);
+            status = gPhySuccess_c;
         }
     }
 
@@ -459,7 +419,6 @@ static void Phy24Task(Phy_PhyLocalStruct_t *ctx)
         Phy_EnterIdle(ctx);
     }
 
-    UnprotectFromXcvrInterrupt_base(ctx);
     OSA_InterruptEnable();
 }
 

@@ -1304,11 +1304,19 @@ phyStatus_t PhyPlmeGetPIBRequest(phyPibId_t pibId, uint8_t *pibValue, instanceId
         {
             if (!instanceId)
             {
+#if defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES)
+                value = !!(ZLL->RX_FRAME_FILTER & ZLL_RX_FRAME_FILTER_PANCORDNTR0_MASK);
+#else
                 value = !!(ZLL->PHY_CTRL & ZLL_PHY_CTRL_PANCORDNTR0_MASK);
+#endif
             }
             else
             {
+#if defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES)
+                value = !!(ZLL->RX_FRAME_FILTER & ZLL_RX_FRAME_FILTER_PANCORDNTR1_MASK);
+#else
                 value = !!(ZLL->DUAL_PAN_CTRL & ZLL_DUAL_PAN_CTRL_PANCORDNTR1_MASK);
+#endif
             }
         }
         break;

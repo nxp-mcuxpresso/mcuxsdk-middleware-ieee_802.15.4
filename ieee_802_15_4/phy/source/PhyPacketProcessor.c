@@ -396,11 +396,16 @@ void PhyHwInit(void)
                     ZLL_PHY_CTRL_RXMSK_MASK                         |
                     ZLL_PHY_CTRL_TXMSK_MASK                         |
                     ZLL_PHY_CTRL_SEQMSK_MASK                        |
-                    ZLL_PHY_CTRL_AUTOACK_MASK                       |
 #if !defined(gPhyUseExternalCoexistence_d) || (gPhyUseExternalCoexistence_d == 0) || (ARB_GRANT_DEASSERTION_SUPPORT == 1)
                     ZLL_PHY_CTRL_ARB_GRANT_DEASSERTION_MSK_MASK     |
 #endif
                     ZLL_PHY_CTRL_TRCV_MSK_MASK;
+
+#if defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES)
+    ZLL->RX_FRAME_FILTER |= ZLL_RX_FRAME_FILTER_AUTOACK_MASK;
+#else
+    ZLL->PHY_CTRL |= ZLL_PHY_CTRL_AUTOACK_MASK;
+#endif
 
     /* Clear all PP IRQ bits to avoid unexpected interrupts immediately after init
        disable all timer interrupts */
@@ -852,13 +857,24 @@ phyStatus_t PhyPpSetMacRole(bool_t macRole, uint8_t pan)
 
     if (0 == pan)
     {
+
+#if defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES)
+        ZLL->RX_FRAME_FILTER &= ~ZLL_RX_FRAME_FILTER_PANCORDNTR0_MASK;
+        ZLL->RX_FRAME_FILTER |= ZLL_RX_FRAME_FILTER_PANCORDNTR0(panCoord);
+#else
         ZLL->PHY_CTRL &= ~ZLL_PHY_CTRL_PANCORDNTR0_MASK;
         ZLL->PHY_CTRL |= ZLL_PHY_CTRL_PANCORDNTR0(panCoord);
+#endif
     }
     else
     {
+#if defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES)
+        ZLL->RX_FRAME_FILTER &= ~ZLL_RX_FRAME_FILTER_PANCORDNTR1_MASK;
+        ZLL->RX_FRAME_FILTER |= ZLL_RX_FRAME_FILTER_PANCORDNTR1(panCoord);
+#else
         ZLL->DUAL_PAN_CTRL &= ~ZLL_DUAL_PAN_CTRL_PANCORDNTR1_MASK;
         ZLL->DUAL_PAN_CTRL |= ZLL_DUAL_PAN_CTRL_PANCORDNTR1(panCoord);
+#endif
     }
 
     return gPhySuccess_c;
@@ -872,6 +888,30 @@ phyStatus_t PhyPpSetMacRole(bool_t macRole, uint8_t pan)
 ********************************************************************************** */
 void PhyPpSetPromiscuous(bool_t mode)
 {
+#if defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES)
+    /* This doesn't work with dual PAN */
+    if (mode)
+    {
+        /* FRM_VER[11:8] = b1111. Any Frame version/type accepted */
+        ZLL->RX_FRAME_FILTER |= (ZLL_RX_FRAME_FILTER_PROMISCUOUS_MASK     |
+                                 ZLL_RX_FRAME_FILTER_FRM_VER_FILTER_MASK  |
+                                 ZLL_RX_FRAME_FILTER_EXTENDED_FT_MASK     |
+                                 ZLL_RX_FRAME_FILTER_MULTIPURPOSE_FT_MASK |
+                                 ZLL_RX_FRAME_FILTER_LLDN_FT_MASK         |
+                                 ZLL_RX_FRAME_FILTER_CMD_FT_MASK          |
+                                 ZLL_RX_FRAME_FILTER_DATA_FT_MASK         |
+                                 ZLL_RX_FRAME_FILTER_BEACON_FT_MASK       |
+                                 ZLL_RX_FRAME_FILTER_ACK_FT_MASK          |
+                                 ZLL_RX_FRAME_FILTER_NS_FT_MASK);
+    }
+    else
+    {
+        ZLL->RX_FRAME_FILTER &= ~ZLL_RX_FRAME_FILTER_PROMISCUOUS_MASK;
+        /* FRM_VER[11:8] = b0011. Accept FrameVersion 0 and 1 packets, reject all others */
+        /* Beacon, Data and MAC command frame types accepted */
+        ZLL->RX_FRAME_FILTER = mDefaultRxFiltering;
+    }
+#else
     /* This doesn't work with dual PAN */
     if (mode)
     {
@@ -894,6 +934,7 @@ void PhyPpSetPromiscuous(bool_t mode)
         /* Beacon, Data and MAC command frame types accepted */
         ZLL->RX_FRAME_FILTER = mDefaultRxFiltering;
     }
+#endif
 }
 
 /*! *********************************************************************************
@@ -904,6 +945,28 @@ void PhyPpSetPromiscuous(bool_t mode)
 ********************************************************************************** */
 void PhySetActivePromiscuous(bool_t state)
 {
+#if defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES)
+    /* This doesn't work with dual PAN */
+    if (state)
+    {
+        if (ZLL->RX_FRAME_FILTER & ZLL_RX_FRAME_FILTER_PROMISCUOUS_MASK)
+        {
+            /* Disable Promiscuous mode */
+            ZLL->RX_FRAME_FILTER &= ~ZLL_RX_FRAME_FILTER_PROMISCUOUS_MASK;
+            ZLL->RX_FRAME_FILTER |= ZLL_RX_FRAME_FILTER_ACTIVE_PROMISCUOUS_MASK;
+        }
+    }
+    else
+    {
+        if (ZLL->RX_FRAME_FILTER & ZLL_RX_FRAME_FILTER_ACTIVE_PROMISCUOUS_MASK)
+        {
+            ZLL->RX_FRAME_FILTER &= ~ZLL_RX_FRAME_FILTER_ACTIVE_PROMISCUOUS_MASK;
+            /* Enable Promiscuous mode */
+            /* Doesn't look right */
+            ZLL->RX_FRAME_FILTER |= ZLL_RX_FRAME_FILTER_PROMISCUOUS_MASK;
+        }
+    }
+#else
     /* This doesn't work with dual PAN */
     if (state)
     {
@@ -924,6 +987,7 @@ void PhySetActivePromiscuous(bool_t state)
             ZLL->PHY_CTRL |= ZLL_PHY_CTRL_PROMISCUOUS_MASK;
         }
     }
+#endif
 }
 
 /*! *********************************************************************************
@@ -1422,7 +1486,11 @@ uint8_t PhyPlmeGetRSSILevelRequest(instanceId_t instanceId)
 ********************************************************************************** */
 bool_t PhyPlmeGetPromiscuousRequest(void)
 {
+#if defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES)
+    return (ZLL->RX_FRAME_FILTER & ZLL_RX_FRAME_FILTER_PROMISCUOUS_MASK) == ZLL_RX_FRAME_FILTER_PROMISCUOUS_MASK;
+#else
     return (ZLL->PHY_CTRL & ZLL_PHY_CTRL_PROMISCUOUS_MASK) == ZLL_PHY_CTRL_PROMISCUOUS_MASK;
+#endif
 }
 
 /*! *********************************************************************************

@@ -35,14 +35,6 @@
 #include "PhyWlanCoex.h"
 #endif
 
-#ifndef gMWS_Enabled_d
-#define gMWS_Enabled_d 0
-#endif
-
-#ifndef gMWS_UseCoexistence_d
-#define gMWS_UseCoexistence_d 0
-#endif
-
 #if (gMWS_Enabled_d) || (gMWS_UseCoexistence_d)
 #include "MWS.h"
 #include "nxp2p4_xcvr.h"
@@ -150,7 +142,7 @@ extern uint8_t * const rxf;
 uint8_t phy_lp_flag = 0;
 
 #if gMWS_Enabled_d
-uint8_t mXcvrAcquired = 0;
+static bool_t phy_is_active;
 #endif
 
 #if (gMWS_Enabled_d) || (gMWS_UseCoexistence_d)
@@ -442,6 +434,8 @@ phyStatus_t MAC_PD_SapHandler(macToPdDataMessage_t *pMsg, instanceId_t phyInstan
     if (NULL == pMsg)
         return gPhyInvalidParameter_c;
 
+    OSA_InterruptDisable();
+
     switch (pMsg->msgType)
     {
     case gPdIndQueueInsertReq_c:
@@ -489,6 +483,7 @@ phyStatus_t MAC_PD_SapHandler(macToPdDataMessage_t *pMsg, instanceId_t phyInstan
         result = gPhyInvalidPrimitive_c;
         break;
     }
+    OSA_InterruptEnable();
 
     return result;
 }
@@ -511,6 +506,8 @@ phyStatus_t MAC_PLME_SapHandler(macToPlmeMessage_t *pMsg, instanceId_t phyInstan
     if (NULL == pMsg) {
         return gPhyInvalidParameter_c;
     }
+
+    OSA_InterruptDisable();
 
     switch (pMsg->msgType) {
     case gPlmeEdReq_c:
@@ -683,6 +680,7 @@ phyStatus_t MAC_PLME_SapHandler(macToPlmeMessage_t *pMsg, instanceId_t phyInstan
         result = gPhyInvalidPrimitive_c;
         break;
     }
+    OSA_InterruptEnable();
 
     return result;
 }
@@ -1361,6 +1359,177 @@ void Radio_Phy_Notify(Phy_PhyLocalStruct_t *ctx)
     Phy24Task(ctx);
 }
 
+#if gMWS_Enabled_d || defined(CTX_SCHED)
+/* TMR4 management */
+
+#define T4_CMP_MIN 4   /* comparator threshold. symbols */
+
+/* switch timer - 0, scheduler timer - 1 */
+#define T4_CNT 2
+
+/* timer states */
+#define T4_OFF 0    /* inactive */
+#define T4_ON  1    /* active */
+#define T4_RUN 2    /* running */
+#define T4_EXP 3    /* expired */
+
+static uint8_t t4_timer_state[T4_CNT];
+static uint32_t t4_timer_tstp[T4_CNT];
+
+static bool_t t1_less_t2(uint32_t tstp_1, uint32_t tstp_2)
+{
+    uint32_t neg_msk = 1 << (gPhyTimeShift_c - 1);
+
+    tstp_1 &= gPhyTimeMask_c;
+    tstp_2 &= gPhyTimeMask_c;
+
+    return !!((tstp_1 - tstp_2) & neg_msk);
+}
+
+static bool_t t1_near_t2(uint32_t tstp_1, uint32_t tstp_2)
+{
+    tstp_1 &= gPhyTimeMask_c;
+    tstp_2 &= gPhyTimeMask_c;
+
+    return ((tstp_1 - tstp_2 <= T4_CMP_MIN) || (tstp_2 - tstp_1 <= T4_CMP_MIN));
+}
+
+static void start_t4(uint32_t tstp)
+{
+    tstp &= gPhyTimeMask_c;
+
+    /* is current tstp in the past or close to current time? */
+    uint32_t phy_tstp = PhyTime_ReadClock() & gPhyTimeMask_c;
+
+    if (t1_less_t2(tstp, phy_tstp) || t1_near_t2(tstp, phy_tstp))
+    {
+        tstp = (phy_tstp + T4_CMP_MIN) & gPhyTimeMask_c;
+    }
+
+    TMR_UNMASK_AND_SET(4, tstp);
+}
+
+static void start_t4_timer(bool_t id, uint32_t dt)
+{
+    /* id - selects between switch timer (FALSE) and scheduler timer (TRUE) */
+
+    if (t4_timer_state[id] != T4_OFF)
+    {
+        /* timer is already started */
+        return;
+    }
+
+    /* start timer */
+    t4_timer_state[id] = T4_ON;
+    t4_timer_tstp[id] = (dt + PhyTime_ReadClock()) & gPhyTimeMask_c;
+
+    /* no active timers yet */
+    if ((t4_timer_state[!id] == T4_OFF) ||
+        (t4_timer_state[!id] == T4_EXP))
+    {
+        start_t4(t4_timer_tstp[id]);
+
+        t4_timer_state[id] = T4_RUN;
+        return;
+    }
+
+    /* no running timers */
+    if (t4_timer_state[!id] == T4_ON)
+    {
+        /* select closest timestamp */
+        bool_t current = id;
+
+        if (t1_less_t2(t4_timer_tstp[!id], t4_timer_tstp[id]))
+        {
+            current = !id;
+        }
+
+        t4_timer_state[current] = T4_RUN;
+
+        /* is the other timestamp close? */
+        if (t1_near_t2(t4_timer_tstp[current], t4_timer_tstp[!current]))
+        {
+            t4_timer_state[!current] = T4_RUN;;
+        }
+
+        start_t4(t4_timer_tstp[current]);
+        return;
+    }
+
+    /* a timer is already running */
+    if (t4_timer_state[!id] == T4_RUN)
+    {
+        /* are the timestamps close? */
+        if (t1_near_t2(t4_timer_tstp[id], t4_timer_tstp[!id]))
+        {
+            t4_timer_state[id] = T4_RUN;
+            return;
+        }
+
+        /* timestamp is far away */
+        if (t1_less_t2(t4_timer_tstp[!id], t4_timer_tstp[id]))
+        {
+            return;
+        }
+
+        /* timestamp is closer but the other timer has already expired */
+        if (ZLL->IRQSTS & ZLL_IRQSTS_TMR4IRQ_MASK)
+        {
+            t4_timer_state[id] = T4_RUN;
+            return;
+        }
+
+        /* switch the running timer */
+        start_t4(t4_timer_tstp[id]);
+
+        t4_timer_state[id] = T4_RUN;
+        t4_timer_state[!id] = T4_ON;
+        return;
+    }
+}
+
+static void stop_t4_timer(bool_t id)
+{
+    t4_timer_state[id] = T4_OFF;
+
+    if (t4_timer_state[!id] == T4_ON)
+    {
+        start_t4(t4_timer_tstp[!id]);
+
+        t4_timer_state[!id] = T4_RUN;
+    }
+    else if ((t4_timer_state[!id] == T4_OFF) ||
+             (t4_timer_state[!id] == T4_EXP))
+    {
+        TMR_CLEAR(4);
+    }
+}
+
+static bool_t t4_timer_expired(bool_t id)
+{
+    /* timer expired */
+    if ((t4_timer_state[id] == T4_RUN) &&
+        (ZLL->IRQSTS & ZLL_IRQSTS_TMR4IRQ_MASK))
+    {
+        t4_timer_state[id] = T4_EXP;
+
+        if (t4_timer_state[!id] == T4_RUN)
+        {
+            t4_timer_state[!id] = T4_EXP;
+        }
+    }
+
+    if (t4_timer_state[id] != T4_EXP)
+    {
+        return FALSE;
+    }
+
+    stop_t4_timer(id);
+
+    return TRUE;
+}
+#endif
+
 #if (gMWS_Enabled_d) || (gMWS_UseCoexistence_d)
 static void mode_switch_ZB()
 {
@@ -1444,7 +1613,7 @@ static uint32_t MWS_802_15_4_Callback(mwsEvents_t event)
     {
     case gMWS_Active_c:
         mode_switch_ZB();
-        mXcvrAcquired = 1;
+        phy_is_active = TRUE;
         break;
 
     case gMWS_Idle_c:
@@ -1458,7 +1627,7 @@ static uint32_t MWS_802_15_4_Callback(mwsEvents_t event)
         mode_switch_BLE();
 
     case gMWS_Init_c:
-        mXcvrAcquired = 0;
+        phy_is_active = FALSE;
         break;
 
     case gMWS_GetInactivityDuration_c:
@@ -1476,6 +1645,90 @@ static uint32_t MWS_802_15_4_Callback(mwsEvents_t event)
 
     OSA_InterruptEnable();
     return status;
+}
+
+static void stop_switch_timer()
+{
+    stop_t4_timer(FALSE);
+}
+
+static void start_switch_timer(uint32_t dt)
+{
+    start_t4_timer(FALSE, dt);
+}
+
+static bool_t switch_timer_expired()
+{
+    return t4_timer_expired(FALSE);
+}
+
+/* - Maximum frame size with preamble: 6 * 2 + 127 * 2 symbols
+ * - AIFS: 12 symbols
+ * - Maximum ACK size with preamble: 6 * 2 + 39 * 2 symbols
+ * (destination PAN ID, extended destination/source address, CSL IE) */
+#define SWITCH_MIN_TIME (uint32_t)370       /* symbols */
+#define SWITCH_MAX_TIME (uint32_t)((1 << (gPhyTimeShift_c - 1)) - 1)    /* to allow signed comparisons of timestamps */
+
+static bool_t delay_phy_release;
+
+void do_ble_phy_coex()
+{
+    delay_phy_release = FALSE;
+
+    if (!phy_is_active)
+    {
+        /* gMWS_Abort_c doesn't stop switch timer */
+        stop_switch_timer();
+    }
+    else if (switch_timer_expired())
+    {
+        bool_t seq_end = !!(ZLL->IRQSTS & ZLL_IRQSTS_SEQIRQ_MASK);
+
+        stop_switch_timer();
+
+        /* let current trx finish and handle mode switch later */
+        if (seq_end)
+        {
+            delay_phy_release = TRUE;
+        }
+        else
+        {
+            PHY_sw_abort();
+            MWS_Release(gMWS_802_15_4_c);
+        }
+    }
+
+    if (!phy_is_active)
+    {
+        uint32_t dt = MWS_GetInactivityDuration(gMWS_802_15_4_c) / PHY_SYMBOLS_US;
+
+        /* if gMWS_Abort_c/gMWS_Release_c happens, there shouldn't be enough time left */
+        if (dt >= SWITCH_MIN_TIME)
+        {
+            MWS_Acquire(gMWS_802_15_4_c, FALSE);
+
+            if (phy_is_active)
+            {
+                /* if dt is very big, then the BLE LL is not active */
+                if (dt < SWITCH_MAX_TIME)
+                {
+                    start_switch_timer(dt);
+                }
+                delay_phy_release = FALSE;
+            }
+        }
+    }
+}
+
+bool_t PHY_is_active()
+{
+    if (delay_phy_release)
+    {
+        delay_phy_release = FALSE;
+        PHY_sw_abort();     /* ED request restarts several times at seq_end */
+        MWS_Release(gMWS_802_15_4_c);
+    }
+    return phy_is_active;
 }
 #endif
 

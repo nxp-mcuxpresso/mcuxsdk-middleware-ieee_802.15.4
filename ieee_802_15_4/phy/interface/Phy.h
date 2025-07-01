@@ -53,6 +53,14 @@
 extern "C" {
 #endif
 
+#ifndef gMWS_Enabled_d
+#define gMWS_Enabled_d 0
+#endif
+
+#ifndef gMWS_UseCoexistence_d
+#define gMWS_UseCoexistence_d 0
+#endif
+
 
 #undef CTX_NO
 

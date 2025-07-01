@@ -94,6 +94,18 @@ void PhyAbort_base(Phy_PhyLocalStruct_t *ctx);
 #define PhyAbort_base(ctx) PhyAbort()
 #endif
 
+#if gMWS_Enabled_d
+#ifdef CTX_SCHED
+#define do_ble_phy_coex()
+#else   /* CTX_SCHED */
+void do_ble_phy_coex();
+#endif  /* CTX_SCHED */
+bool_t PHY_is_active();
+#else   /* gMWS_Enabled_d */
+#define do_ble_phy_coex()
+#define PHY_is_active() TRUE
+#endif  /* gMWS_Enabled_d */
+
 /*! *********************************************************************************
 *************************************************************************************
 * Public memory declarations
@@ -1088,6 +1100,11 @@ void PHY_InterruptHandler_base(
     uint32_t length;
     uint32_t crc_valid;
     uint16_t rxFcf;
+
+    OSA_InterruptDisable();
+
+    do_ble_phy_coex();
+
     Phy_PhyLocalStruct_t *ctx = ctx_get_current();
     uint32_t seqCtrlStatus = ZLL->SEQ_CTRL_STS;
 
@@ -1440,7 +1457,12 @@ void PHY_InterruptHandler_base(
         ZLL->RX_WTR_MARK = RX_WTMRK_START;
     }
 
-    Radio_Phy_Notify(ctx);
+    if (PHY_is_active())
+    {
+        Radio_Phy_Notify(ctx);
+    }
+
+    OSA_InterruptEnable();
 }
 
 /*! *********************************************************************************

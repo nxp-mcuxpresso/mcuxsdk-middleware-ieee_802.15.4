@@ -1038,7 +1038,6 @@ void ctx_set_tx(Phy_PhyLocalStruct_t *ctx, macToPdDataMessage_t *pMsg);
 void ctx_set_cca(Phy_PhyLocalStruct_t *ctx);
 void ctx_set_none(Phy_PhyLocalStruct_t *ctx);
 
-bool_t PHY_ctx_can_sleep();
 bool_t PHY_ctx_all_disabled();
 
 #else /* CTX_SCHED */
@@ -1053,7 +1052,6 @@ bool_t PHY_ctx_all_disabled();
 #define ctx_set_tx(ctx, pMsg)
 #define ctx_set_cca(ctx)
 #define ctx_set_none(ctx)
-#define PHY_ctx_can_sleep() TRUE
 #define PHY_ctx_all_disabled() TRUE
 
 #endif /* CTX_SCHED */

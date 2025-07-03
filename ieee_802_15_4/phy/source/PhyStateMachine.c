@@ -117,14 +117,12 @@ void UnprotectFromXcvrInterrupt_base(Phy_PhyLocalStruct_t *ctx);
 uint8_t PhyPpGetState_base(Phy_PhyLocalStruct_t *ctx);
 void PhyAbort_base(Phy_PhyLocalStruct_t *ctx);
 bool_t PHY_graceful_idle_base(Phy_PhyLocalStruct_t *ctx);
-void PHY_allow_sleep_base(Phy_PhyLocalStruct_t *ctx);
 #else
 #define ProtectFromXcvrInterrupt_base(ctx) ProtectFromXcvrInterrupt()
 #define UnprotectFromXcvrInterrupt_base(ctx) UnprotectFromXcvrInterrupt()
 #define PhyPpGetState_base(ctx) PhyPpGetState()
 #define PhyAbort_base(ctx) PhyAbort()
 #define PHY_graceful_idle_base(ctx) PHY_graceful_idle()
-#define PHY_allow_sleep_base(ctx) PHY_allow_sleep()
 #endif
 
 uint16_t PHY_TransformArrayToUint16(uint8_t *pArray);
@@ -138,8 +136,6 @@ void PHY_set_enh_ack_state(Phy_PhyLocalStruct_t *ctx, enh_ack_state_t state);
 *************************************************************************************
 ********************************************************************************** */
 extern uint8_t * const rxf;
-
-uint8_t phy_lp_flag = 0;
 
 #if gMWS_Enabled_d
 static bool_t phy_is_active;
@@ -922,7 +918,6 @@ static void Phy_EnterIdle(Phy_PhyLocalStruct_t *ctx)
     {
         ctx->flags &= ~(gPhyFlagIdleRx_c);
         ctx_set_none(ctx);
-        PHY_allow_sleep_base(ctx);
     }
 }
 
@@ -1730,31 +1725,75 @@ bool_t PHY_is_active()
     }
     return phy_is_active;
 }
+
+static void PHY_set_inactive()
+{
+    if (phy_is_active)
+    {
+        delay_phy_release = FALSE;
+        PhyAbort();
+        MWS_Release(gMWS_802_15_4_c);
+    }
+}
 #endif
 
-
-void PHY_allow_sleep()
+static bool_t PHY_ctx_can_sleep()
 {
-    phy_lp_flag = 0;
-}
+    uint8_t id;
+    Phy_PhyLocalStruct_t *ctx;
 
-void PHY_disallow_sleep()
-{
-    phy_lp_flag = 1;
-}
+    for (id = 0; id < CTX_NO; id++)
+    {
+        ctx = ctx_get(id);
 
+        if (ctx->flags & gPhyFlagRxOnWhenIdle_c)
+        {
+            return FALSE;
+        }
+
+        if (MSG_Pending(&ctx->macPhyInputQueue))
+        {
+            return FALSE;
+        }
+
+#ifdef CTX_SCHED
+        if ((ctx->state != E_SCHED_PROTO_OFF) && ctx->op)
+        {
+            return FALSE;
+        }
+#endif
+    }
+
+    return TRUE;
+
+}
 
 /*! *********************************************************************************
-* \brief  returns true if XCVR allow sleep, retruns false others ways
+* \brief  returns true if 15.4 PHY allows sleep, returns false others ways
 *
 ********************************************************************************** */
 bool PHY_XCVR_AllowLowPower(void)
 {
-    if (!phy_lp_flag && PHY_ctx_can_sleep() && PhyTime_can_sleep())
+    OSA_InterruptDisable();
+
+#if gMWS_Enabled_d
+    if (!phy_is_active)
     {
+        OSA_InterruptEnable();
+        return true;
+    }
+#endif
+
+    if ((PhyPpGetState() == gIdle_c) && PHY_ctx_can_sleep() && PhyTime_can_sleep())
+    {
+#if gMWS_Enabled_d
+        PHY_set_inactive();
+#endif
+        OSA_InterruptEnable();
         return true;
     }
 
+    OSA_InterruptEnable();
     return false;
 }
 
@@ -2783,34 +2822,6 @@ bool_t PHY_graceful_idle_base(Phy_PhyLocalStruct_t *ctx)
     return status;
 }
 
-void PHY_allow_sleep_base(Phy_PhyLocalStruct_t *ctx)
-{
-    OSA_InterruptDisable();
-
-    if ((ctx_is_active(ctx) || ctx_is_paused(ctx)) &&
-        (gIdle_c == PhyPpGetState()))
-    {
-        PHY_allow_sleep();
-    }
-
-    OSA_InterruptEnable();
-}
-
-bool_t PHY_ctx_can_sleep()
-{
-    uint8_t id;
-
-    for (id = 0; id < CTX_NO; id++)
-    {
-        if (ctx_get(id)->op)
-        {
-            return FALSE;
-        }
-    }
-
-    return TRUE;
-
-}
 
 bool_t PHY_ctx_all_disabled()
 {

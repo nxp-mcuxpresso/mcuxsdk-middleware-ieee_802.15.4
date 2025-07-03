@@ -466,8 +466,6 @@ phyStatus_t PhyPdDataRequest(Phy_PhyLocalStruct_t *ctx)
     }
 #endif
 
-    PHY_disallow_sleep();
-
     return gPhySuccess_c;
 }
 
@@ -521,8 +519,6 @@ phyStatus_t PhyPlmeRxRequest(Phy_PhyLocalStruct_t *ctx)
 
     /* Start the RX sequence */
     ZLL->PHY_CTRL |= gRX_c;
-
-    PHY_disallow_sleep();
 
     return gPhySuccess_c;
 }
@@ -594,8 +590,6 @@ phyStatus_t PhyPlmeCcaEdRequest(Phy_PhyLocalStruct_t *ctx)
     {
         ZLL->PHY_CTRL |= gCCA_c;
     }
-
-    PHY_disallow_sleep();
 
     return gPhySuccess_c;
 }

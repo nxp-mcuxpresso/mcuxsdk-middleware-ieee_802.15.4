@@ -608,8 +608,6 @@ static void phy_abort_helper(bool_t sw_abort)
 
     if (!sw_abort)
     {
-        PHY_allow_sleep();
-
         UnprotectFromXcvrInterrupt();
     }
 

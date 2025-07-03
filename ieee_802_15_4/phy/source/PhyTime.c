@@ -520,11 +520,6 @@ phyTimeTimerId_t PhyTime_ScheduleEvent(phyTimeEvent_t *pEvent)
     {
         if (maPhyTimers[tmr].callback == NULL)
         {
-            if (mPhyActiveTimers == 1)
-            {
-                /* PHY_disallow_sleep(); */
-            }
-
             mPhyActiveTimers++;
             maPhyTimers[tmr] = *pEvent;
             break;
@@ -562,11 +557,6 @@ phyTimeStatus_t PhyTime_CancelEvent(phyTimeTimerId_t timerId)
     maPhyTimers[timerId].callback = NULL;
     mPhyActiveTimers--;
 
-    if (mPhyActiveTimers == 1)
-    {
-        /* PHY_allow_sleep(); */
-    }
-
     OSA_InterruptEnable();
 
     return gPhyTimeOk_c;
@@ -593,10 +583,6 @@ phyTimeStatus_t PhyTime_CancelEventsWithParam(uint32_t param)
         }
     }
 
-    if (mPhyActiveTimers == 1)
-    {
-        /* PHY_allow_sleep(); */
-    }
     OSA_InterruptEnable();
 
     return status;
@@ -617,11 +603,6 @@ void PhyTime_RunCallback(void)
         pNextEvent->callback = NULL;
         pNextEvent = NULL;
         mPhyActiveTimers--;
-
-        if (mPhyActiveTimers == 1)
-        {
-            /* PHY_allow_sleep(); */
-        }
     }
 
     OSA_InterruptEnable();

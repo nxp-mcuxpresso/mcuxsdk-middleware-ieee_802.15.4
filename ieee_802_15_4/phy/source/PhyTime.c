@@ -17,7 +17,7 @@
 
 
 /* for timeouts <= gPhyTimeMinSetupTime_c, PhyTime_ScheduleEvent() runs the event callback without delay */
-#define gPhyTimeMinSetupTime_c (4) /* symbols */
+#define gPhyTimeMinSetupTime_c PHY_TMR_CMP_MIN  /* symbols */
 
 
 static bool_t phy_lp_tmr_allow_sleep = TRUE;

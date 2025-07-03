@@ -70,7 +70,7 @@
 #define MSG_Queue(anchor, element)      MSG_QueueAddTail((anchor), (element))
 #define MSG_QueueHead(anchor, element)  MSG_QueueAddHead((anchor), (element))
 
-#define DELAYED_TX_RANGE                (0xFFFF)*10 /* maximum csl phase time in symbols */
+#define DELAYED_TX_RANGE                (uint32_t)(0xFFFF * 10) /* maximum csl phase time in symbols */
 
 #define TX_DONE_RESET_REGISTER          (ZLL_BASE + 0x88)
 #define TX_DONE_RESET_REGISTER_MASK     0x04
@@ -838,22 +838,22 @@ void Phy_SetSequenceTiming(phyTime_t startTime, uint32_t seqDuration, uint32_t o
 
     OSA_InterruptDisable();
 
-    /* Check if there is enough time for delayed operation */
+    /* Check if there is enough time for delayed operation (considering PHY_TMR_CMP_MIN) */
     if (startTime != gPhySeqStartAsap_c)
     {
-        startTime = startTime & gPhyTimeMask_c;
+        startTime &= gPhyTimeMask_c;
 
         /* 24bit timer. Do modulo operations */
-        delta = ((startTime & gPhyTimeMask_c) - (PhyTime_ReadClock() & gPhyTimeMask_c)) & gPhyTimeMask_c;
+        delta = (startTime - (PhyTime_ReadClock() & gPhyTimeMask_c)) & gPhyTimeMask_c;
 
-        if ((delta  < overhead) || (delta > DELAYED_TX_RANGE))
+        if ((delta  < (overhead + PHY_TMR_CMP_MIN)) || (delta > DELAYED_TX_RANGE))
         {
             startTime = gPhySeqStartAsap_c;
         }
         else
         {
             startTime -= overhead;
-            startTime = startTime & gPhyTimeMask_c;
+            startTime &= gPhyTimeMask_c;
         }
     }
 
@@ -865,7 +865,7 @@ void Phy_SetSequenceTiming(phyTime_t startTime, uint32_t seqDuration, uint32_t o
     }
     else
     {
-        endTime = startTime & gPhyTimeMask_c;
+        endTime = startTime;
 
         PhyTimeSetEventTrigger(startTime);
     }
@@ -873,7 +873,7 @@ void Phy_SetSequenceTiming(phyTime_t startTime, uint32_t seqDuration, uint32_t o
     if (0xFFFFFFFFU != seqDuration)
     {
         endTime += (seqDuration + overhead);
-        endTime = endTime & gPhyTimeMask_c;
+        endTime &= gPhyTimeMask_c;
 
         PhyTimeSetEventTimeout(endTime);
     }
@@ -1356,9 +1356,6 @@ void Radio_Phy_Notify(Phy_PhyLocalStruct_t *ctx)
 
 #if gMWS_Enabled_d || defined(CTX_SCHED)
 /* TMR4 management */
-
-#define T4_CMP_MIN 4   /* comparator threshold. symbols */
-
 /* switch timer - 0, scheduler timer - 1 */
 #define T4_CNT 2
 
@@ -1386,7 +1383,7 @@ static bool_t t1_near_t2(uint32_t tstp_1, uint32_t tstp_2)
     tstp_1 &= gPhyTimeMask_c;
     tstp_2 &= gPhyTimeMask_c;
 
-    return ((tstp_1 - tstp_2 <= T4_CMP_MIN) || (tstp_2 - tstp_1 <= T4_CMP_MIN));
+    return ((tstp_1 - tstp_2 <= PHY_TMR_CMP_MIN) || (tstp_2 - tstp_1 <= PHY_TMR_CMP_MIN));
 }
 
 static void start_t4(uint32_t tstp)
@@ -1398,7 +1395,7 @@ static void start_t4(uint32_t tstp)
 
     if (t1_less_t2(tstp, phy_tstp) || t1_near_t2(tstp, phy_tstp))
     {
-        tstp = (phy_tstp + T4_CMP_MIN) & gPhyTimeMask_c;
+        tstp = (phy_tstp + PHY_TMR_CMP_MIN) & gPhyTimeMask_c;
     }
 
     TMR_UNMASK_AND_SET(4, tstp);
@@ -1809,7 +1806,7 @@ Phy_PhyLocalStruct_t ctxs[CTX_NO];
 #define SCHED_DEFAULT_DUTY_CYCLE_TICK 3750  /* symbols (60 ms) */
 #define SCHED_DEFAULT_PRIO_TIME_TICK 1000   /* symbols (16 ms) */
 #define SCHED_RETRY_TICK 544                /* symbols (8.7 ms). 2 max length frames + AIFS */
-#define SCHED_MIN_TICK 4                    /* symbols (64 us). Comparator threshold */
+#define SCHED_MIN_TICK PHY_TMR_CMP_MIN      /* symbols */
 
 struct sched_ctx
 {

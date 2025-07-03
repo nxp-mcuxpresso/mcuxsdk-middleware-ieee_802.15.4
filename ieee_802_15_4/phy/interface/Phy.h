@@ -92,6 +92,8 @@ typedef enum
 #endif /* CTX_SCHED */
 
 
+#define PHY_TMR_CMP_MIN 4   /* symbols (64 us). Comparator threshold */
+
 #define PHY_TEN_SYMBOLS_US 160
 #define PHY_SYMBOLS_US 16
 

@@ -147,6 +147,15 @@ const uint32_t mDefaultRxFiltering = ZLL_RX_FRAME_FILTER_FRM_VER_FILTER(7) |
                                      ZLL_RX_FRAME_FILTER_DATA_FT_MASK      |
                                      ZLL_RX_FRAME_FILTER_BEACON_FT_MASK;
 
+const uint32_t mAllFrameTypes = ZLL_RX_FRAME_FILTER_EXTENDED_FT_MASK     |
+                                ZLL_RX_FRAME_FILTER_NS_FT_MASK           |
+                                ZLL_RX_FRAME_FILTER_MULTIPURPOSE_FT_MASK |
+                                ZLL_RX_FRAME_FILTER_LLDN_FT_MASK         |
+                                ZLL_RX_FRAME_FILTER_CMD_FT_MASK          |
+                                ZLL_RX_FRAME_FILTER_DATA_FT_MASK         |
+                                ZLL_RX_FRAME_FILTER_BEACON_FT_MASK       |
+                                ZLL_RX_FRAME_FILTER_ACK_FT_MASK;
+
 uint8_t gPhyTxWuTimeSym;  /*!< TSM TX warmup time in us */
 uint8_t gPhyTxWdTimeSym;  /*!< TSM TX warmdown time in us */
 uint8_t gPhyRxWuTimeSym;  /*!< TSM RX warmup time in us */
@@ -434,7 +443,8 @@ void PhyHwInit(void)
 #endif
 
     /* Frame Filtering */
-    ZLL->RX_FRAME_FILTER = mDefaultRxFiltering;
+    ZLL->RX_FRAME_FILTER &= ~(mAllFrameTypes);
+    ZLL->RX_FRAME_FILTER |= mDefaultRxFiltering;
     ZLL->LENIENCY_MSB = ZLL_LENIENCY_MSB_LENIENCY_MSB(gPhyLeniency_c);
 
     /* Set prescaller to obtain 1 symbol (16us) timebase */
@@ -888,53 +898,35 @@ phyStatus_t PhyPpSetMacRole(bool_t macRole, uint8_t pan)
 ********************************************************************************** */
 void PhyPpSetPromiscuous(bool_t mode)
 {
+    uint32_t reg;
+
+    reg  = ZLL->RX_FRAME_FILTER;
+    reg &= ~(ZLL_RX_FRAME_FILTER_FRM_VER_FILTER_MASK |
+             mAllFrameTypes);
+
+    if (mode)
+    {
 #if defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES)
-    /* This doesn't work with dual PAN */
-    if (mode)
-    {
-        /* FRM_VER[11:8] = b1111. Any Frame version/type accepted */
-        ZLL->RX_FRAME_FILTER |= (ZLL_RX_FRAME_FILTER_PROMISCUOUS_MASK     |
-                                 ZLL_RX_FRAME_FILTER_FRM_VER_FILTER_MASK  |
-                                 ZLL_RX_FRAME_FILTER_EXTENDED_FT_MASK     |
-                                 ZLL_RX_FRAME_FILTER_MULTIPURPOSE_FT_MASK |
-                                 ZLL_RX_FRAME_FILTER_LLDN_FT_MASK         |
-                                 ZLL_RX_FRAME_FILTER_CMD_FT_MASK          |
-                                 ZLL_RX_FRAME_FILTER_DATA_FT_MASK         |
-                                 ZLL_RX_FRAME_FILTER_BEACON_FT_MASK       |
-                                 ZLL_RX_FRAME_FILTER_ACK_FT_MASK          |
-                                 ZLL_RX_FRAME_FILTER_NS_FT_MASK);
-    }
-    else
-    {
-        ZLL->RX_FRAME_FILTER &= ~ZLL_RX_FRAME_FILTER_PROMISCUOUS_MASK;
-        /* FRM_VER[11:8] = b0011. Accept FrameVersion 0 and 1 packets, reject all others */
-        /* Beacon, Data and MAC command frame types accepted */
-        ZLL->RX_FRAME_FILTER = mDefaultRxFiltering;
-    }
+        reg |= ZLL_RX_FRAME_FILTER_PROMISCUOUS_MASK;
 #else
-    /* This doesn't work with dual PAN */
-    if (mode)
-    {
         ZLL->PHY_CTRL |= ZLL_PHY_CTRL_PROMISCUOUS_MASK;
-        /* FRM_VER[11:8] = b1111. Any Frame version/type accepted */
-        ZLL->RX_FRAME_FILTER |= (ZLL_RX_FRAME_FILTER_FRM_VER_FILTER_MASK  |
-                                 ZLL_RX_FRAME_FILTER_EXTENDED_FT_MASK     |
-                                 ZLL_RX_FRAME_FILTER_MULTIPURPOSE_FT_MASK |
-                                 ZLL_RX_FRAME_FILTER_LLDN_FT_MASK         |
-                                 ZLL_RX_FRAME_FILTER_CMD_FT_MASK          |
-                                 ZLL_RX_FRAME_FILTER_DATA_FT_MASK         |
-                                 ZLL_RX_FRAME_FILTER_BEACON_FT_MASK       |
-                                 ZLL_RX_FRAME_FILTER_ACK_FT_MASK          |
-                                 ZLL_RX_FRAME_FILTER_NS_FT_MASK);
+#endif
+
+        /* All Frame Versions / Frame Types */
+        reg |= (ZLL_RX_FRAME_FILTER_FRM_VER_FILTER_MASK  | mAllFrameTypes);
     }
     else
     {
+#if defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES)
+        reg &= ~ZLL_RX_FRAME_FILTER_PROMISCUOUS_MASK;
+#else
         ZLL->PHY_CTRL &= ~ZLL_PHY_CTRL_PROMISCUOUS_MASK;
-        /* FRM_VER[11:8] = b0011. Accept FrameVersion 0 and 1 packets, reject all others */
-        /* Beacon, Data and MAC command frame types accepted */
-        ZLL->RX_FRAME_FILTER = mDefaultRxFiltering;
-    }
 #endif
+
+        reg |= (mDefaultRxFiltering);
+    }
+
+    ZLL->RX_FRAME_FILTER = reg;
 }
 
 /*! *********************************************************************************

@@ -108,6 +108,7 @@ static uint32_t MWS_802_15_4_Callback(mwsEvents_t event);
 #endif
 
 #ifdef CTX_SCHED
+static void sched_reset();
 void sched_enable();
 void sched_start_timer(uint32_t ticks);
 void sched_stop_timer();
@@ -1786,6 +1787,9 @@ bool PHY_XCVR_AllowLowPower(void)
 #if gMWS_Enabled_d
         PHY_set_inactive();
 #endif
+#ifdef CTX_SCHED
+        sched_reset();  /* disable scheduler */
+#endif
         OSA_InterruptEnable();
         return true;
     }
@@ -1825,8 +1829,6 @@ struct sched_ctx
     bool_t auto_rx;         /* auto dual PAN allowed */
     bool_t rx_all;          /* all contexts are in rx (auto rx / dual PAN) */
     bool_t rxed_on_all;     /* auto dual PAN on single channel: reception successful on both PANs (broadcast frame) */
-
-    bool_t timer_is_running;
 };
 
 struct sched_ctx scheduler;
@@ -1991,21 +1993,25 @@ Phy_PhyLocalStruct_t *ctx_get_current()
 }
 
 #ifdef CTX_SCHED
+
+#if !gMWS_Enabled_d
+#define do_ble_phy_coex()
+#define PHY_is_active() TRUE
+#endif  /* gMWS_Enabled_d */
+
 void sched_start_timer(uint32_t ticks)
 {
-    if (!scheduler.timer_is_running)
-    {
-        ticks = (ticks + PhyTime_ReadClock()) & gPhyTimeMask_c;
-        TMR_UNMASK_AND_SET(4, ticks);
-
-        scheduler.timer_is_running = TRUE;
-    }
+    start_t4_timer(TRUE, ticks);
 }
 
 void sched_stop_timer()
 {
-    TMR_CLEAR(4);
-    scheduler.timer_is_running = FALSE;
+    stop_t4_timer(TRUE);
+}
+
+static bool_t sched_timer_expired()
+{
+    return t4_timer_expired(TRUE);
 }
 
 void sched_reschedule()
@@ -2131,7 +2137,6 @@ void ctx_set_none(Phy_PhyLocalStruct_t *ctx)
 
 void proto_save(Phy_PhyLocalStruct_t *ctx)
 {
-    /* should release access through MWS */
 }
 
 bool_t start_rx_all()
@@ -2171,8 +2176,6 @@ bool_t start_rx_all()
 
 void proto_restore(Phy_PhyLocalStruct_t *ctx)
 {
-    /* should request access through MWS */
-
     if (start_rx_all())
     {
         PhyPlmeRxRequest(ctx_get(0));   /* ctx could be NULL */
@@ -2370,26 +2373,50 @@ void schedule(bool_t force_switch)
     sched_start_timer(slice);
 }
 
-void sched_enable()
+static void sched_reset()
 {
-    scheduler.active = TRUE;
+    uint8_t id;
+    Phy_PhyLocalStruct_t *ctx;
 
-    scheduler.policy = E_SCHED_NO_POLICY;
-    scheduler.next_policy = E_SCHED_NO_POLICY;
+    for (id = 0; id < CTX_NO; id++)
+    {
+        ctx = ctx_get(id);
+
+        if (ctx->state != E_SCHED_PROTO_OFF)
+        {
+            ctx->state = E_SCHED_PROTO_INACTIVE;
+            ctx->rx_ongoing = FALSE;
+            ctx->filter_fail = 0;
+            ctx->op_pending = TRUE;     /* select next operation when PHY is again active */
+
+            if ((scheduler.current == ctx) || scheduler.rx_all)
+            {
+                /* context operation was canceled because PHY was deactivated */
+                ctx->op = NONE_OP;
+                ctx->flags &= ~gPhyFlagIdleRx_c;
+            }
+        }
+    }
 
     scheduler.current = NULL;
     scheduler.next = NULL;
 
-    scheduler.wait_idle = TRUE;
     scheduler.switch_later = FALSE;
-
-    scheduler.auto_rx = gHwAutoDualPanMode_c;
     scheduler.rx_all = FALSE;
     scheduler.rxed_on_all = FALSE;
 
-    scheduler.timer_is_running = FALSE;
+    sched_stop_timer();
+}
 
-    schedule(FALSE);
+void sched_enable()
+{
+    scheduler.active = TRUE;
+    scheduler.policy = E_SCHED_NO_POLICY;
+    scheduler.next_policy = E_SCHED_NO_POLICY;
+    scheduler.wait_idle = TRUE;
+    scheduler.auto_rx = gHwAutoDualPanMode_c;
+
+    sched_reset();
 }
 
 uint32_t ctx_match(uint8_t *p, uint8_t *a, uint8_t len)
@@ -2547,12 +2574,16 @@ void sched_update_ctx_pending()
 /* both RPMSG/IMU and PHY IRQs have the same priority (4) */
 void PHY_InterruptHandler()
 {
+    OSA_InterruptDisable();
+
+    do_ble_phy_coex();
+
     uint8_t xcvseq = ZLL->PHY_CTRL & ZLL_PHY_CTRL_XCVSEQ_MASK;
     uint32_t irq_status = ZLL->IRQSTS;
 
     bool_t wtmrk = !!(irq_status & ZLL_IRQSTS_RXWTRMRKIRQ_MASK);
     bool_t seq_end = !!(irq_status & ZLL_IRQSTS_SEQIRQ_MASK);
-    bool_t sched_switch = !!(irq_status & ZLL_IRQSTS_TMR4IRQ_MASK);
+    bool_t sched_switch = !!sched_timer_expired();
     bool_t proto_switch = FALSE; /* Need to change protocol */
 
     update_rxf(xcvseq, irq_status);
@@ -2595,6 +2626,21 @@ void PHY_InterruptHandler()
     }
 
     PHY_InterruptHandler_base(xcvseq,  irq_status);
+
+    if (!PHY_is_active())
+    {
+        /* check again sw abort. Could happen because ED request restarts several times at seq_end  */
+        bool_t sw_abort = !!(ZLL->SEQ_CTRL_STS & ZLL_SEQ_CTRL_STS_SW_ABORTED_MASK);
+        seq_end = !!(ZLL->IRQSTS & ZLL_IRQSTS_SEQIRQ_MASK);
+
+        if (!(seq_end && sw_abort))
+        {
+            sched_reset();
+        }
+
+        OSA_InterruptEnable();
+        return;
+    }
 
     /* No PAN selected, because of filter fail, but rx finished */
     if (scheduler.rx_all && (PhyPpGetState() == gIdle_c))
@@ -2656,6 +2702,8 @@ void PHY_InterruptHandler()
     {
         sched_start_timer(SCHED_RETRY_TICK);
     }
+
+    OSA_InterruptEnable();
 }
 
 void ProtectFromXcvrInterrupt_base(Phy_PhyLocalStruct_t *ctx)

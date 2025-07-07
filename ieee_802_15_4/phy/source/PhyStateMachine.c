@@ -569,6 +569,11 @@ phyStatus_t MAC_PLME_SapHandler(macToPlmeMessage_t *pMsg, instanceId_t phyInstan
 
             /* disable rx when idle */
             ctx->flags &= ~(gPhyFlagRxOnWhenIdle_c | gPhyFlagIdleRx_c);
+
+            ctx_set_pending(ctx);
+
+            /* run the PHY state machine from PHY ISR context only */
+            PHY_ForceIrqPending();
         }
         break;
 
@@ -955,6 +960,11 @@ void PhyPlmeSetRxOnWhenIdle(bool_t state, instanceId_t instanceId)
         {
             ctx->flags &= ~gPhyFlagIdleRx_c;
             PhyAbort_base(ctx);
+
+            ctx_set_pending(ctx);
+
+            /* run the PHY state machine from PHY ISR context only */
+            PHY_ForceIrqPending();
         }
     }
 

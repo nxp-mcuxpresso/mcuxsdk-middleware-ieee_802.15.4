@@ -108,6 +108,7 @@ static uint32_t MWS_802_15_4_Callback(mwsEvents_t event);
 #endif
 
 #ifdef CTX_SCHED
+static void ctx_plme_msg_all(Phy_PhyLocalStruct_t *ctx, phyMessageId_t msg_type);
 static void sched_reset();
 void sched_enable();
 void sched_start_timer(uint32_t ticks);
@@ -119,6 +120,7 @@ uint8_t PhyPpGetState_base(Phy_PhyLocalStruct_t *ctx);
 void PhyAbort_base(Phy_PhyLocalStruct_t *ctx);
 bool_t PHY_graceful_idle_base(Phy_PhyLocalStruct_t *ctx);
 #else
+#define ctx_plme_msg_all(ctx, msg_type)
 #define ProtectFromXcvrInterrupt_base(ctx) ProtectFromXcvrInterrupt()
 #define UnprotectFromXcvrInterrupt_base(ctx) UnprotectFromXcvrInterrupt()
 #define PhyPpGetState_base(ctx) PhyPpGetState()
@@ -1091,6 +1093,8 @@ void Radio_Phy_TimeRxTimeoutIndication(Phy_PhyLocalStruct_t *ctx)
     {
         PLME_SendMessage(ctx, gPlmeTimeoutInd_c);
     }
+
+    ctx_plme_msg_all(ctx, gPlmeTimeoutInd_c);
 }
 
 /*! *********************************************************************************
@@ -1111,6 +1115,8 @@ void Radio_Phy_AbortIndication(Phy_PhyLocalStruct_t *ctx)
     {
         PLME_SendMessage(ctx, gPlmeAbortInd_c);
     }
+
+    ctx_plme_msg_all(ctx, gPlmeAbortInd_c);
 }
 
 /* Update reception timeout */
@@ -1148,7 +1154,6 @@ void Radio_Phy_PlmeRxWatermark(uint32_t frameLength, uint16_t fcf)
 ********************************************************************************** */
 void Radio_Phy_PlmeSyncLossIndication(Phy_PhyLocalStruct_t *ctx)
 {
-    PhyAbort();
     Radio_Phy_TimeRxTimeoutIndication(ctx);
 }
 
@@ -2045,6 +2050,21 @@ bool_t ctx_is_paused(Phy_PhyLocalStruct_t *ctx)
     return (ctx->state == E_SCHED_PROTO_PAUSING);
 }
 
+static void ctx_plme_msg_all(Phy_PhyLocalStruct_t *ctx, phyMessageId_t msg_type)
+{
+    if (!scheduler.rx_all || !ctx)
+    {
+        return;
+    }
+
+    Phy_PhyLocalStruct_t *ctx_2 = ctx_get((ctx->id + 1) % CTX_NO);
+
+    if ((ctx_2->flags & gPhyFlagIdleRx_c) != gPhyFlagIdleRx_c)
+    {
+        PLME_SendMessage(ctx_2, msg_type);
+    }
+}
+
 void ctx_data_ind_all(Phy_PhyLocalStruct_t *ctx)
 {
     /* broadcast frames, auto dual PAN on single channel.
@@ -2296,19 +2316,11 @@ void sched_abort_current()
 
     if (scheduler.current)
     {
-        scheduler.current->filter_fail = 0;
-        scheduler.current->rx_ongoing = FALSE;
-
-        if ((scheduler.current->op == TX_OP) ||
-            ((scheduler.current->op == CCA_OP) &&
-             (scheduler.current->ccaParams.msgType == gPlmeEdReq_c)))
-        {
-            scheduler.current->op = NONE_OP;
-
-            /* send notification to MAC */
-            Radio_Phy_AbortIndication(scheduler.current);
-        }
+        /* send notification to MAC */
+        Radio_Phy_AbortIndication(scheduler.current);
     }
+
+    sched_reset();
 }
 
 /* force_switch is used when wifi access was not granted for current protocol
@@ -2642,9 +2654,11 @@ void PHY_InterruptHandler()
         return;
     }
 
-    /* No PAN selected, because of filter fail, but rx finished */
+    /* No PAN selected, because of filter fail, timeout or abort but rx finished */
     if (scheduler.rx_all && (PhyPpGetState() == gIdle_c))
     {
+        sched_reset();
+
         sched_switch = TRUE;
         proto_switch = TRUE;
     }

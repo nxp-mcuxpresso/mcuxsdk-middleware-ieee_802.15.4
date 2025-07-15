@@ -2514,7 +2514,7 @@ void sched_enable()
     sched_reset();
 }
 
-uint32_t ctx_match(uint8_t *p, uint8_t *a, uint8_t len)
+static uint32_t ctx_match(uint8_t *p, uint8_t *a, uint8_t len)
 {
     uint16_t pan = (p ? PHY_TransformArrayToUint16(p) : 0);
     uint64_t addr = 0, tmp;
@@ -2566,7 +2566,7 @@ uint32_t ctx_match(uint8_t *p, uint8_t *a, uint8_t len)
 }
 
 /* if rx started / ended, try to select the context */
-void sched_set_current_ctx(uint32_t irq_status)
+static void sched_set_current_ctx(uint32_t irq_status)
 {
     uint32_t idx = INV_IDX;
     uint16_t fcf = 0;
@@ -2648,7 +2648,7 @@ void sched_set_current_ctx(uint32_t irq_status)
     }
 }
 
-void sched_update_ctx_pending()
+static void sched_update_ctx_pending()
 {
     uint8_t id;
     Phy_PhyLocalStruct_t *ctx;

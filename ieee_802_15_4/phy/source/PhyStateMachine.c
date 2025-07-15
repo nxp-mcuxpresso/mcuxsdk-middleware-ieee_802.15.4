@@ -766,15 +766,12 @@ static phyStatus_t Phy_Handle_PdDataReq(Phy_PhyLocalStruct_t *ctx, macToPdDataMe
 {
     phyStatus_t status = gPhySuccess_c;
 
-    if (!pMsg || !pMsg->msgData.dataReq.pPsdu)
+    if (!pMsg->msgData.dataReq.pPsdu)
     {
         return gPhyInvalidParameter_c;
     }
 
     ctx->txParams.dataReq = &pMsg->msgData.dataReq;
-
-    OSA_InterruptDisable();
-    ProtectFromXcvrInterrupt_base(ctx);
 
     ctx_set_tx(ctx, pMsg);
 
@@ -791,9 +788,6 @@ static phyStatus_t Phy_Handle_PdDataReq(Phy_PhyLocalStruct_t *ctx, macToPdDataMe
     {
         PhyAbort_base(ctx);
     }
-
-    UnprotectFromXcvrInterrupt_base(ctx);
-    OSA_InterruptEnable();
 
     return status;
 }

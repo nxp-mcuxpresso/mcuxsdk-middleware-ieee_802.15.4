@@ -364,11 +364,6 @@ phyStatus_t PhyPdDataRequest(Phy_PhyLocalStruct_t *ctx)
     pdDataReq_t *pTxPacket;
     uint32_t ccaOverheadSym = gPhyTxWuTimeSym;
 
-    if (NULL == ctx)
-    {
-        return gPhyInvalidParameter_c;
-    }
-
     pTxPacket = ctx->txParams.dataReq;
 
     if (pTxPacket->CCABeforeTx < gPhyNoCCABeforeTx_c)

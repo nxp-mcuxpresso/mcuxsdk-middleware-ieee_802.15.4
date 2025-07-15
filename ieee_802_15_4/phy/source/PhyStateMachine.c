@@ -2405,9 +2405,7 @@ void schedule(bool_t force_switch)
 {
     uint32_t slice;
 
-    /* Save context for current proto only if
-        * the next to schedule is not the same.
-        */
+    /* Save context for current proto only if the next to schedule is not the same. */
     if ((NULL != scheduler.current) && (scheduler.next != scheduler.current))
     {
         proto_save(scheduler.current);

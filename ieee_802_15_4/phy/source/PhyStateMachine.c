@@ -2229,10 +2229,6 @@ void ctx_set_none(Phy_PhyLocalStruct_t *ctx)
     ctx->op = NONE_OP;
 }
 
-void proto_save(Phy_PhyLocalStruct_t *ctx)
-{
-}
-
 bool_t start_rx_all()
 {
     uint8_t id;
@@ -2408,8 +2404,6 @@ void schedule(bool_t force_switch)
     /* Save context for current proto only if the next to schedule is not the same. */
     if ((NULL != scheduler.current) && (scheduler.next != scheduler.current))
     {
-        proto_save(scheduler.current);
-
         /* Set the old proto state to inactive */
         scheduler.current->state = E_SCHED_PROTO_INACTIVE;
     }

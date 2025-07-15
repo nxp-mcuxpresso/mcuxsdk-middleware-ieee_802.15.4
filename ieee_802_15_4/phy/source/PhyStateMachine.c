@@ -2919,13 +2919,6 @@ bool_t PHY_graceful_idle_base(Phy_PhyLocalStruct_t *ctx)
 {
     bool_t status = FALSE;
 
-    if (!ctx)
-    {
-        return status;
-    }
-
-    OSA_InterruptDisable();
-
     if (scheduler.rx_all)
     {
         status = PHY_graceful_idle();
@@ -2961,8 +2954,6 @@ bool_t PHY_graceful_idle_base(Phy_PhyLocalStruct_t *ctx)
     }
 
     status = (ctx->op == NONE_OP);
-
-    OSA_InterruptEnable();
 
     return status;
 }

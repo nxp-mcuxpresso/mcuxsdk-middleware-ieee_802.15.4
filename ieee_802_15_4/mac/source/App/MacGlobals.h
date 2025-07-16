@@ -89,24 +89,6 @@
 #define gNumSecurityLevelTableEntries_c             2
 #endif
 
-
-/*******************************************/
-/*** MAC LE Tables sizes and transactions **/
-/***************************************** */
-
-/*! This constant defines the maximum number of entries in the RIT table 
- *  that specifies how many devices can the MAC layer store listening schedule
- *  for (timestamp of last received RIT Data Request command and listening schedule). */
-#ifndef gMacRitTableSize_c
-#define gMacRitTableSize_c          (10)
-#endif
-
-/*! This constant defines the maximum number of RIT sequences that can be 
- *  present in the MAC layer when RIT is enabled. */
-#ifndef gMacRitMaxSequencesCnt_c
-#define gMacRitMaxSequencesCnt_c    (12)
-#endif
-
 /************************************************************************************
 *************************************************************************************
 * Public memory declarations

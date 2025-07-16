@@ -74,17 +74,6 @@ uint8_t gMacMaxPendingReq = gMacInpuQueueLimit_d;
 /* The ID of the MEM pools used by the MAC */
 const uint8_t gMacPoolId = gMacPoolId_d;
 
-#if gRitSupport_d
-/* The maximum number of RIT transactions */    
-const uint8_t gMacMaxRitTransactions = gMacRitMaxSequencesCnt_c;
-
-/* MAC RIT table used for sync */
-#if gMacRitTableSize_c > 0
-    macRitEntry_t macRitTable[gMacRitTableSize_c];
-    const uint8_t gMacRitTableSize = gMacRitTableSize_c;
-    #endif
-#endif
-
 /* The maximum number MAC instances */
 const uint8_t gMacNoOfInstances = gMacInstancesCnt_c;
 

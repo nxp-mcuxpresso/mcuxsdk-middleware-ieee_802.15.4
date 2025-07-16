@@ -371,13 +371,7 @@ typedef enum
     gMPibTxControlPauseDuration_c               = 0x61,    /*!< Unused */
     gMPibTxTotalDuration_c                      = 0x62,    /*!< Unused */
 #endif
-#if gRitSupport_d
-    gMPibRitPeriod_c                            = 0x67,
-    gMPibRitDataWaitDuration_c                  = 0x68,
-    gMPibRitTxWaitDuration_c                    = 0x69,
-    gMPibRitIe_c                                = 0x6A,
-#endif
-    
+
     /* MAC2006 Security Related PIB Attributes */
     gMPibKeyTable_c                             = 0x71,
     gMPibKeyTableEntries_c                      = 0x72,    /*!< Freescale specific MAC 2011 */
@@ -582,24 +576,6 @@ typedef struct securityLevelDescriptor_tag
     macSecurityLevel_t          allowedSecurityLevels[8];
 #endif
 }securityLevelDescriptor_t;
-
-#if gRitSupport_d
-/*! This type describes the LE RIT Information element. */
-typedef PACKED_STRUCT macRitIe_tag
-{
-    uint8_t  T0; /*!< Time to first listen interval. */
-    uint8_t  N;  /*!< Number of repeat listen. */
-    uint16_t T;  /*!< Repeat listen interval. */
-}macRitIe_t;
-
-typedef struct macRitEntry_tag
-{
-    uint64_t           lastTimestamp; /*!< Absolute time for the last RIT Data Request of the node. */
-    macRitIe_t         ritIe;         /*!< Listening schedule of the node, if any. */
-    uint16_t           checksum;      /*!< Checksum of the addressing information of the node. */
-    bool_t             inUse;         /*!< Entry is currently active. */
-}macRitEntry_t;
-#endif
 
 /*! This type describes the Beacon frame types. */
 typedef enum

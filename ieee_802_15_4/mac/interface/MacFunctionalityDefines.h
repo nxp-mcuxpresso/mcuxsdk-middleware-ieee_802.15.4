@@ -163,7 +163,6 @@
 #elif (gMacFeatureSet_d == gMacFeatureSet_06BEGTSM4_d) || (gMacFeatureSet_d == gMacFeatureSet_06BEGTSM0_d)
   #define gMacInternalDataSize_c      600 /* [bytes] */
   #define gMacSecurityEnable_d        (1)
-  #define gGtsSupport_d               (1)
 
 #elif (gMacFeatureSet_d == gMacFeatureSet_06gM0_d)
   #define gMacInternalDataSize_c      464 /* [bytes] */
@@ -197,11 +196,6 @@
 
 #endif
 /*! \endcond */
-
-/*! Guaranteed Time Slot support in Beaconed Networks */
-#ifndef gGtsSupport_d
-#define gGtsSupport_d               (0)
-#endif
 
 /*! MAC encryption/decryption support */
 #ifndef gMacSecurityEnable_d

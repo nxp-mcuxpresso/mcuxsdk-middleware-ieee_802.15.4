@@ -128,7 +128,6 @@
 #elif (gMacFeatureSet_d == gMacFeatureSet_THR_M4_d) || (gMacFeatureSet_d == gMacFeatureSet_THR_M0_d)
   #define gMacInternalDataSize_c      344 /* [bytes] */
   #define gMacSecurityEnable_d        (1)
-  #define gMacThread_d                (1)
   #define gMacUseAssociation_d        (0)
   #define gMacUseOrphanScan_d         (0)
   #define gMacUsePromiscuous_d        (0)
@@ -137,7 +136,6 @@
 #elif (gMacFeatureSet_d == gMacFeatureSet_THR_CSL_d)
   #define gMacInternalDataSize_c      400 /* [bytes] */
   #define gMacSecurityEnable_d        (1)
-  #define gMacThread_d                (1)
   #define gMacUseAssociation_d        (0)
   #define gMacUseOrphanScan_d         (0)
   #define gMacUsePromiscuous_d        (0)
@@ -147,7 +145,6 @@
 #elif (gMacFeatureSet_d == gMacFeatureSet_THRRFD_M4_d) || (gMacFeatureSet_d == gMacFeatureSet_THRRFD_M0_d)
   #define gMacInternalDataSize_c      264 /* [bytes] */
   #define gMacSecurityEnable_d        (1)
-  #define gMacThread_d                (1)
   #define gMacUseAssociation_d        (0)
   #define gMacUseOrphanScan_d         (0)
   #define gMacUsePromiscuous_d        (0)
@@ -240,12 +237,6 @@
 #ifndef gMacCoordinatorCapability_d
 #define gMacCoordinatorCapability_d (1)
 #endif
-
-/*! Optimize MAC for Thread stack */
-#ifndef gMacThread_d
-#define gMacThread_d                (0)
-#endif
-
 
 #endif /* _MAC_FUNCTIONALITY_DEFINES_H_ */
 

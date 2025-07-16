@@ -513,9 +513,6 @@ typedef PACKED_STRUCT panDescriptor_tag
     uint16_t            coordPanId;                /*!< PAN identifier of the coordinator as specified in the received beacon frame.*/
     addrModeType_t      coordAddrMode;             /*!< The coordinator addressing mode corresponding to the received beacon frame. */
     logicalChannelId_t  logicalChannel;            /*!< The current logical channel occupied by the network. */
-#if 0
-    channelPageId_t     channelPage;               /*!< The current channel page occupied by the network.*/
-#endif
 #ifdef gMAC2011_d
     resultType_t        securityStatus;            /*!< gSuccess_c if there was no error in the security processing of the frame. One of the other status codes indicating an error in the security processing otherwise.*/
 #else
@@ -529,11 +526,6 @@ typedef PACKED_STRUCT panDescriptor_tag
     keyIdModeType_t     keyIdMode;                 /*!< This parameter is ignored if the securityLevel parameter is set to gMacSecurityNone_c. */
     uint64_t            keySource;                 /*!< Indicates the originator of the key to be used. Ignored if the keyIdMode parameter is ignored or set to gKeyIdMode0_c*/
     uint8_t             keyIndex;                  /*!< Indicates the index of the key to be used. Ignored if the keyIdMode parameter is ignored or set to gKeyIdMode0_c*/
-#if 0
-#ifdef gMAC2011_d
-    uint8_t*            pCodeList;
-#endif
-#endif
 } panDescriptor_t;
 
 /* MAC2006 Security Tables type definitions */
@@ -761,12 +753,6 @@ typedef PACKED_STRUCT macHoppingSequenceIe_tag
     uint8_t  macChannelPage;       /*!< Channel page in use */
     uint16_t macNumberOfChannels;  /*!< Maximum number of channels supported by current PHY mode */
     uint32_t macPhyConfiguration;  /*!< PHY configuration, channel list is in the channel bitmap */
-#if 0
-    macExtendedBitmap;
-    uint16_t macHoppingSequenceLength;
-    macHoppingSequenceList;
-    uint16_t macCurrentHop;
-#endif
 }macHoppingSequenceIe_t;
 
 typedef PACKED_STRUCT macTschSynchronizationIe_tag
@@ -779,18 +765,12 @@ typedef PACKED_STRUCT macTschSynchronizationIe_tag
 typedef PACKED_STRUCT macTschSlotframeAndLinkIe_tag
 {
     uint8_t numberOfSlotframes; /*!< Number of slotframes included in the IE */
-#if 0
-    macTschSlotframeIe_t * numberOfSlotframes
-#endif
 }macTschSlotframeAndLinkIe_t;
 
 typedef PACKED_STRUCT macTschSlotframeIe_tag
 {
     macSlotframeIe_t slotframe;     /*!< Slotframe IE */
     uint8_t          numberOfLinks; /*!< Number of links included in the IE */
-#if 0
-    macTschLinkIe_t * numberOfLinks;
-#endif
 }macTschSlotframeIe_t;
 
 typedef PACKED_STRUCT macAckTimeCorrectionIe_tag

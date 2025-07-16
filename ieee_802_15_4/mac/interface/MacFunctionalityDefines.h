@@ -144,7 +144,6 @@
   #define gMacUsePromiscuous_d        (0)
   #define gMacUseRxEnableRequest_d    (1)
   #define gMacPanIdConflictDetect_d   (0)
-  #define gCslSupport_d               (1)
 
 #elif (gMacFeatureSet_d == gMacFeatureSet_THRRFD_M4_d) || (gMacFeatureSet_d == gMacFeatureSet_THRRFD_M0_d)
   #define gMacInternalDataSize_c      264 /* [bytes] */
@@ -175,7 +174,6 @@
 #elif (gMacFeatureSet_d == gMacFeatureSet_06eLEgM0_d)
   #define gMacInternalDataSize_c      568 /* [bytes] */
   #define gMacSecurityEnable_d        (1)
-  #define gCslSupport_d               (1)
   #define gRitSupport_d               (1)
 
 #elif (gMacFeatureSet_d == gMacFeatureSet_06eTSCHgM0_d)
@@ -192,7 +190,6 @@
   #define gMacInternalDataSize_c      560 /* [bytes] */
   #define gMacSecurityEnable_d        (1)
   #define gMAC2011_d                  (1)
-  #define gCslSupport_d               (1)
   #define gRitSupport_d               (1)
 
 #elif (gMacFeatureSet_d == gMacFeatureSet_11eTSCHgM0_d)
@@ -215,11 +212,6 @@
 /*! Guaranteed Time Slot support in Beaconed Networks */
 #ifndef gGtsSupport_d
 #define gGtsSupport_d               (0)
-#endif
-
-/*! Coordinated Sampled Listening support (sub-GHz only) */
-#ifndef gCslSupport_d
-#define gCslSupport_d               (0)
 #endif
 
 /*! Receiver Initiated Transmission support (sub-GHz only) */

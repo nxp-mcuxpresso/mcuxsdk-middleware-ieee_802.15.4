@@ -74,17 +74,6 @@ uint8_t gMacMaxPendingReq = gMacInpuQueueLimit_d;
 /* The ID of the MEM pools used by the MAC */
 const uint8_t gMacPoolId = gMacPoolId_d;
 
-#if gCslSupport_d
-/* The maximum number of CSL transactions */    
-const uint8_t gMacMaxCslTransactions = gMacCslMaxSequencesCnt_c;
-
-/* MAC CSL table used for sync */
-#if gMacCslTableSize_c > 0
-    macCslEntry_t macCslTable[gMacCslTableSize_c];
-    const uint8_t gMacCslTableSize = gMacCslTableSize_c;
-    #endif
-#endif
-
 #if gRitSupport_d
 /* The maximum number of RIT transactions */    
 const uint8_t gMacMaxRitTransactions = gMacRitMaxSequencesCnt_c;
@@ -318,15 +307,6 @@ uint16_t Mac_GetMaxMsduLength (mcpsDataReq_t* pParams)
             {
                 maxDataMsduLen -= (2 << (pParams->securityLevel & 0x03));
             }
-        }
-#endif
-        
-    /* Check if CSL IEs needs to be added */
-#if gCslSupport_d && gMacThread_d
-        if (pParams->txOptions & gMacTxOptionCSL_c)
-        {
-            /* Size of CSL IE and Header IE termination */
-            maxDataMsduLen -= sizeof(uint16_t) + 4 + sizeof(uint16_t);
         }
 #endif
     }

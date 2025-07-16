@@ -94,19 +94,6 @@
 /*** MAC LE Tables sizes and transactions **/
 /***************************************** */
 
-/*! The maximum number of entries in the CSL Synchronization table that specifies 
- *  how many devices can the MAC layer store synchronization details for 
- * (CSL listening period and timestamp of next channel sample). */
-#ifndef gMacCslTableSize_c
-#define gMacCslTableSize_c          (10)
-#endif
-
-/*! This constant defines the maximum number of CSL sequences that can be 
- *  present in the MAC layer when CSL is enabled. */
-#ifndef gMacCslMaxSequencesCnt_c
-#define gMacCslMaxSequencesCnt_c    (12)
-#endif
-
 /*! This constant defines the maximum number of entries in the RIT table 
  *  that specifies how many devices can the MAC layer store listening schedule
  *  for (timestamp of last received RIT Data Request command and listening schedule). */

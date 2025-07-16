@@ -963,22 +963,6 @@ resultType_t PLME_MAC_SapHandler( void* pMsg, instanceId_t macInstanceId );
 ********************************************************************************** */
 uint16_t Mac_GetMaxMsduLength( mcpsDataReq_t* pParams );
 
-/*! *********************************************************************************
-* \brief  This function will update the macCslTable with both device addresses (short/ext) 
-*
-* \param[in]  panId      The PAN Id used by the device
-* \param[in]  extAddr    The IEEE 64-bit address of the device
-* \param[in]  shortAddr  The short 16-bit address of the device
-*
-* \return gSuccess_c      - CSL Table was updated
-*         gInvalidIndex_c - No entry was found in the CSL table with the specified 
-*                           short or extended address
-*
-********************************************************************************** */
-#if gCslSupport_d
-resultType_t CSL_SyncAddress (uint16_t panId, uint64_t extAddr, uint16_t shortAddr);
-#endif
-
 #ifdef __cplusplus
     }
 #endif

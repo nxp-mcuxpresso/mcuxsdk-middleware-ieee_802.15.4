@@ -385,14 +385,7 @@ typedef enum
     gMPibTxControlPauseDuration_c               = 0x61,    /*!< Unused */
     gMPibTxTotalDuration_c                      = 0x62,    /*!< Unused */
 #endif
-#if gCslSupport_d
-    gMPibCslInterval_c                          = 0x62,
-    gMPibCslPeriod_c                            = 0x63,
-    gMPibCslMaxPeriod_c                         = 0x64,
-    gMPibCslFramePendingWait_c                  = 0x65,
-    gMPibCslChannel_c                           = 0x6f,
-#endif
-#if gCslSupport_d || gTschSupport_d
+#if gTschSupport_d
     gMPibEnhAckWaitDuration_c                   = 0x66,
 #endif
 #if gRitSupport_d
@@ -606,17 +599,6 @@ typedef struct securityLevelDescriptor_tag
     macSecurityLevel_t          allowedSecurityLevels[8];
 #endif
 }securityLevelDescriptor_t;
-
-#if gCslSupport_d
-typedef struct macCslEntry_tag
-{
-    uint64_t           nextSample;     /*!< Absolute time for the node channel sample. */
-    uint64_t           timestamp;      /*!< Absolute time for the last frame containing CSL IE. */
-    uint16_t           checksum[2];    /*!< Checksum of the addressing information of the node. */
-    uint16_t           period;         /*!< Interval between node channel samples. */
-    uint8_t            inUse;          /*!< Entry is currently active. */
-}macCslEntry_t;
-#endif
 
 #if gRitSupport_d
 /*! This type describes the LE RIT Information element. */

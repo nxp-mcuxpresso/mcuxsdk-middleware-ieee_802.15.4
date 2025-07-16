@@ -95,15 +95,9 @@ enum
 /*! \cond DOXY_SKIP_TAG */
 #define gMacVerMajor_c   5
 
-#ifdef gPHY_802_15_4g_d
-  #define gMacVerMinor_c   1
-  #define gMacVerPatch_c   0
-  #define gMacBuildNo_c    30
-#else
-  #define gMacVerMinor_c   0
-  #define gMacVerPatch_c   5
-  #define gMacBuildNo_c    2
-#endif
+#define gMacVerMinor_c   0
+#define gMacVerPatch_c   5
+#define gMacBuildNo_c    2
 
 #if (gMacUsePackedStructs_d)
 #define MAC_STRUCT PACKED_STRUCT
@@ -128,29 +122,17 @@ enum
 /*!
  *  First logical channel used by the MAC layer
  */
-#ifdef gPHY_802_15_4g_d
-#define gMacFirstLogicalChannel_c    (gLogicalChannel0_c)
-#else
 #define gMacFirstLogicalChannel_c    (gLogicalChannel11_c)
-#endif
 
 /*!
  *  Last logical channel used by the MAC layer
  */
-#ifdef gPHY_802_15_4g_d
-#define gMacLastLogicalChannel_c     (gLogicalChannel127_c)
-#else
 #define gMacLastLogicalChannel_c     (gLogicalChannel26_c)
-#endif
 
 /*!
  *  The defaul channel page used
  */
-#ifdef gPHY_802_15_4g_d
-#define gDefaultChannelPageId_c     (gChannelPageId9_c)
-#else                                   
 #define gDefaultChannelPageId_c     (gChannelPageId0_c)
-#endif
 
 
 /*! The states of the MAC layer  */

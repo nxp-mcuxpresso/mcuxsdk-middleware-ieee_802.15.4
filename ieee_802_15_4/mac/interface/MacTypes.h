@@ -199,19 +199,6 @@ typedef enum
 typedef uint8_t logicalChannelId_t;
 /*! Logical channel values */
 typedef enum {
-#ifdef gPHY_802_15_4g_d
-  gLogicalChannel0_c = 0,
-  gLogicalChannel1_c = 1,
-  gLogicalChannel2_c = 2,
-  gLogicalChannel3_c = 3,
-  gLogicalChannel4_c = 4,
-  gLogicalChannel5_c = 5,
-  gLogicalChannel6_c = 6,
-  gLogicalChannel7_c = 7,
-  gLogicalChannel8_c = 8,
-  gLogicalChannel9_c = 9,
-  gLogicalChannel10_c = 10,
-#endif //gPHY_802_15_4g_d  
   gLogicalChannel11_c = 11,
   gLogicalChannel12_c = 12,
   gLogicalChannel13_c = 13,
@@ -228,135 +215,14 @@ typedef enum {
   gLogicalChannel24_c = 24,
   gLogicalChannel25_c = 25,
   gLogicalChannel26_c = 26,
-#ifdef gPHY_802_15_4g_d  
-  gLogicalChannel27_c = 27,
-  gLogicalChannel28_c = 28,
-  gLogicalChannel29_c = 29,
-  gLogicalChannel30_c = 30,
-  gLogicalChannel31_c = 31,
-  gLogicalChannel32_c = 32,
-  gLogicalChannel33_c = 33,
-  gLogicalChannel34_c = 34,
-  gLogicalChannel35_c = 35,
-  gLogicalChannel36_c = 36,
-  gLogicalChannel37_c = 37,
-  gLogicalChannel38_c = 38,
-  gLogicalChannel39_c = 39,
-  gLogicalChannel40_c = 40,
-  gLogicalChannel41_c = 41,
-  gLogicalChannel42_c = 42,
-  gLogicalChannel43_c = 43,
-  gLogicalChannel44_c = 44,
-  gLogicalChannel45_c = 45,
-  gLogicalChannel46_c = 46,
-  gLogicalChannel47_c = 47,
-  gLogicalChannel48_c = 48,
-  gLogicalChannel49_c = 49,
-  gLogicalChannel50_c = 50,
-  gLogicalChannel51_c = 51,
-  gLogicalChannel52_c = 52,
-  gLogicalChannel53_c = 53,
-  gLogicalChannel54_c = 54,
-  gLogicalChannel55_c = 55,
-  gLogicalChannel56_c = 56,
-  gLogicalChannel57_c = 57,
-  gLogicalChannel58_c = 58,
-  gLogicalChannel59_c = 59,
-  gLogicalChannel60_c = 60,
-  gLogicalChannel61_c = 61,
-  gLogicalChannel62_c = 62,
-  gLogicalChannel63_c = 63,
-  gLogicalChannel64_c = 64,
-  gLogicalChannel65_c = 65,
-  gLogicalChannel66_c = 66,
-  gLogicalChannel67_c = 67,
-  gLogicalChannel68_c = 68,
-  gLogicalChannel69_c = 69,
-  gLogicalChannel70_c = 70,
-  gLogicalChannel71_c = 71,
-  gLogicalChannel72_c = 72,
-  gLogicalChannel73_c = 73,
-  gLogicalChannel74_c = 74,
-  gLogicalChannel75_c = 75,
-  gLogicalChannel76_c = 76,
-  gLogicalChannel77_c = 77,
-  gLogicalChannel78_c = 78,
-  gLogicalChannel79_c = 79,
-  gLogicalChannel80_c = 80,
-  gLogicalChannel81_c = 81,
-  gLogicalChannel82_c = 82,
-  gLogicalChannel83_c = 83,
-  gLogicalChannel84_c = 84,
-  gLogicalChannel85_c = 85,
-  gLogicalChannel86_c = 86,
-  gLogicalChannel87_c = 87,
-  gLogicalChannel88_c = 88,
-  gLogicalChannel89_c = 89,
-  gLogicalChannel90_c = 90,
-  gLogicalChannel91_c = 91,
-  gLogicalChannel92_c = 92,
-  gLogicalChannel93_c = 93,
-  gLogicalChannel94_c = 94,
-  gLogicalChannel95_c = 95,
-  gLogicalChannel96_c = 96,
-  gLogicalChannel97_c = 97,
-  gLogicalChannel98_c = 98,
-  gLogicalChannel99_c = 99,
-  gLogicalChannel100_c = 100,
-  gLogicalChannel101_c = 101,
-  gLogicalChannel102_c = 102,
-  gLogicalChannel103_c = 103,
-  gLogicalChannel104_c = 104,
-  gLogicalChannel105_c = 105,
-  gLogicalChannel106_c = 106,
-  gLogicalChannel107_c = 107,
-  gLogicalChannel108_c = 108,
-  gLogicalChannel109_c = 109,
-  gLogicalChannel110_c = 110,
-  gLogicalChannel111_c = 111,
-  gLogicalChannel112_c = 112,
-  gLogicalChannel113_c = 113,
-  gLogicalChannel114_c = 114,
-  gLogicalChannel115_c = 115,
-  gLogicalChannel116_c = 116,
-  gLogicalChannel117_c = 117,
-  gLogicalChannel118_c = 118,
-  gLogicalChannel119_c = 119,
-  gLogicalChannel120_c = 120,
-  gLogicalChannel121_c = 121,
-  gLogicalChannel122_c = 122,
-  gLogicalChannel123_c = 123,
-  gLogicalChannel124_c = 124,
-  gLogicalChannel125_c = 125,
-  gLogicalChannel126_c = 126,
-  gLogicalChannel127_c = 127,
-  gLogicalChannel128_c = 128,
-#endif /*gPHY_802_15_4g_d  */
 } logicalChannelId_tag;
 
-#ifdef gPHY_802_15_4g_d
-typedef uint32_t channelMask_t[5];
-#else
 typedef uint32_t channelMask_t;
-#endif /*gPHY_802_15_4g_d*/
 
 /*! \brief These values can be also be used for the other 3 bytes of the channel masks
 For instance {0x00, 0x00, gChannelMask00_c, 0x00} represents gChannelMask32_c */
 typedef enum
 {
-#ifdef gPHY_802_15_4g_d
-    gChannelMask00_c             = 0x00000001,  /*!< Channel 0 bit-mask */
-    gChannelMask01_c             = 0x00000002,  /*!< Channel 1 bit-mask */
-    gChannelMask02_c             = 0x00000004,  /*!< Channel 2 bit-mask */
-    gChannelMask03_c             = 0x00000008,  /*!< Channel 3 bit-mask */
-    gChannelMask04_c             = 0x00000010,  /*!< Channel 4 bit-mask */
-    gChannelMask05_c             = 0x00000020,  /*!< Channel 5 bit-mask */
-    gChannelMask06_c             = 0x00000040,  /*!< Channel 6 bit-mask */
-    gChannelMask07_c             = 0x00000080,  /*!< Channel 7 bit-mask */
-    gChannelMask08_c             = 0x00000100,  /*!< Channel 8 bit-mask */
-    gChannelMask09_c             = 0x00000200,  /*!< Channel 9 bit-mask */
-    gChannelMask10_c             = 0x00000400,  /*!< Channel 10 bit-mask */
-#endif   
     gChannelMask11_c             = 0x00000800,  /*!< Channel 11 bit-mask */
     gChannelMask12_c             = 0x00001000,  /*!< Channel 12 bit-mask */
     gChannelMask13_c             = 0x00002000,  /*!< Channel 13 bit-mask */
@@ -373,13 +239,6 @@ typedef enum
     gChannelMask24_c             = 0x01000000,  /*!< Channel 24 bit-mask */
     gChannelMask25_c             = 0x02000000,  /*!< Channel 25 bit-mask */
     gChannelMask26_c             = 0x04000000,  /*!< Channel 26 bit-mask */
-#ifdef gPHY_802_15_4g_d
-    gChannelMask27_c             = 0x08000000,  /*!< Channel 27 bit-mask */
-    gChannelMask28_c             = 0x10000000,  /*!< Channel 28 bit-mask */
-    gChannelMask29_c             = 0x20000000,  /*!< Channel 29 bit-mask */
-    gChannelMask30_c             = 0x40000000,  /*!< Channel 30 bit-mask */
-    gChannelMask31_c             = 0x80000000,  /*!< Channel 31 bit-mask */
-#endif
 }channelMask_tag;
 
 /*! \brief The MAC Channel Page Ids */
@@ -396,9 +255,6 @@ typedef enum{
                                                        - Channel 0 is in 868 MHz band using O-QPSK
                                                        - Channels 1 to 10 are in 915 MHz band using O-QPSK
                                                        - Channels 11 to 26 are Reserved*/
-#ifdef gPHY_802_15_4g_d    
-    gChannelPageId9_c               = 0x09,        /*!< 802.15.4g standard-defined SUN Phy Modes */
-#endif
 } channelPageId_t;
 
 #ifdef gMAC2011_d
@@ -544,12 +400,6 @@ typedef enum
     gMPibRitDataWaitDuration_c                  = 0x68,
     gMPibRitTxWaitDuration_c                    = 0x69,
     gMPibRitIe_c                                = 0x6A,
-#endif
-#ifdef gPHY_802_15_4g_d
-    gMPibPhyMode_c                              = 0x6B,
-    gMPibPhyCCADuration_c                       = 0x6C,
-    gMPibPhyFSKScramblePSDU_c                   = 0x6D,
-    gMPibPhyFrequencyBand_c                     = 0x6E,
 #endif
     
     /* MAC2006 Security Related PIB Attributes */

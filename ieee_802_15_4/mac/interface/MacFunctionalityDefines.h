@@ -102,7 +102,7 @@
 
 /*! \cond DOXY_SKIP_TAG */
 #if (gMacFeatureSet_d == gMacFeatureSet_06M4_d) || (gMacFeatureSet_d == gMacFeatureSet_06M0_d)
-  #define gMacInternalDataSize_c      426 /* [bytes] */
+  #define gMacInternalDataSize_c      320 /* [bytes] */
 
 #elif (gMacFeatureSet_d == gMacFeatureSet_11M4_d) || (gMacFeatureSet_d == gMacFeatureSet_11M0_d)
   #define gMacInternalDataSize_c      336 /* [bytes] */

@@ -103,16 +103,13 @@
 /*! \cond DOXY_SKIP_TAG */
 #if (gMacFeatureSet_d == gMacFeatureSet_06M4_d) || (gMacFeatureSet_d == gMacFeatureSet_06M0_d)
   #define gMacInternalDataSize_c      426 /* [bytes] */
-  #define gMacSecurityEnable_d        (1)
 
 #elif (gMacFeatureSet_d == gMacFeatureSet_11M4_d) || (gMacFeatureSet_d == gMacFeatureSet_11M0_d)
   #define gMacInternalDataSize_c      336 /* [bytes] */
-  #define gMacSecurityEnable_d        (1)
   #define gMAC2011_d                  (1)
 
 #elif (gMacFeatureSet_d == gMacFeatureSet_06RFD_M4_d) || (gMacFeatureSet_d == gMacFeatureSet_06RFD_M0_d)
   #define gMacInternalDataSize_c      360 /* [bytes] */
-  #define gMacSecurityEnable_d        (1)
   #define gMacUseAssociation_d        (1)
   #define gMacUseOrphanScan_d         (0)
   #define gMacUsePromiscuous_d        (0)
@@ -122,12 +119,10 @@
 
 #elif (gMacFeatureSet_d == gMacFeatureSet_ZPM4_d) || (gMacFeatureSet_d == gMacFeatureSet_ZPM0_d)
   #define gMacInternalDataSize_c      376 /* [bytes] */
-  #define gMacSecurityEnable_d        (0)
   #define gMacUsePackedStructs_d      (1)
 
 #elif (gMacFeatureSet_d == gMacFeatureSet_THR_M4_d) || (gMacFeatureSet_d == gMacFeatureSet_THR_M0_d)
   #define gMacInternalDataSize_c      344 /* [bytes] */
-  #define gMacSecurityEnable_d        (1)
   #define gMacUseAssociation_d        (0)
   #define gMacUseOrphanScan_d         (0)
   #define gMacUsePromiscuous_d        (0)
@@ -135,7 +130,6 @@
 
 #elif (gMacFeatureSet_d == gMacFeatureSet_THR_CSL_d)
   #define gMacInternalDataSize_c      400 /* [bytes] */
-  #define gMacSecurityEnable_d        (1)
   #define gMacUseAssociation_d        (0)
   #define gMacUseOrphanScan_d         (0)
   #define gMacUsePromiscuous_d        (0)
@@ -144,7 +138,6 @@
 
 #elif (gMacFeatureSet_d == gMacFeatureSet_THRRFD_M4_d) || (gMacFeatureSet_d == gMacFeatureSet_THRRFD_M0_d)
   #define gMacInternalDataSize_c      264 /* [bytes] */
-  #define gMacSecurityEnable_d        (1)
   #define gMacUseAssociation_d        (0)
   #define gMacUseOrphanScan_d         (0)
   #define gMacUsePromiscuous_d        (0)
@@ -154,37 +147,29 @@
 
 #elif (gMacFeatureSet_d == gMacFeatureSet_06BEM4_d) || (gMacFeatureSet_d == gMacFeatureSet_06BEM0_d)
   #define gMacInternalDataSize_c      560 /* [bytes] */
-  #define gMacSecurityEnable_d        (1)
 
 #elif (gMacFeatureSet_d == gMacFeatureSet_06BEGTSM4_d) || (gMacFeatureSet_d == gMacFeatureSet_06BEGTSM0_d)
   #define gMacInternalDataSize_c      600 /* [bytes] */
-  #define gMacSecurityEnable_d        (1)
 
 #elif (gMacFeatureSet_d == gMacFeatureSet_06gM0_d)
   #define gMacInternalDataSize_c      464 /* [bytes] */
-  #define gMacSecurityEnable_d        (1)
   
 #elif (gMacFeatureSet_d == gMacFeatureSet_06eLEgM0_d)
   #define gMacInternalDataSize_c      568 /* [bytes] */
-  #define gMacSecurityEnable_d        (1)
 
 #elif (gMacFeatureSet_d == gMacFeatureSet_06eTSCHgM0_d)
   #define gMacInternalDataSize_c      552 /* [bytes] */
-  #define gMacSecurityEnable_d        (1)
 
 #elif (gMacFeatureSet_d == gMacFeatureSet_11gM0_d)
   #define gMacInternalDataSize_c      448 /* [bytes] */
-  #define gMacSecurityEnable_d        (1)
   #define gMAC2011_d                  (1)
 
 #elif (gMacFeatureSet_d == gMacFeatureSet_11eLEgM0_d)
   #define gMacInternalDataSize_c      560 /* [bytes] */
-  #define gMacSecurityEnable_d        (1)
   #define gMAC2011_d                  (1)
 
 #elif (gMacFeatureSet_d == gMacFeatureSet_11eTSCHgM0_d)
   #define gMacInternalDataSize_c      544 /* [bytes] */
-  #define gMacSecurityEnable_d        (1)
   #define gMAC2011_d                  (1)
 
 #else
@@ -192,11 +177,6 @@
 
 #endif
 /*! \endcond */
-
-/*! MAC encryption/decryption support */
-#ifndef gMacSecurityEnable_d
-#define gMacSecurityEnable_d        (0)
-#endif
 
 /*! PACK all data structures from MAC interface */
 #ifndef gMacUsePackedStructs_d

@@ -83,55 +83,6 @@ uint32_t gMacData[gMacInstancesCnt_c][(gMacInternalDataSize_c + 3)/sizeof(uint32
 /* MAC internal data size. Used for sanity check */
 extern const uint16_t gMacLocalDataSize;
 
-#if gMacSecurityEnable_d
-
-const bool_t gMacWipeSecurityTables = TRUE;
-
-/* Allocate memory for the MAC KeyTable and sub-tables */
-#if gNumKeyTableEntries_c > 0
-    keyDescriptor_t            gPIBKeyTable[gMacInstancesCnt_c][gNumKeyTableEntries_c];
-    uint8_t                    gNumKeyTableEntries = gNumKeyTableEntries_c;
-    
-    #if gNumKeyIdLookupListEntries_c > 0
-    keyIdLookupDescriptor_t    gPIBKeyIdLookupDescriptorTable[gMacInstancesCnt_c][gNumKeyIdLookupListEntries_c * gNumKeyTableEntries_c];
-    uint8_t                    gNumKeyIdLookupListEntries = gNumKeyIdLookupListEntries_c;
-    #endif
-
-#ifndef gMAC2011_d    
-    #if gNumKeyDeviceListEntries_c > 0
-    keyDeviceDescriptor_t      gPIBKeyDeviceDescriptorTable[gMacInstancesCnt_c][gNumKeyDeviceListEntries_c * gNumKeyTableEntries_c];
-    uint8_t                    gNumKeyDeviceListEntries = gNumKeyDeviceListEntries_c;
-    #endif
-#else /* gMAC2011_d */    
-    #if gNumDeviceDescriptorHandleListEntries_c > 0
-    uint8_t                    gPIBDeviceDescriptorHandleTable[gMacInstancesCnt_c][gNumDeviceDescriptorHandleListEntries_c * gNumKeyTableEntries_c];
-    uint8_t                    gNumDeviceDescriptorHandleListEntries = gNumDeviceDescriptorHandleListEntries_c;
-    #endif
-#endif /* gMAC2011_d */
-    
-    #if gNumKeyUsageListEntries_c > 0
-    keyUsageDescriptor_t       gPIBKeyUsageDescriptorTable[gMacInstancesCnt_c][gNumKeyUsageListEntries_c * gNumKeyTableEntries_c];
-    uint8_t                    gNumKeyUsageListEntries = gNumKeyUsageListEntries_c;
-    #endif
-#endif
-
-/* Allocate memory for the MAC DeviceTable */
-#if gNumDeviceTableEntries_c > 0
-    deviceAddrDescriptor_t     gPIBDeviceAddrTable[gMacInstancesCnt_c][gNumDeviceAddrTableEntries_c];
-    uint8_t                    gNumDeviceAddrTableEntries = gNumDeviceAddrTableEntries_c;
-
-    deviceDescriptor_t         gPIBDeviceTable[gMacInstancesCnt_c][gNumDeviceTableEntries_c];
-    uint8_t                    gNumDeviceTableEntries = gNumDeviceTableEntries_c;
-#endif
-
-/* Allocate memory for the MAC SecurityLevelTable */
-#if gNumSecurityLevelTableEntries_c > 0
-    securityLevelDescriptor_t  gPIBSecurityLevelTable[gMacInstancesCnt_c][gNumSecurityLevelTableEntries_c];
-    uint8_t                    gNumSecurityLevelTableEntries = gNumSecurityLevelTableEntries_c;
-#endif
-
-#endif /*gMacSecurityEnable_d*/
-
 /*! Table used to determine the addressing field length based on addressing mode */
 const uint8_t gAddrModeFieldLengthTable[4] =
 {
@@ -139,15 +90,6 @@ const uint8_t gAddrModeFieldLengthTable[4] =
     0,  /*!< Reserved */
     4,  /*!< Address field contains a 16-bit short address + 16-bit PAN Id */
     10  /*!< Address field contains a 64-bit short address + 16-bit PAn Id */
-};
-
-/* Table used to determine the length of the ASH given the KeyIdMode */
-const uint8_t gKeyIdModeToAshLen[4] = 
-{
-    1 + 4,              /*!< Security Control[1] + Frame Counter[4] */
-    1 + 4 + 1,          /*!< Security Control[1] + Frame Counter[4] + KeyIndex[1] */
-    1 + 4 + 2 + 2 + 1,  /*!< Security Control[1] + Frame Counter[4] + macPanId[2] + macShortAddress[2] + KeyIndex[1] */
-    1 + 4 + 8 + 1,      /*!< Security Control[1] + Frame Counter[4] + macExtendedAddress[8] + KeyIndex[1] */
 };
 
 /************************************************************************************
@@ -233,11 +175,7 @@ uint16_t Mac_GetMaxMsduLength (mcpsDataReq_t* pParams)
     
     /* Verify input parameters */
     if ((pParams->dstAddrMode > gAddrModeExtendedAddress_c) ||
-        (pParams->srcAddrMode > gAddrModeExtendedAddress_c)
-#if gMacSecurityEnable_d
-        || ((gMacSecurityNone_c != pParams->securityLevel) && (pParams->keyIdMode > gKeyIdMode3_c))
-#endif
-        )
+        (pParams->srcAddrMode > gAddrModeExtendedAddress_c))
     {
         /* Return 0, some input parameters are invalid */
         maxDataMsduLen = 0;
@@ -258,22 +196,6 @@ uint16_t Mac_GetMaxMsduLength (mcpsDataReq_t* pParams)
         {
             maxDataMsduLen += 2; /* The source PanId is not present */
         }
-        
-        /* Determine the ASH Length and the MAC Authentication Code Length if necessary */
-#if gMacSecurityEnable_d
-        if (gMacSecurityNone_c != pParams->securityLevel)
-        {
-            /* ASH length */
-            maxDataMsduLen -= gKeyIdModeToAshLen[pParams->keyIdMode];
-            
-            /* According to Table 95 in the standard Length M is always equal to (2^(x+1)) if x!=0 where x is
-            the number represented by the last two bits of the SecurityLevel Parameter */
-            if ((pParams->securityLevel & 0x03) != 0)
-            {
-                maxDataMsduLen -= (2 << (pParams->securityLevel & 0x03));
-            }
-        }
-#endif
     }
 
     return maxDataMsduLen;

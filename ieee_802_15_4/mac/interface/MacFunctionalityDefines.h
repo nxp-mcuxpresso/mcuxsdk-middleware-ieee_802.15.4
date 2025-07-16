@@ -179,7 +179,6 @@
 #elif (gMacFeatureSet_d == gMacFeatureSet_06eTSCHgM0_d)
   #define gMacInternalDataSize_c      552 /* [bytes] */
   #define gMacSecurityEnable_d        (1)
-  #define gTschSupport_d              (1)
 
 #elif (gMacFeatureSet_d == gMacFeatureSet_11gM0_d)
   #define gMacInternalDataSize_c      448 /* [bytes] */
@@ -196,7 +195,6 @@
   #define gMacInternalDataSize_c      544 /* [bytes] */
   #define gMacSecurityEnable_d        (1)
   #define gMAC2011_d                  (1)
-  #define gTschSupport_d              (1)
 
 #else
   #error Unsupported MAC Feature Set
@@ -217,11 +215,6 @@
 /*! Receiver Initiated Transmission support (sub-GHz only) */
 #ifndef gRitSupport_d
 #define gRitSupport_d               (0)
-#endif
-
-/*! Timeslotted Channel Hopping support (sub-GHz only) */
-#ifndef gTschSupport_d
-#define gTschSupport_d              (0)
 #endif
 
 /*! MAC encryption/decryption support */

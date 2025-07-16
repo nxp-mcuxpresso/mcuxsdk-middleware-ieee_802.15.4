@@ -332,20 +332,6 @@ typedef enum
     gMPibMac2003Compatibility_c                 = 0x2F,    /*!< Maintain OTA compatibillity with 802.15.4/2003 */
     /* In MAC2011 this is a standard PIB, in MAC2006 it is a costant. It must be modifiable for testing. */
     gMPibExtendedAddress_c                      = 0x30,    /*!< The device's extended address (64-bit) */
-    
-#if gTschSupport_d
-    gMPibDisconnectTime_c                       = 0x31,
-    gMPibJoinPriority_c                         = 0x32,
-    gMPibASN_c                                  = 0x33,    /*!< Absolute Slot Number*/
-    gMPibNoHLBuffers_c                          = 0x34,
-    gMPibEBSN_c                                 = 0x35,    /*!< Enhanced Beacon Sequence Number*/
-    gMPibTschEnabled_c                          = 0x36,
-    gMPibEBIEList_c                             = 0x37,
-    gMPibTimeslotTemplate_c                     = 0x38,
-    gMPibHoppingSequenceList_c                  = 0x39,
-    gMPibHoppingSequenceLength_c                = 0x3A,
-    gMPibTschRole_c                             = 0x3B,
-#endif
 
     /* Standard MAC PIBs */
     gMPibAckWaitDuration_c                      = 0x40,    /*!< Number of symbols to wait for an ACK (ReadOnly) */
@@ -384,9 +370,6 @@ typedef enum
     gMPibTxControlActiveDuration_c              = 0x60,    /*!< Unused */
     gMPibTxControlPauseDuration_c               = 0x61,    /*!< Unused */
     gMPibTxTotalDuration_c                      = 0x62,    /*!< Unused */
-#endif
-#if gTschSupport_d
-    gMPibEnhAckWaitDuration_c                   = 0x66,
 #endif
 #if gRitSupport_d
     gMPibRitPeriod_c                            = 0x67,

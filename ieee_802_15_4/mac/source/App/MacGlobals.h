@@ -107,49 +107,6 @@
 #define gMacRitMaxSequencesCnt_c    (12)
 #endif
 
-
-/****************************/
-/*** MAC TSCH Tables sizes **/
-/****************************/
-
-/*! This constant defines the maximum number of channels that the MAC layer 
- *  can store to hop on when TSCH is enabled. */
-#ifndef gMacHoppingSequenceTableEntries_c
-#define gMacHoppingSequenceTableEntries_c   (128)
-#endif
-
-/*! This constant defines the maximum number of TSCH slotframes that the MAC layer can store. */
-#ifndef gMacSlotframeTableEntries_c
-#define gMacSlotframeTableEntries_c         (2)
-#endif
-
-/*! This constant defines the maximum number of TSCH links that the MAC layer can store. */
-#ifndef gMacLinkTableEntries_c
-#define gMacLinkTableEntries_c              (10)
-#endif
-
-/*! This constant defines the maximum number of TSCH time source neighbors 
- *  that the MAC layer can store when TSCH is enabled. These are configured 
- *  through the MLME-KEEP-ALIVE.Request primitive, and they must have the 
- *  Rx Link with timekeeping option set for the same node address. */
-#ifndef gMacTschNeighborTableEntries_c
-#define gMacTschNeighborTableEntries_c      (10)
-#endif
-
-/*! This constant defines the maximum number of PAN Coordinators that 
- *  the MAC layer can store during the TSCH Passive Scan procedure. 
- *  This information is required for TSCH service enablement following the scan procedure. */
-#ifndef gMacTschMaxPanCoordSync_c
-#define gMacTschMaxPanCoordSync_c           (1)       
-#endif
-
-/*! This constant defines the maximum number of Data Tx sequences 
- *  that can be present in the MAC layer when TSCH is enabled.*/
-#ifndef gMacTschMaxTransactions_c
-#define gMacTschMaxTransactions_c           (10)       
-#endif
-
-
 /************************************************************************************
 *************************************************************************************
 * Public memory declarations

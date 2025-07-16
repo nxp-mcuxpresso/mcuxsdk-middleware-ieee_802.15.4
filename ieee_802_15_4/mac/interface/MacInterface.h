@@ -519,12 +519,6 @@ typedef MAC_STRUCT mlmeBeaconNotifyInd_tag
     uint8_t*                pAddrList;      /*!< The list of addresses of the devices for which the beacon source has data */
     panDescriptor_t*        pPanDescriptor; /*!< The PANDescriptor for the received beacon. */
     uint8_t*                pSdu;           /*!< The set of octets comprising the beacon payload to be transferred from the MAC sublayer entity to the next higher layer. */
-#if gTschSupport_d
-    uint8_t                 ebsn;
-    beaconType_t            beaconType;
-#endif
-    // void*                   pBufferRoot; /*!< Pointer to the start of the message received by air. 
-    //                                           The upper layer must free this buffer before freeing the indication message. */
 } mlmeBeaconNotifyInd_t;
 
 /*!  The MLME-GTS.request primitive enables a device to send a request to the PAN coordinator to allocate a new GTS or to deallocate an existing GTS. 

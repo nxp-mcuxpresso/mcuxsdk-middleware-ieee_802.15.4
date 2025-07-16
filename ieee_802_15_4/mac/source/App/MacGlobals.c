@@ -85,30 +85,6 @@ const uint8_t gMacMaxRitTransactions = gMacRitMaxSequencesCnt_c;
     #endif
 #endif
 
-#if gTschSupport_d    
-/* MAC TSCH tables */
-#if gMacHoppingSequenceTableEntries_c > 0
-    uint8_t gMacHoppingSequenceTable[gMacHoppingSequenceTableEntries_c];
-    const uint16_t gMacHoppingSequenceTableSize = gMacHoppingSequenceTableEntries_c;
-    #endif
-#if gMacSlotframeTableEntries_c > 0
-    macSlotframe_t gMacSlotframeTable[gMacSlotframeTableEntries_c];
-    const uint8_t gMacSlotframeTableSize = gMacSlotframeTableEntries_c;
-    #endif    
-#if gMacLinkTableEntries_c > 0
-    macLink_t gMacLinkTable[gMacLinkTableEntries_c];
-    const uint8_t gMacLinkTableSize = gMacLinkTableEntries_c;
-    #endif
-#if gMacTschNeighborTableEntries_c > 0
-    macTschNeighbor_t gMacTschNeighborTable[gMacTschNeighborTableEntries_c];
-    const uint8_t gMacTschNeighborTableSize = gMacTschNeighborTableEntries_c;
-    #endif
-/* MAC TSCH PAN join dynamically allocated buffer size */    
-const uint8_t gMacTschMaxPanCoordSync = gMacTschMaxPanCoordSync_c;    
-/* MAC TSCH max sequences in Tx queue */
-const uint8_t gMacTschMaxTransactions = gMacTschMaxTransactions_c;
-#endif
-
 /* The maximum number MAC instances */
 const uint8_t gMacNoOfInstances = gMacInstancesCnt_c;
 

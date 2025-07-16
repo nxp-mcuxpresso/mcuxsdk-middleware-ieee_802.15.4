@@ -174,9 +174,6 @@ typedef MAC_STRUCT mcpsDataCnf_tag
     uint8_t                 msduHandle; /*!< The handle associated with the MSDU being confirmed. */
     resultType_t            status;
     uint32_t                timestamp;  /*!< The time (in symbols), at which the data were transmitted. This is a 24-bit value. */
-#if gPhyEfpEnabled
-    bool_t                  efpState;   /*!< The state of the Frame Pending bit */
-#endif
 } mcpsDataCnf_t;
 
 /*!  The MCPS-DATA.indication primitive indicates the transfer of data SPDU (MSDU) from the MAC sublayer to the local SSCS entity. */
@@ -191,9 +188,6 @@ typedef MAC_STRUCT mcpsDataInd_tag
     uint8_t                 msduLength;      /*!< The number of octets contained in the MSDU being indicated by the MAC sublayer entity. */
     uint8_t                 mpduLinkQuality; /*!< The LQI value measured during the reception of the MPDU. Lower values represent lower LQI */
     uint8_t                 dsn;             /*!< Data Sequence Number of the packet */
-#if gPhyEfpEnabled
-    bool_t                  efpState;        /*!< The state of the Frame Pending bit */
-#endif
     uint32_t                timestamp;       /*!< The time, in symbols, at which the data were received. This is a 24-bit value */
     macSecurityLevel_t      securityLevel; /*!< The security level to be used */
     keyIdModeType_t         keyIdMode; /*!< The mode used to identify the key to be used. This parameter is ignored if the SecurityLevel parameter is set to 0x00. */

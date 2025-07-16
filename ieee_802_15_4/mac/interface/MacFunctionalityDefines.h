@@ -202,11 +202,6 @@
 #define gMacSecurityEnable_d        (0)
 #endif
 
-/*! Channel Page support */
-#ifndef gMacUseChannelPage_d
-#define gMacUseChannelPage_d        (0)
-#endif
-
 /*! PACK all data structures from MAC interface */
 #ifndef gMacUsePackedStructs_d
 #define gMacUsePackedStructs_d      (0)

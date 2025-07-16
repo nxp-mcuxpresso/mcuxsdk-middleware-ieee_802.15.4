@@ -177,9 +177,6 @@ typedef MAC_STRUCT mcpsDataCnf_tag
 #if gPhyEfpEnabled
     bool_t                  efpState;   /*!< The state of the Frame Pending bit */
 #endif
-#if gZPRO_d
-    uint8_t                 retriesLeft; /*!< The number of MAC frame retries left */
-#endif
 } mcpsDataCnf_t;
 
 /*!  The MCPS-DATA.indication primitive indicates the transfer of data SPDU (MSDU) from the MAC sublayer to the local SSCS entity. */

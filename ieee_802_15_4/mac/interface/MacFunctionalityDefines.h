@@ -123,7 +123,6 @@
 #elif (gMacFeatureSet_d == gMacFeatureSet_ZPM4_d) || (gMacFeatureSet_d == gMacFeatureSet_ZPM0_d)
   #define gMacInternalDataSize_c      376 /* [bytes] */
   #define gMacSecurityEnable_d        (0)
-  #define gZPRO_d                     (1)
   #define gMacUsePackedStructs_d      (1)
 
 #elif (gMacFeatureSet_d == gMacFeatureSet_THR_M4_d) || (gMacFeatureSet_d == gMacFeatureSet_THR_M0_d)
@@ -240,11 +239,6 @@
 /*! MAC Coordinator functionality */
 #ifndef gMacCoordinatorCapability_d
 #define gMacCoordinatorCapability_d (1)
-#endif
-
-/*! Optimize MAC for ZigBee stack */
-#ifndef gZPRO_d
-#define gZPRO_d                     (0)
 #endif
 
 /*! Optimize MAC for Thread stack */

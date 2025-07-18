@@ -1,5 +1,5 @@
 /*! *********************************************************************************
-* Copyright 2021-2024 NXP
+* Copyright 2021-2025 NXP
 * All rights reserved.
 *
 * \file
@@ -61,9 +61,6 @@ typedef enum {
     /* To be completed */
 } macCmdId_t;
 
-#define MAC_FRAME_TYPE_ACK          0x2
-#define MAC_FRAME_TYPE_CMD          0x3
-
 #define HDR_IE_ID_HT1               0x7e
 #define HDR_IE_ID_HT2               0x7f
 
@@ -72,8 +69,23 @@ typedef enum {
 #define FCF_SIZE sizeof(uint16_t)       /* Frame control: 2 bytes */
 #define SN_SIZE sizeof(uint8_t)         /* Sequence Number: 1 byte */
 #define PAN_SIZE sizeof(uint16_t)       /* PAN ID: 2 bytes */
+#define FCS_SIZE sizeof(uint16_t)       /* Frame Check Sequence: 2 bytes */
 
+#define FCF_SEC (1 << 3)    /* security enabled */
+#define FCF_FP (1 << 4)     /* frame pending */
+#define FCF_AR (1 << 5)     /* acknowledgment request */
+#define FCF_PC (1 << 6)     /* PAN ID compression */
+#define FCF_SNS (1 << 8)    /* sequence number suppression */
+#define FCF_IE (1 << 9)     /* IE present */
+
+#define FCF_FT_BEACON 0
+#define FCF_FT_DATA 1
+#define FCF_FT_ACK 2
+#define FCF_FT_CMD 3
 #define FCF_FT_GET(x) ((x) & phyFcfFrameTypeMask)
+
+#define MAC_FRAME_TYPE_ACK FCF_FT_ACK
+#define MAC_FRAME_TYPE_CMD FCF_FT_CMD
 
 #define FCF_VER_MAX 2
 #define FCF_VER_GET(x) (((x) >> 12) & 0x3)
@@ -81,10 +93,14 @@ typedef enum {
 #define FCF_DAP (1 << 11)       /* destination address is present */
 #define FCF_IS_DAS(x) ((((x) >> 10) & 0x3) == 2)    /* dst address is short */
 #define FCF_IS_DAE(x) ((((x) >> 10) & 0x3) == 3)    /* dst addr is extended */
+#define FCF_DAS (2 << 10)                           /* set short dst address */
+#define FCF_DAE (3 << 10)                           /* set extended dst addr */
 
 #define FCF_SAP (1 << 15)       /* source address is present */
+#define FCF_IS_SAS(x) ((((x) >> 14) & 0x3) == 2)    /* src address is short */
 #define FCF_IS_SAE(x) ((((x) >> 14) & 0x3) == 3)    /* src addr is extended */
-#define FCF_IS_SAS(x) ((((x) >> 14) & 0x3) == 2)    /* src addr is short */
+#define FCF_SAS (2 << 14)                           /* set short src address */
+#define FCF_SAE (3 << 14)                           /* set extended src addr */
 
 #define INV_ASH_KEY_ID 0    /* IEEE Std 802.15.4, security chapter: key indices are all different from 0x0 */
 #define INV_ASH_KEY_ID_POS ((uint8_t)(-1))

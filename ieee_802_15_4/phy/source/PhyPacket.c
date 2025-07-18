@@ -1,5 +1,5 @@
 /*! *********************************************************************************
-* Copyright 2022-2024 NXP
+* Copyright 2022-2025 NXP
 * All rights reserved.
 *
 * \file
@@ -83,7 +83,8 @@ uint8_t PhyPacket_GetHdrLength(const uint8_t *packet)
         return 0;
     }
 
-    if (fcf->snSupression == 0)
+    if ((fcf->frameVersion < FCF_VER_MAX) ||
+        ((fcf->frameVersion == FCF_VER_MAX) && (fcf->snSupression == 0)))
     {
         length += sizeof(uint8_t);
     }
@@ -349,7 +350,7 @@ uint8_t PhyPacket_GetMacHdrLength(uint8_t *packet, uint8_t packetLength)
     packetLength -= (gPhyFCSSize_c + mic_len);
     packet += mhrLength;
 
-    if (fcf->iePresent)
+    if ((fcf->frameVersion == FCF_VER_MAX) && fcf->iePresent)
     {
         HdrIe_t *ie;
 
@@ -366,9 +367,10 @@ uint8_t PhyPacket_GetMacHdrLength(uint8_t *packet, uint8_t packetLength)
         }
     }
 
-    if ((fcf->frameVersion != 2) && (fcf->frameType == MAC_FRAME_TYPE_CMD))
+    /* beacon version 0/1 encryption is not supported.
+       For command frame vesion 0/1, command id is not encrypted. */
+    if ((fcf->frameVersion < FCF_VER_MAX) && (fcf->frameType == MAC_FRAME_TYPE_CMD))
     {
-        /* beacon encryption not supported */
         mhrLength++;
     }
 

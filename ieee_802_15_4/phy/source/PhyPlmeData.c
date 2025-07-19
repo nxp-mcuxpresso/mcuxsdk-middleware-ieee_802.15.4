@@ -393,6 +393,15 @@ phyStatus_t PhyPdDataRequest(Phy_PhyLocalStruct_t *ctx)
     PhyUpdateCoexSwMetricsTx();
 #endif
 
+    if (PhyPacket_GetMacCmdId(pTxPacket->pPsdu, pTxPacket->psduLength) == phyMacCmdDataReq)
+    {
+        ctx->ps = PS_DATA_REQ;
+    }
+    else
+    {
+        ctx->ps = PS_NONE;
+    }
+
     /* Load data into Packet Buffer byte by byte to avoid memory access issues.
        psduLength should include the 2 FCS bytes (gPhyFCSSize_c) */
     PHY_MemCpyVerify(TX_PB, &pTxPacket->psduLength, sizeof(pTxPacket->psduLength));
@@ -1117,6 +1126,7 @@ phyStatus_t PhyPlmeSetPIBRequest(phyPibId_t pibId, uint64_t pibValue, instanceId
             OSA_InterruptDisable();
 
             PhyAbort_base(ctx);
+            ctx->ps = PS_NONE;
 
             result = PhyPlmeSetCurrentChannelRequest((uint8_t) pibValue, instanceId);
 
@@ -1172,7 +1182,8 @@ phyStatus_t PhyPlmeSetPIBRequest(phyPibId_t pibId, uint64_t pibValue, instanceId
             PhyPlmeSetRxOnWhenIdle( (bool_t)pibValue, instanceId );
         }
         break;
-    case gPhyPibFrameWaitTime_c:
+    case gPhyPibRxTimePoll_c:
+        ctx->rx_time_poll = (uint32_t)pibValue;
         break;
     case gPhyPibDeferTxIfRxBusy_c:
         break;
@@ -1282,8 +1293,6 @@ phyStatus_t PhyPlmeGetPIBRequest(phyPibId_t pibId, uint8_t *pibValue, instanceId
         {
             value = !!(ctx->flags & gPhyFlagRxOnWhenIdle_c);
         }
-        break;
-    case gPhyPibFrameWaitTime_c:
         break;
     case gPhyPibDeferTxIfRxBusy_c:
         break;

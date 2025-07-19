@@ -1461,6 +1461,10 @@ void PHY_InterruptHandler_base(
     {
         Radio_Phy_Notify(ctx);
     }
+    else if (ctx)
+    {
+        ctx->ps = PS_NONE;
+    }
 
     OSA_InterruptEnable();
 }

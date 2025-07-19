@@ -88,7 +88,7 @@
 ********************************************************************************** */
 static void Phy24Task(Phy_PhyLocalStruct_t *ctx);
 
-static phyStatus_t Phy_Handle_RxReq(Phy_PhyLocalStruct_t *ctx, macToPlmeMessage_t *pMsg);
+static phyStatus_t Phy_Handle_RxReq(Phy_PhyLocalStruct_t *ctx, macToPlmeMessage_t *pMsg, uint32_t dt);
 
 static phyStatus_t Phy_Handle_PdDataReq(Phy_PhyLocalStruct_t *ctx, macToPdDataMessage_t *pMsg);
 
@@ -355,6 +355,27 @@ static void Phy24Task(Phy_PhyLocalStruct_t *ctx)
 
     OSA_InterruptDisable();
 
+    if (ctx->ps == PS_RX)
+    {
+        uint32_t t = PhyTime_ReadClock();
+        uint32_t dt = (ctx->rx_poll_to - t) & gPhyTimeMask_c;
+
+        if ((PhyPpGetState_base(ctx) == gIdle_c) &&
+            t1_less_t2(t, ctx->rx_poll_to) && (dt > PHY_IMM_ACK_LENGTH))
+        {
+            ctx->flags &= ~gPhyFlagIdleRx_c;
+
+            Phy_Handle_RxReq(ctx, NULL, dt);
+
+            OSA_InterruptEnable();
+            return;
+        }
+        else
+        {
+            ctx->ps = PS_NONE;
+        }
+    }
+
     /* Handling messages from upper layer */
     while (MSG_Pending(&ctx->macPhyInputQueue))
     {
@@ -385,7 +406,7 @@ static void Phy24Task(Phy_PhyLocalStruct_t *ctx)
             break;
 
         case gPlmeRxReq_c:
-            status = Phy_Handle_RxReq(ctx, (macToPlmeMessage_t *)pMsgIn);
+            status = Phy_Handle_RxReq(ctx, (macToPlmeMessage_t *)pMsgIn, 0);
             break;
 
         case gPlmeCcaReq_c:
@@ -580,6 +601,7 @@ phyStatus_t MAC_PLME_SapHandler(macToPlmeMessage_t *pMsg, instanceId_t phyInstan
 
             /* disable rx when idle */
             ctx->flags &= ~(gPhyFlagRxOnWhenIdle_c | gPhyFlagIdleRx_c);
+            ctx->ps = PS_NONE;
 
             ctx_set_pending(ctx);
 
@@ -700,7 +722,7 @@ phyStatus_t MAC_PLME_SapHandler(macToPlmeMessage_t *pMsg, instanceId_t phyInstan
     return result;
 }
 
-static phyStatus_t Phy_Handle_RxReq(Phy_PhyLocalStruct_t *ctx, macToPlmeMessage_t *pMsg)
+static phyStatus_t Phy_Handle_RxReq(Phy_PhyLocalStruct_t *ctx, macToPlmeMessage_t *pMsg, uint32_t dt)
 {
     phyStatus_t status = gPhySuccess_c;
 
@@ -712,7 +734,7 @@ static phyStatus_t Phy_Handle_RxReq(Phy_PhyLocalStruct_t *ctx, macToPlmeMessage_
     else
     {
         ctx->rxParams.startTime = gPhySeqStartAsap_c;
-        ctx->rxParams.duration = 0xFFFFFFFFU;
+        ctx->rxParams.duration = dt;
     }
 
     OSA_InterruptDisable();
@@ -931,7 +953,7 @@ static void Phy_EnterIdle(Phy_PhyLocalStruct_t *ctx)
     if (ctx->flags & gPhyFlagRxOnWhenIdle_c)
     {
         ctx->flags |= gPhyFlagIdleRx_c;
-        Phy_Handle_RxReq(ctx, NULL);
+        Phy_Handle_RxReq(ctx, NULL, 0xFFFFFFFFU);
     }
     else
     {
@@ -1018,6 +1040,17 @@ void Radio_Phy_PdDataConfirm(Phy_PhyLocalStruct_t *ctx, bool_t framePending)
 
     if (framePending)
     {
+        /* start rx for POLL if not rx on idle */
+        if (!(ctx->flags & gPhyFlagRxOnWhenIdle_c) && ctx->rx_time_poll && (ctx->ps == PS_DATA_REQ))
+        {
+            ctx->ps = PS_RX;
+            ctx->rx_poll_to = (ctx->rx_time_poll + PhyTime_ReadClock()) & gPhyTimeMask_c;
+        }
+        else
+        {
+            ctx->ps = PS_NONE;
+        }
+
         ctx->flags |= gPhyFlagRxFP_c;
     }
     else
@@ -1036,6 +1069,19 @@ void Radio_Phy_PdDataConfirm(Phy_PhyLocalStruct_t *ctx, bool_t framePending)
 ********************************************************************************** */
 void Radio_Phy_PdDataIndication(Phy_PhyLocalStruct_t *ctx)
 {
+    if (!ctx)
+    {
+        return;
+    }
+
+    uint16_t fcf = PHY_TransformArrayToUint16(ctx->trx_buff);
+
+    if (fcf & phyFcfAckRequest)
+    {
+        /* stop rx for POLL after a unicast packet is received */
+        ctx->ps = PS_NONE;
+    }
+
     PD_SendMessage(ctx, gPdDataInd_c);
 
     ctx_data_ind_all(ctx);
@@ -1110,10 +1156,12 @@ void Radio_Phy_TimeRxTimeoutIndication(Phy_PhyLocalStruct_t *ctx)
         return;
     }
 
-    if ((ctx->flags & gPhyFlagIdleRx_c) != gPhyFlagIdleRx_c)
+    if (!(ctx->flags & gPhyFlagIdleRx_c) && (ctx->ps != PS_RX))
     {
         PLME_SendMessage(ctx, gPlmeTimeoutInd_c);
     }
+
+    ctx->ps = PS_NONE;
 
     ctx_plme_msg_all(ctx, gPlmeTimeoutInd_c);
 }
@@ -1132,10 +1180,12 @@ void Radio_Phy_AbortIndication(Phy_PhyLocalStruct_t *ctx)
         return;
     }
 
-    if ((ctx->flags & gPhyFlagIdleRx_c) != gPhyFlagIdleRx_c)
+    if (!(ctx->flags & gPhyFlagIdleRx_c) && (ctx->ps != PS_RX))
     {
         PLME_SendMessage(ctx, gPlmeAbortInd_c);
     }
+
+    ctx->ps = PS_NONE;
 
     ctx_plme_msg_all(ctx, gPlmeAbortInd_c);
 }
@@ -1760,6 +1810,11 @@ static bool_t PHY_ctx_can_sleep()
     {
         ctx = ctx_get(id);
 
+        if (ctx->ps == PS_RX)
+        {
+            return FALSE;
+        }
+
         if (ctx->flags & gPhyFlagRxOnWhenIdle_c)
         {
             return FALSE;
@@ -1901,6 +1956,7 @@ void ctx_init_single(uint8_t id)
     ctx = ctx_get(id);
 
     ctx->id = id;
+    ctx->flags = 0;
 
     /* Prepare input queues.*/
     MSG_QueueInit(&ctx->macPhyInputQueue);
@@ -1924,6 +1980,9 @@ void ctx_init_single(uint8_t id)
 
     ctx->filter_fail = 0;
     ctx->neighbourTblEnabled = FALSE;
+
+    ctx->rx_time_poll = PHY_RX_TIME_POLL;
+    ctx->ps = PS_NONE;
 
 #ifdef CTX_SCHED
     ctx->state = E_SCHED_PROTO_OFF;
@@ -2070,10 +2129,12 @@ static void ctx_plme_msg_all(Phy_PhyLocalStruct_t *ctx, phyMessageId_t msg_type)
 
     Phy_PhyLocalStruct_t *ctx_2 = ctx_get((ctx->id + 1) % CTX_NO);
 
-    if ((ctx_2->flags & gPhyFlagIdleRx_c) != gPhyFlagIdleRx_c)
+    if (!(ctx_2->flags & gPhyFlagIdleRx_c) && (ctx_2->ps != PS_RX))
     {
         PLME_SendMessage(ctx_2, msg_type);
     }
+
+    ctx_2->ps = PS_NONE;
 }
 
 void ctx_data_ind_all(Phy_PhyLocalStruct_t *ctx)
@@ -2090,6 +2151,14 @@ void ctx_data_ind_all(Phy_PhyLocalStruct_t *ctx)
 
     ctx_2->rxParams = ctx->rxParams;
     memcpy(ctx_2->trx_buff, ctx->trx_buff, ctx->rxParams.psduLength);
+
+    uint16_t fcf = PHY_TransformArrayToUint16(ctx_2->trx_buff);
+
+    if (fcf & phyFcfAckRequest)
+    {
+        /* stop rx for POLL after a unicast packet is received */
+        ctx_2->ps = PS_NONE;
+    }
 
     /* Phy_GetRxInfo() */
     ctx_2->mPhyLastRxRSSI = ctx->mPhyLastRxRSSI;
@@ -2278,8 +2347,10 @@ void get_next_proto_rr(Phy_PhyLocalStruct_t **ctx)
                 t2 = t;
                 break;
             }
-            else if (!t2 || (t2->op < t->op) ||
-                     ((t2->op == t->op) && ((t->tstp - t2->tstp) & neg_msk)))
+            else if (!t2 ||
+                     ((t2->ps != PS_RX) &&
+                      ((t->ps == PS_RX) || (t2->op < t->op) ||
+                       ((t2->op == t->op) && ((t->tstp - t2->tstp) & neg_msk)))))
             {
                 t2 = t;
             }
@@ -2417,6 +2488,7 @@ static void sched_reset()
                 /* context operation was canceled because PHY was deactivated */
                 ctx->op = NONE_OP;
                 ctx->flags &= ~gPhyFlagIdleRx_c;
+                ctx->ps = PS_NONE;
             }
         }
     }
@@ -2680,7 +2752,9 @@ void PHY_InterruptHandler()
         {
             sched_abort_current();
         }
-        else if ((scheduler.current && (scheduler.current->op == RX_OP) && scheduler.current->rx_ongoing) ||
+        else if ((scheduler.current &&
+                  ((scheduler.current->ps == PS_RX) ||
+                   ((scheduler.current->op == RX_OP) && scheduler.current->rx_ongoing))) ||
                  !PHY_graceful_idle())
         {
             scheduler.switch_later = TRUE;
@@ -2835,6 +2909,7 @@ void PhyAbort_base(Phy_PhyLocalStruct_t *ctx)
         ctx->op          = NONE_OP;
         ctx->filter_fail = 0;
         ctx->rx_ongoing  = FALSE;
+        ctx->ps = PS_NONE;
     }
 
     OSA_InterruptEnable();

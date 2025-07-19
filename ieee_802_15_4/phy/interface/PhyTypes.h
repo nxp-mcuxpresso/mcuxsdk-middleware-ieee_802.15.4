@@ -193,6 +193,7 @@ typedef enum
     gPhyPibAckFramePending_c = 0x0C,       /*!< Used to copy its contents to the outgoing ACK frame's Frame Pending field as a response to a received Data Request frame with Source Address Matching disabled.*/
     gPhyPibRxOnWhenIdle      = 0x0D,       /*!< Enable RX when the radio is IDLE*/  
     gPhyPibFrameWaitTime_c   = 0x0E,       /*!< The number of symbols the RX should be on after receiving an ACK with FP=1 */
+    gPhyPibRxTimePoll_c = gPhyPibFrameWaitTime_c,
     gPhyPibDeferTxIfRxBusy_c = 0x0F,       /*!< If a packet is being received, transmission is deferred */
     gPhyPibLastTxAckFP_c     = 0x10,       /*!< Indicates, whether the last ACK sent to the MAC Data Request had the frame pending flag set. */
     gPhyPibCCAType_c         = 0x11,       /*!< Set the CCA3 Type */

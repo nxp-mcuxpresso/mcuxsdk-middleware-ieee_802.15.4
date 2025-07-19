@@ -94,6 +94,8 @@ typedef enum
 
 #define PHY_TMR_CMP_MIN 4   /* symbols (64 us). Comparator threshold */
 
+#define PHY_RX_TIME_POLL 6250   /* symbols */
+
 #define PHY_TEN_SYMBOLS_US 160
 #define PHY_SYMBOLS_US 16
 
@@ -207,6 +209,14 @@ typedef enum
     ENH_ACK_READY
 } enh_ack_state_t;
 
+/* state machine for POLL */
+enum
+{
+    PS_NONE,
+    PS_DATA_REQ,
+    PS_RX
+};
+
 #if defined(FFU_DEVICE_LIMIT_VISIBILITY)
 
 #ifndef N_FILTER_DEVICES
@@ -284,6 +294,10 @@ typedef struct Phy_PhyLocalStruct_tag
 
     enh_ack_state_t enh_ack_state;
     bool_t neighbourTblEnabled;
+
+    uint32_t rx_time_poll;      /* symbols. rx duration after data req with ACK with FP=1 */
+    uint32_t rx_poll_to;        /* symbols. timeout for POLL reception */
+    uint8_t ps;                 /* POLL state machine */
 
 #if defined(FFU_DEVICE_LIMIT_VISIBILITY)
     visible_filter_t sFilter;

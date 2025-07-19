@@ -814,7 +814,7 @@ static void PHY_SetImmAckFp(Phy_PhyLocalStruct_t *ctx, uint8_t *packet, uint8_t 
             return;
         }
 
-        commId = PhyPacket_GetMacV1CmdId(packet, packetLength);
+        commId = PhyPacket_GetMacCmdId(packet, packetLength);
     }
 
     if ((ctx->efp ||

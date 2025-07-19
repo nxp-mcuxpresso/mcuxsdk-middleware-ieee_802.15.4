@@ -383,14 +383,14 @@ uint8_t PhyPacket_GetMacHdrLength(uint8_t *packet, uint8_t packetLength)
     return mhrLength;
 }
 
-/* This will return the CMD ID for a V0/1 packet frame */
-macCmdId_t PhyPacket_GetMacV1CmdId(uint8_t *packet, uint8_t packetLength)
+/* This will return the CMD ID for a frame */
+macCmdId_t PhyPacket_GetMacCmdId(uint8_t *packet, uint8_t packetLength)
 {
     phyFcf_t *fcf     = (phyFcf_t *)packet;
     uint8_t hdr_len;
 
     if ((fcf->frameType != MAC_FRAME_TYPE_CMD) ||
-       (fcf->frameVersion != 0 && fcf->frameVersion != 1))
+       (fcf->frameVersion > FCF_VER_MAX))
     {
         return phyMacCmdInvalid;
     }
@@ -402,7 +402,16 @@ macCmdId_t PhyPacket_GetMacV1CmdId(uint8_t *packet, uint8_t packetLength)
         return phyMacCmdInvalid;
     }
 
-    return (macCmdId_t)packet[hdr_len - 1];
+    if (fcf->frameVersion < FCF_VER_MAX)
+    {
+        /* for command frame vesion 0/1, command id is not encrypted. */
+        return (macCmdId_t)packet[hdr_len - 1];
+    }
+    else
+    {
+        /* valid before encryption */
+        return (macCmdId_t)packet[hdr_len];
+    }
 }
 
 void PhyPacket_get_dest_pan_addr(uint8_t *f, uint8_t **pan, uint8_t **addr, uint8_t *len)

@@ -149,7 +149,7 @@ void     PhyPacket_GetFrameCounter(uint8_t *packet, uint32_t *frameCounter, uint
 uint8_t  PhyPacket_GetSecurityHeaderLength(uint8_t *packet, uint8_t packetLength);
 uint8_t  PhyPacket_GetMicLen(const uint8_t *packet, uint8_t packetLength);
 uint8_t  PhyPacket_GetMacHdrLength(uint8_t *packet, uint8_t packetLength);
-macCmdId_t PhyPacket_GetMacV1CmdId(uint8_t *packet, uint8_t packetLength);
+macCmdId_t PhyPacket_GetMacCmdId(uint8_t *packet, uint8_t packetLength);
 
 void     PhyPacket_get_dest_pan_addr(uint8_t *f, uint8_t **pan, uint8_t **addr, uint8_t *len);
 

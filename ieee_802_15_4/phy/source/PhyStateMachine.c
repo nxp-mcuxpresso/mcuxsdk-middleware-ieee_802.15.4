@@ -154,6 +154,17 @@ static bool_t phy_is_active;
 uint8_t g_ldo_ant_trim_15_4 = 0xFF;
 #endif
 
+
+static bool_t t1_less_t2(uint32_t tstp_1, uint32_t tstp_2)
+{
+    uint32_t neg_msk = 1 << (gPhyTimeShift_c - 1);
+
+    tstp_1 &= gPhyTimeMask_c;
+    tstp_2 &= gPhyTimeMask_c;
+
+    return !!((tstp_1 - tstp_2) & neg_msk);
+}
+
 /*! *********************************************************************************
 *************************************************************************************
 * Public functions
@@ -1384,16 +1395,6 @@ void Radio_Phy_Notify(Phy_PhyLocalStruct_t *ctx)
 static uint8_t t4_timer_state[T4_CNT];
 static uint32_t t4_timer_tstp[T4_CNT];
 
-static bool_t t1_less_t2(uint32_t tstp_1, uint32_t tstp_2)
-{
-    uint32_t neg_msk = 1 << (gPhyTimeShift_c - 1);
-
-    tstp_1 &= gPhyTimeMask_c;
-    tstp_2 &= gPhyTimeMask_c;
-
-    return !!((tstp_1 - tstp_2) & neg_msk);
-}
-
 static bool_t t1_near_t2(uint32_t tstp_1, uint32_t tstp_2)
 {
     tstp_1 &= gPhyTimeMask_c;
@@ -1411,7 +1412,7 @@ static void start_t4(uint32_t tstp)
 
     if (t1_less_t2(tstp, phy_tstp) || t1_near_t2(tstp, phy_tstp))
     {
-        tstp = (phy_tstp + PHY_TMR_CMP_MIN) & gPhyTimeMask_c;
+        tstp = (PhyTime_ReadClock() + PHY_TMR_CMP_MIN) & gPhyTimeMask_c;
     }
 
     TMR_UNMASK_AND_SET(4, tstp);

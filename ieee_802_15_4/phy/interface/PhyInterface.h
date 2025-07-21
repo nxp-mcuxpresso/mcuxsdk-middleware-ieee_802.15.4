@@ -461,6 +461,8 @@ void PHY_release_ctx(uint8_t id);
  ********************************************************************************** */
 void Phy_RegisterSapHandlers(PD_MAC_SapHandler_t pPD_MAC_SapHandler, PLME_MAC_SapHandler_t pPLME_MAC_SapHandler, instanceId_t instanceId);
 
+void Phy_GetSapHandlers(PD_MAC_SapHandler_t *pPD_MAC_SapHandler, PLME_MAC_SapHandler_t *pPLME_MAC_SapHandler, instanceId_t instanceId);
+
 /*! *********************************************************************************
  * \brief This is the entry point for the PHY data service requests
  *

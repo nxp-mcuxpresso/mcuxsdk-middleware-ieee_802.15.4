@@ -337,6 +337,17 @@ void Phy_RegisterSapHandlers(PD_MAC_SapHandler_t pPD_MAC_SapHandler,
     ctx->PLME_MAC_SapHandler = pPLME_MAC_SapHandler;
 }
 
+void Phy_GetSapHandlers(PD_MAC_SapHandler_t *pPD_MAC_SapHandler, PLME_MAC_SapHandler_t *pPLME_MAC_SapHandler, instanceId_t instanceId)
+{
+    Phy_PhyLocalStruct_t *ctx = ctx_get(instanceId);
+
+    if (pPD_MAC_SapHandler && pPLME_MAC_SapHandler)
+    {
+        *pPD_MAC_SapHandler = ctx->PD_MAC_SapHandler;
+        *pPLME_MAC_SapHandler = ctx->PLME_MAC_SapHandler;
+    }
+}
+
 /*! *********************************************************************************
 * \brief  This function represents the PHY's task
 *

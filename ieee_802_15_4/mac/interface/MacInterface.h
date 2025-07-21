@@ -51,23 +51,26 @@
 
 _Static_assert(sizeof(macMessageId_t) == sizeof(uint8_t), "macMessageId_t bigger than 1 byte");
 
+
 #undef MAC_ID_SIZE
-#define MAC_ID_SIZE 5       /* valid bits from mac_id field */
+#define MAC_ID_SIZE CTX_ID_SIZE       /* valid bits from mac_id field */
 
 _Static_assert(sizeof(uint8_t) * (CHAR_BIT) > (MAC_ID_SIZE), "MAC_ID_SIZE bigger than 1 byte");
 
 #undef MAC_ID_MASK
 #define MAC_ID_MASK ((uint32_t)(1 << (MAC_ID_SIZE)) - 1)
 
-#undef MAC_CMD_MASK         /* upper bits from mac_id are used for commands */
+#undef MAC_CMD_MASK         /* upper bits from mac_id are used for command categories */
 #define MAC_CMD_MASK ((uint32_t)(1 << (sizeof(uint8_t) * (CHAR_BIT) - (MAC_ID_SIZE))) - 1)
+
 
 enum
 {
-    MAC_CMD = 0,
-    MAC_PROXY_CMD = 1,
-    MAC_PLAT_CMD = 2,
-    MAC_ACK = 3
+    MAC_CMD = CTX_CMD,
+    MAC_PROXY_CMD = CTX_PROXY_CMD,
+    MAC_PLAT_CMD = CTX_PLAT_CMD,
+    MAC_ACK = CTX_ACK,
+    MAC_EXT_CMD = CTX_EXT_CMD
 };
 
 /*!

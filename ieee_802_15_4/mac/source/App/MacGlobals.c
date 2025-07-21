@@ -37,7 +37,7 @@
 *************************************************************************************
 ************************************************************************************/
 extern void Mac_Task( osa_task_param_t argument );
-extern void Mac_InitializeData( osa_event_handle_t eventHandle );
+extern void Mac_InitializeData(osa_event_handle_t eventHandle, bool_t fast_init);
 
 #if !gFsciHost_802_15_4_c
 /* The following definitions are required by the VERSION_TAGS. DO NOT MODIFY or REMOVE */
@@ -102,7 +102,7 @@ const uint8_t gAddrModeFieldLengthTable[4] =
 * \brief  This function will create the MAC task(s)
 *
 ********************************************************************************** */
-void MAC_Init( void )
+void MAC_init_ext(bool_t fast_init)
 {
     static bool_t init = FALSE;
 
@@ -140,7 +140,7 @@ void MAC_Init( void )
     }
     else
     {
-        Mac_InitializeData(NULL);
+        Mac_InitializeData(NULL, fast_init);
 
 #ifndef NO_MAC_TASK
         /* The instance of the MAC is passed at task creaton */
@@ -152,6 +152,12 @@ void MAC_Init( void )
     }
 #endif
 }
+
+void MAC_Init( void )
+{
+    MAC_init_ext(FALSE);
+}
+
 
 /*! *********************************************************************************
 * \brief  This function determines tmaximum length of the MSDU of a MAC Data frame

@@ -842,6 +842,7 @@ typedef resultType_t (*MLME_NWK_SapHandler_t) (nwkMessage_t* pMsg, instanceId_t 
 *
 ********************************************************************************** */
 void MAC_Init( void );
+void MAC_init_ext(bool_t fast_init);
 
 uint8_t MAC_get_PHY_ctx(instanceId_t macInstanceId);
 
@@ -850,6 +851,10 @@ resultType_t MAC_Proxy_PLME_SapHandler(macToPlmeMessage_t *pMsg, instanceId_t ma
 resultType_t MAC_Register_Plat_Handler(plat_handler_t f, instanceId_t macInstanceId);
 
 resultType_t MAC_Plat_Cmd(macPlatMessage_t *pMsg, instanceId_t macInstanceId);
+
+instanceId_t find_init_bind_MAC(instanceId_t nwkId, instanceId_t phy_ctx);
+
+void unbind_deinit_MAC(instanceId_t macInstanceId, bool_t release_phy_ctx);
 
 /*! *********************************************************************************
 *   Bind upper layer with MAC layer.

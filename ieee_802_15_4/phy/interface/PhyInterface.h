@@ -33,7 +33,7 @@
 #include "fsl_component_mem_manager.h"
 
 #include <assert.h>
-
+#include <limits.h>
 /*! *********************************************************************************
 *************************************************************************************
 * Public type definitions
@@ -41,10 +41,32 @@
 ********************************************************************************** */
 #define CONCAT(a, b) a ## b // Concatenate
 #define CONCAT_EXPAND(a,b) CONCAT(a, b) // expand then paste
-#define _Static_assert(cond, STR) typedef char CONCAT_EXPAND(static_assert_line_, __LINE__)[(cond)?1:-1] // Define _Static_assert for Backward Compatibility to support lower C11 C-Standard versions.
+#define _Static_assert(cond, STR) typedef char CONCAT_EXPAND(static_assert_line_, __LINE__)[(cond) ? 1 : -1] // Define _Static_assert for Backward Compatibility to support lower C11 C-Standard versions.
 
 
 _Static_assert(sizeof(phyMessageId_t) == sizeof(uint8_t), "phyMessageId_t bigger than 1 byte");
+
+
+#undef CTX_ID_SIZE
+#define CTX_ID_SIZE 5       /* valid bits for ctx_id */
+
+_Static_assert(sizeof(uint8_t) * (CHAR_BIT) > (CTX_ID_SIZE), "CTX_ID_SIZE bigger than 1 byte");
+
+#undef CTX_ID_MASK
+#define CTX_ID_MASK ((uint32_t)(1 << (CTX_ID_SIZE)) - 1)
+
+#undef CTX_CMD_MASK         /* upper bits from ctx_id are used for command categories */
+#define CTX_CMD_MASK ((uint32_t)(1 << (sizeof(uint8_t) * (CHAR_BIT) - (CTX_ID_SIZE))) - 1)
+
+
+enum
+{
+    CTX_CMD = 0,
+    CTX_PROXY_CMD = 1,
+    CTX_PLAT_CMD = 2,
+    CTX_ACK = 3,
+    CTX_EXT_CMD = 4
+};
 
 /************************************************************************************
 *************************************************************************************

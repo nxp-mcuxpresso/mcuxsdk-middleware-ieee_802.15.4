@@ -412,6 +412,7 @@ phyStatus_t PhyPdDataRequest(Phy_PhyLocalStruct_t *ctx)
         if (pTxPacket->flags & gPhyUpdHDr)
         {
             PhyPacket_SetFrameCounter(pTxPacket->pPsdu, ctx->frameCounter++, pTxPacket->psduLength);
+            PhyPacket_SetKeyIndex(pTxPacket->pPsdu, ctx->keyId, pTxPacket->psduLength);
         }
 
         PhySec_Encrypt(ctx, pTxPacket->pPsdu, pTxPacket->psduLength);

@@ -1840,7 +1840,7 @@ bool PHY_XCVR_AllowLowPower(void)
     OSA_InterruptDisable();
 
 #if gMWS_Enabled_d
-    if (!phy_is_active)
+    if (!phy_is_active && PhyTime_can_sleep())
     {
         OSA_InterruptEnable();
         return true;

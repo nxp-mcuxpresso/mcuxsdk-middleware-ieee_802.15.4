@@ -19,6 +19,8 @@
 /* for timeouts <= gPhyTimeMinSetupTime_c, PhyTime_ScheduleEvent() runs the event callback without delay */
 #define gPhyTimeMinSetupTime_c PHY_TMR_CMP_MIN  /* symbols */
 
+/* previous PHY timer timestamp */
+static phyTime_t prevTimestamp = 0;
 
 static bool_t phy_lp_tmr_allow_sleep = TRUE;
 
@@ -433,9 +435,10 @@ phyTime_t PhyTime_ReadClock()
 
 void PhyTime_ISR(void)
 {
-    if (pNextEvent->callback == PhyTime_OverflowCB)
+    if ((pNextEvent != NULL) && pNextEvent->callback == PhyTime_OverflowCB)
     {
-        gPhyTimerOverflow += (uint64_t)(1 << gPhyTimeShift_c);
+        // will update gPhyTimerOverflow in case overflow has been detected
+        PhyTime_GetTimestamp();
     }
 
     if (gpfPhyTimeNotify)
@@ -459,6 +462,7 @@ phyTimeStatus_t PhyTime_TimerInit(void (*cb)(void))
 
     gpfPhyTimeNotify = cb;
     gPhyTimerOverflow = 0;
+    prevTimestamp = 0;
     memset(maPhyTimers, 0, sizeof(maPhyTimers));
 
     /* Schedule Overflow Calback */
@@ -486,20 +490,12 @@ phyTime_t PhyTime_GetTimestamp(void)
 
     OSA_InterruptDisable();
     t = PhyTime_ReadClock();
-    t |= gPhyTimerOverflow;
-    /* Check for overflow */
-    if(pNextEvent != NULL)
+    if(t < prevTimestamp)
     {
-        if (pNextEvent->callback == PhyTime_OverflowCB)
-        {
-            if (ZLL->IRQSTS & ZLL_IRQSTS_TMR1IRQ_MASK)
-            {
-                t = PhyTime_ReadClock();
-                t |= gPhyTimerOverflow;
-                t += (1 << gPhyTimeShift_c);
-            }
-        }
+        gPhyTimerOverflow += (uint64_t)(1 << gPhyTimeShift_c);
     }
+    prevTimestamp = t;
+    t |= gPhyTimerOverflow;
     OSA_InterruptEnable();
 
     return t;

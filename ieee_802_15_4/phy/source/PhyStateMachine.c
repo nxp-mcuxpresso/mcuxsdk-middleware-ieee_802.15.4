@@ -733,6 +733,11 @@ phyStatus_t MAC_PLME_SapHandler(macToPlmeMessage_t *pMsg, instanceId_t phyInstan
     return result;
 }
 
+uint8_t Phy_GetKeyId(instanceId_t phyInstance)
+{
+    return ctx_get(phyInstance)->keyId;
+}
+
 static phyStatus_t Phy_Handle_RxReq(Phy_PhyLocalStruct_t *ctx, macToPlmeMessage_t *pMsg, uint32_t dt)
 {
     phyStatus_t status = gPhySuccess_c;

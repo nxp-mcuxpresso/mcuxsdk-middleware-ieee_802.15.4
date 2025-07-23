@@ -638,6 +638,8 @@ void PHY_ConfigureAckIeData(instanceId_t phyInstance, uint8_t * pIeData, uint32_
 ********************************************************************************** */
 void PHY_ClearAckIeData(instanceId_t id);
 
+uint8_t Phy_GetKeyId(instanceId_t phyInstance);
+
 /*! *********************************************************************************
 * \brief  returns true if XCVR allow sleep, retruns false others ways
 *

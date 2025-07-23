@@ -4,7 +4,7 @@
 ********************************************************************************** */
 /*! *********************************************************************************
 * Copyright (c) 2015, Freescale Semiconductor, Inc.
-* Copyright 2016-2024 NXP
+* Copyright 2016-2025 NXP
 * All rights reserved.
 *
 * \file
@@ -16,6 +16,8 @@
 /*! \cond */
 #define _MAC_MESSAGES_H
 /*! \endcond */
+
+#include "PhyMessages.h"
 
 typedef enum
 {
@@ -92,6 +94,8 @@ typedef enum
 
     gMcpsPurgeIndQueueReq_c,    /*!< MCPS-PURGE indirect queue Request (NOT in spec) */
     gMcpsPurgeIndQueueCnf_c,    /*!< MCPS-PURGE indirect queue Confirm (NOT in spec) */
+
+    gExtMacCmd = gPhyExtCmd
 }macMessageId_t;
 
 #endif  /* _MAC_MESSAGES_H */

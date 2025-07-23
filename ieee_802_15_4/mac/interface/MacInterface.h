@@ -804,6 +804,9 @@ typedef struct macAck_tag
     uint16_t payload_len;   /* length of buffer after this header */
 } macAckMessage_t;
 
+/* this message is for both requests and responses */
+typedef ext_phy_cmd_t ext_mac_msg_t;
+
 /*! *********************************************************************************
 *   Callback function type used for sending messages to upper layer.
 * The callback must be installed by upper layers through the Mac_RegisterSapHandlers() function
@@ -855,6 +858,8 @@ resultType_t MAC_Plat_Cmd(macPlatMessage_t *pMsg, instanceId_t macInstanceId);
 instanceId_t find_init_bind_MAC(instanceId_t nwkId, instanceId_t phy_ctx);
 
 void unbind_deinit_MAC(instanceId_t macInstanceId, bool_t release_phy_ctx);
+
+void MAC_ext_cmd(macMsgHeader_t *cmd);
 
 /*! *********************************************************************************
 *   Bind upper layer with MAC layer.

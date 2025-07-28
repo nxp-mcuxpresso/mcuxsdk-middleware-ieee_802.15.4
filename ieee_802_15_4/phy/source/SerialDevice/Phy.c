@@ -1,5 +1,5 @@
 /*! *********************************************************************************
-* Copyright 2021-2024 NXP
+* Copyright 2021-2025 NXP
 * All rights reserved.
 *
 *
@@ -31,8 +31,10 @@ static struct phy_local
 {
     uint32_t id;
 
-    PD_MAC_SapHandler_t         PD_MAC_SapHandler;
-    PLME_MAC_SapHandler_t       PLME_MAC_SapHandler;
+    PD_MAC_SapHandler_t PD_MAC_SapHandler;
+    PLME_MAC_SapHandler_t PLME_MAC_SapHandler;
+
+    PHY_ext_cmd_handler_t ext_cmd_handler;
 } phyLocal[CTX_NO];
 
 static RPMSG_HANDLE_DEFINE(phyRpmsgHandle);
@@ -86,6 +88,7 @@ static void phy_intf_cb_task_func()
 {
     phyMessageHeader_t *msg;
     bool_t msg_free;
+    uint8_t msg_type;
 
     while (1)
     {
@@ -93,39 +96,64 @@ static void phy_intf_cb_task_func()
         {
             msg_free = TRUE;
 
-            switch (msg->msgType)
+            msg_type = (msg->ctx_id >> CTX_ID_SIZE) & CTX_CMD_MASK;
+
+            if (msg_type == CTX_EXT_CMD)
             {
-                case gPdDataInd_c:
-                    if (phyLocal[msg->ctx_id].PD_MAC_SapHandler)
-                    {
-                        msg_free = FALSE;
-                        ((pdDataToMacMessage_t *)msg)->msgData.dataInd.pPsdu = (uint8_t *)msg + sizeof(pdDataToMacMessage_t);
+                msg->ctx_id &= CTX_ID_MASK;
 
-                        phyLocal[msg->ctx_id].PD_MAC_SapHandler((pdDataToMacMessage_t *)msg, msg->ctx_id);
-                    }
-                    break;
+                if (msg->ctx_id >= CTX_NO)
+                {
+                    msg->ctx_id = 0;
+                }
 
-                case gPdDataCnf_c:
-                    if (phyLocal[msg->ctx_id].PD_MAC_SapHandler)
-                    {
-                        msg_free = FALSE;
-                        ((pdDataToMacMessage_t *)msg)->msgData.dataCnf.ackData = (uint8_t *)msg + sizeof(pdDataToMacMessage_t);
+                if (phyLocal[msg->ctx_id].ext_cmd_handler)
+                {
+                    ext_phy_cmd_t *m = (ext_phy_cmd_t *)msg;
 
-                        phyLocal[msg->ctx_id].PD_MAC_SapHandler((pdDataToMacMessage_t *)msg, msg->ctx_id);
-                    }
-                    break;
+                    msg_free = FALSE;
+                    m->tx.cnf.ackData = (uint8_t *)m + sizeof(ext_phy_cmd_t);
+                    m->rx_ind.pPsdu = (uint8_t *)m + sizeof(ext_phy_cmd_t) + m->tx.cnf.ackLength;
 
-                case gPlmeCcaCnf_c:
-                case gPlmeEdCnf_c:
-                case gPlmeSetCnf_c:
-                case gPlmeTimeoutInd_c:
-                case gPlmeAbortInd_c:
-                    if (phyLocal[msg->ctx_id].PLME_MAC_SapHandler)
-                    {
-                        msg_free = FALSE;
-                        phyLocal[msg->ctx_id].PLME_MAC_SapHandler((plmeToMacMessage_t *)msg, msg->ctx_id);
-                    }
-                    break;
+                    phyLocal[msg->ctx_id].ext_cmd_handler(msg, msg->ctx_id);
+                }
+            }
+            else
+            {
+                switch (msg->msgType)
+                {
+                    case gPdDataInd_c:
+                        if (phyLocal[msg->ctx_id].PD_MAC_SapHandler)
+                        {
+                            msg_free = FALSE;
+                            ((pdDataToMacMessage_t *)msg)->msgData.dataInd.pPsdu = (uint8_t *)msg + sizeof(pdDataToMacMessage_t);
+
+                            phyLocal[msg->ctx_id].PD_MAC_SapHandler((pdDataToMacMessage_t *)msg, msg->ctx_id);
+                        }
+                        break;
+
+                    case gPdDataCnf_c:
+                        if (phyLocal[msg->ctx_id].PD_MAC_SapHandler)
+                        {
+                            msg_free = FALSE;
+                            ((pdDataToMacMessage_t *)msg)->msgData.dataCnf.ackData = (uint8_t *)msg + sizeof(pdDataToMacMessage_t);
+
+                            phyLocal[msg->ctx_id].PD_MAC_SapHandler((pdDataToMacMessage_t *)msg, msg->ctx_id);
+                        }
+                        break;
+
+                    case gPlmeCcaCnf_c:
+                    case gPlmeEdCnf_c:
+                    case gPlmeSetCnf_c:
+                    case gPlmeTimeoutInd_c:
+                    case gPlmeAbortInd_c:
+                        if (phyLocal[msg->ctx_id].PLME_MAC_SapHandler)
+                        {
+                            msg_free = FALSE;
+                            phyLocal[msg->ctx_id].PLME_MAC_SapHandler((plmeToMacMessage_t *)msg, msg->ctx_id);
+                        }
+                        break;
+                }
             }
 
             if (msg_free)
@@ -145,8 +173,9 @@ static hal_rpmsg_return_status_t PhyRpmsgRxCallback(void *param, uint8_t *data, 
 {
     (void)param;
     phyMessageHeader_t *pMsg = (phyMessageHeader_t *)data;
+    uint8_t msg_type = (pMsg->ctx_id >> CTX_ID_SIZE) & CTX_CMD_MASK;
 
-    if (pMsg->msgType == gPlmeGetReq_c)
+    if ((msg_type == CTX_CMD) && (pMsg->msgType == gPlmeGetReq_c))
     {
         if (wait_phy_rsp)
         {
@@ -164,7 +193,7 @@ static hal_rpmsg_return_status_t PhyRpmsgRxCallback(void *param, uint8_t *data, 
     }
     memcpy(pMsg, data, len);
 
-    if (pMsg->ctx_id >= CTX_NO)
+    if ((msg_type == CTX_CMD) && (pMsg->ctx_id >= CTX_NO))
     {
         pMsg->ctx_id = 0;
     }
@@ -390,6 +419,56 @@ uint8_t PHY_get_ctx()
     RNG_SetSeed();
 
     return (uint8_t)msg.msgData.getReq.PibAttributeValue;
+}
+
+void PHY_register_ext_cmd_handler(PHY_ext_cmd_handler_t cb, instanceId_t phy_instance)
+{
+    if (!phy_intf_init_done)
+    {
+        return;
+    }
+
+    if (phy_instance >= CTX_NO)
+    {
+        phy_instance = 0;
+    }
+
+    phyLocal[phy_instance].ext_cmd_handler = cb;
+}
+
+void PHY_ext_cmd(phyMessageHeader_t *msg, instanceId_t phy_instance)
+{
+    uint32_t len = sizeof(ext_phy_cmd_t);
+
+    if (!phy_intf_init_done || (msg->msgType != gPhyExtCmd))
+    {
+        return;
+    }
+
+    OSA_MutexLock(phy_intf_mutex, osaWaitForever_c);
+    PLATFORM_RemoteActiveReq();
+
+    do
+    {
+        if (phy_instance >= CTX_NO)
+        {
+            phy_instance = 0;
+        }
+
+        msg->ctx_id = (phy_instance & CTX_ID_MASK) | (CTX_EXT_CMD << CTX_ID_SIZE);
+
+        len += ((ext_phy_cmd_t *)msg)->tx.req.psduLength;
+
+        if (HAL_RpmsgSend((hal_rpmsg_handle_t)phyRpmsgHandle, (uint8_t *)msg, len) != kStatus_HAL_RpmsgSuccess)
+        {
+             break;
+        }
+    } while (0);
+
+    PLATFORM_RemoteActiveRel();
+    OSA_MutexUnlock(phy_intf_mutex);
+
+    return;
 }
 
 /*! *********************************************************************************

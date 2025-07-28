@@ -254,6 +254,8 @@ typedef struct Phy_PhyLocalStruct_tag
     PD_MAC_SapHandler_t         PD_MAC_SapHandler;
     PLME_MAC_SapHandler_t       PLME_MAC_SapHandler;
 
+    PHY_ext_cmd_handler_t ext_cmd_handler;
+
     messaging_t                 macPhyInputQueue;
 
     phyTxParams_t               txParams;

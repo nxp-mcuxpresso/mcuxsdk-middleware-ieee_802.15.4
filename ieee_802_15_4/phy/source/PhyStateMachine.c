@@ -3013,3 +3013,34 @@ bool_t PHY_ctx_graceful_idle(instanceId_t id)
 
     return status;
 }
+
+void PHY_register_ext_cmd_handler(PHY_ext_cmd_handler_t cb, instanceId_t phy_instance)
+{
+    Phy_PhyLocalStruct_t *ctx = ctx_get(phy_instance);
+
+    ctx->ext_cmd_handler = cb;
+}
+
+void PHY_ext_cmd(phyMessageHeader_t *msg, instanceId_t phy_instance)
+{
+    (void)msg;
+    (void)phy_instance;
+
+#ifdef MAC_ENABLED
+    void MAC_ext_cmd(phyMessageHeader_t *);
+
+    MAC_ext_cmd(msg);
+#endif
+}
+
+void PHY_ext_cmd_rsp(phyMessageHeader_t *msg, instanceId_t phy_instance)
+{
+    Phy_PhyLocalStruct_t *ctx = ctx_get(phy_instance);
+
+    if (!msg || !ctx->ext_cmd_handler)
+    {
+        return;
+    }
+
+    ctx->ext_cmd_handler(msg, ctx->id);
+}

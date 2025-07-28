@@ -417,6 +417,41 @@ typedef struct phyCcaParams_tag
     uint32_t edScanMaxCnt;
 } phyCcaParams_t;
 
+/* this message is for both requests and responses */
+typedef struct ext_phy_cmd_tag
+{
+    uint8_t msgType;            /* ext cmd id */
+    uint8_t id;                 /* MAC / PHY id */
+
+    uint8_t cmd;                /* phyMessageId_t / macMessageId_t */
+
+    uint8_t min_be;             /* CSMA / CA */
+    uint8_t max_be;
+    uint8_t max_backoffs;
+
+    uint8_t max_retries;
+
+    bool_t rx_after_tx;
+
+    uint32_t rx_duration;
+
+    uint32_t fc;                /* last frame counter used */
+
+    uint32_t period;            /* ms */
+    uint32_t count;
+
+    /* the packets have to be right after the message - allocate everything together */
+    union
+    {
+        pdDataReq_t req;
+        pdDataCnf_t cnf;
+    } tx;
+
+    pdDataInd_t rx_ind;
+
+    bool_t do_not_free;
+} ext_phy_cmd_t;
+
 /*! PHY data service callback type */
 typedef phyStatus_t ( * PD_MAC_SapHandler_t)(pdDataToMacMessage_t * pMsg, instanceId_t instanceId);
 
@@ -424,6 +459,8 @@ typedef phyStatus_t ( * PD_MAC_SapHandler_t)(pdDataToMacMessage_t * pMsg, instan
 typedef phyStatus_t ( * PLME_MAC_SapHandler_t)(plmeToMacMessage_t * pMsg, instanceId_t instanceId);
 
 typedef void (*phyTxAppCallback)(uint8_t* pTxData);
+
+typedef  void (* PHY_ext_cmd_handler_t)(phyMessageHeader_t *pMsg, instanceId_t instanceId);
 
 #if defined(__ARMCC_VERSION)
 #pragma pop
@@ -483,6 +520,8 @@ void PHY_release_ctx(uint8_t id);
  ********************************************************************************** */
 void Phy_RegisterSapHandlers(PD_MAC_SapHandler_t pPD_MAC_SapHandler, PLME_MAC_SapHandler_t pPLME_MAC_SapHandler, instanceId_t instanceId);
 
+void PHY_register_ext_cmd_handler(PHY_ext_cmd_handler_t cb, instanceId_t phy_instance);
+
 void Phy_GetSapHandlers(PD_MAC_SapHandler_t *pPD_MAC_SapHandler, PLME_MAC_SapHandler_t *pPLME_MAC_SapHandler, instanceId_t instanceId);
 
 /*! *********************************************************************************
@@ -506,6 +545,10 @@ phyStatus_t MAC_PD_SapHandler(macToPdDataMessage_t * pMsg, instanceId_t phyInsta
  *
  ********************************************************************************** */
 phyStatus_t MAC_PLME_SapHandler(macToPlmeMessage_t * pMsg, instanceId_t phyInstance);
+
+void PHY_ext_cmd(phyMessageHeader_t *msg, instanceId_t phy_instance);
+
+void PHY_ext_cmd_rsp(phyMessageHeader_t *msg, instanceId_t phy_instance);
 
 /*! *********************************************************************************
  * \brief This function will schedule the next event to expire

@@ -20,6 +20,8 @@
 * Public type definitions
 *************************************************************************************
 ************************************************************************************/
+#undef EXT_CMD_ID
+#define EXT_CMD_ID (unsigned char)(0xffu)
 
 /*! 802.15.4-2006 standard PHY PD and PLME API messages */
 typedef enum
@@ -84,6 +86,7 @@ typedef enum
     gPlmeSetBeaconFiltering_c,         /* Filter beacon frame                      */
     gPlmeUpdateLocalWithExtAddr_c,     /* Link short address with ieee 64b address */
 
+    gPhyExtCmd = EXT_CMD_ID
 } phyMessageId_t;
 
 #endif  /* _PHY_MESSAGES_H */

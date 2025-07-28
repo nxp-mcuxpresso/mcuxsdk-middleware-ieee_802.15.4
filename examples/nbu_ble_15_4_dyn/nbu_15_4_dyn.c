@@ -61,9 +61,38 @@ static void delay_phy_get_rsp(void *p)
 }
 
 
+static hal_rpmsg_return_status_t phy_ext_cmd_callback(void *param, uint8_t *data, uint32_t len)
+{
+    (void)param;
+    (void)len;
+
+    phyMessageHeader_t *hdr = (phyMessageHeader_t *)data;
+
+    hdr->ctx_id &= CTX_ID_MASK;
+
+    PHY_ext_cmd(hdr, hdr->ctx_id);
+
+    return kStatus_HAL_RL_RELEASE;
+}
+
 static hal_rpmsg_return_status_t PhyRpmsgRxCallback(void *param, uint8_t *data, uint32_t len)
 {
     (void)param;
+
+    phyMessageHeader_t *hdr = (phyMessageHeader_t *)data;
+
+    uint8_t msg_type = (hdr->ctx_id >> CTX_ID_SIZE) & CTX_CMD_MASK;
+
+    if (msg_type == CTX_EXT_CMD)
+    {
+        return phy_ext_cmd_callback(param, data, len);
+    }
+
+    if (msg_type != CTX_CMD)
+    {
+        return kStatus_HAL_RL_RELEASE;
+    }
+
     phyMessageHeader_t *pMsg = (phyMessageHeader_t *)data;
 
     switch (pMsg->msgType)
@@ -193,6 +222,30 @@ phyStatus_t Plme_Mac_SapHandler(plmeToMacMessage_t *pMsg, instanceId_t instanceI
     return gPhySuccess_c;
 }
 
+void PHY_ext_cmd_handler(phyMessageHeader_t *pMsg, instanceId_t instanceId)
+{
+    ext_phy_cmd_t *m = (ext_phy_cmd_t *)pMsg;
+    uint32_t len = sizeof(ext_phy_cmd_t) + m->tx.cnf.ackLength + m->rx_ind.psduLength;
+
+    pMsg->ctx_id = (instanceId & CTX_ID_MASK) | (CTX_EXT_CMD << CTX_ID_SIZE);
+
+    PLATFORM_RemoteActiveReq();
+
+    if (HAL_RpmsgSend((hal_rpmsg_handle_t)phyRpmsgHandle, (uint8_t *)pMsg, len) != kStatus_HAL_RpmsgSuccess)
+    {
+        assert(0);
+    }
+
+    PLATFORM_RemoteActiveRel();
+
+    if (!m->do_not_free)
+    {
+        MSG_Free(pMsg);
+    }
+
+    return;
+}
+
 #ifdef MAC_ENABLED
 void panic(uint32_t id, uint32_t location, uint32_t extra1, uint32_t extra2)
 {
@@ -210,6 +263,9 @@ void init_15_4_Phy(void)
 
     Phy_RegisterSapHandlers(Pd_Mac_SapHandler, Plme_Mac_SapHandler, 0);
     Phy_RegisterSapHandlers(Pd_Mac_SapHandler, Plme_Mac_SapHandler, 1);
+
+    PHY_register_ext_cmd_handler(PHY_ext_cmd_handler, 0);
+    PHY_register_ext_cmd_handler(PHY_ext_cmd_handler, 1);
 
     /* Initialize Phy RPMSG support */
     if (HAL_RpmsgInit((hal_rpmsg_handle_t)phyRpmsgHandle, &phyRpmsgConfig) != kStatus_HAL_RpmsgSuccess)

@@ -1290,6 +1290,12 @@ phyStatus_t PhyPlmeGetPIBRequest(phyPibId_t pibId, uint8_t *pibValue, instanceId
             value = !!(ctx->flags & gPhyFlagRxOnWhenIdle_c);
         }
         break;
+
+    case gPhyPibRxTimePoll_c:
+        size = sizeof(ctx->rx_time_poll);
+        value = ctx->rx_time_poll;
+        break;
+
     case gPhyPibDeferTxIfRxBusy_c:
         break;
     case gPhyPibLastTxAckFP_c:

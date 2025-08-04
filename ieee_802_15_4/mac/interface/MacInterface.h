@@ -73,6 +73,9 @@ enum
     MAC_EXT_CMD = CTX_EXT_CMD
 };
 
+
+#define gDummyNWK_c (instanceId_t)(-2)
+
 /*!
  *  The number of MAC instances used
  */

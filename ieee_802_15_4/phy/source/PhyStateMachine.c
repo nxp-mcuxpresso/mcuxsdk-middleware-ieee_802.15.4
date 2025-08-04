@@ -2979,3 +2979,32 @@ bool_t PHY_ctx_all_disabled()
 
 }
 #endif /* CTX_SCHED */
+
+bool_t PHY_ctx_graceful_idle(instanceId_t id)
+{
+    bool_t status = FALSE;
+    Phy_PhyLocalStruct_t *ctx = ctx_get(id);
+
+    OSA_InterruptDisable();
+
+    status = PHY_graceful_idle_base(ctx);
+
+    if (status)
+    {
+#ifdef CTX_SCHED
+        ctx->rx_ongoing = FALSE;
+#endif
+        ctx->flags &= ~gPhyFlagIdleRx_c;
+        ctx->filter_fail = 0;
+        ctx->ps = PS_NONE;
+
+        ctx_set_pending(ctx);
+
+        /* run the PHY state machine from PHY ISR context only */
+        PHY_ForceIrqPending();
+    }
+
+    OSA_InterruptEnable();
+
+    return status;
+}

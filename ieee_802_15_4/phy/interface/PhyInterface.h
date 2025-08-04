@@ -644,6 +644,8 @@ void PHY_ClearAckIeData(instanceId_t id);
 ********************************************************************************** */
 bool PHY_XCVR_AllowLowPower(void);
 
+bool_t PHY_ctx_graceful_idle(instanceId_t id);
+
 #ifdef PHY_LP_TMR
 phyTimeStatus_t phy_lp_time_init(void (*cb)());
 void phy_lp_time_deinit();

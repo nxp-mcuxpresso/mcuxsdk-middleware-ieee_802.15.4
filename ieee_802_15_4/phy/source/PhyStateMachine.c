@@ -154,8 +154,8 @@ static bool_t phy_is_active;
 uint8_t g_ldo_ant_trim_15_4 = 0xFF;
 #endif
 
-
-static bool_t t1_less_t2(uint32_t tstp_1, uint32_t tstp_2)
+bool_t t1_less_t2(uint32_t tstp_1, uint32_t tstp_2);
+bool_t t1_less_t2(uint32_t tstp_1, uint32_t tstp_2)
 {
     uint32_t neg_msk = 1 << (gPhyTimeShift_c - 1);
 
@@ -1060,6 +1060,7 @@ void Radio_Phy_PdDataConfirm(Phy_PhyLocalStruct_t *ctx, bool_t framePending)
     }
     else
     {
+        ctx->ps = PS_NONE;
         ctx->flags &= ~gPhyFlagRxFP_c;
     }
 

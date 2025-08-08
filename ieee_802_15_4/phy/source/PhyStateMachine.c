@@ -133,15 +133,27 @@ uint16_t PHY_TransformArrayToUint16(uint8_t *pArray);
 void update_rxf(uint8_t xcvseq, uint32_t irq_status);
 
 void PHY_set_enh_ack_state(Phy_PhyLocalStruct_t *ctx, enh_ack_state_t state);
-/*! *********************************************************************************
-*************************************************************************************
-* Private memory declarations
-*************************************************************************************
-********************************************************************************** */
+
+/* ********************************************************************************** */
 extern uint8_t * const rxf;
 
 #if gMWS_Enabled_d
 static bool_t phy_is_active;
+
+/* LTC access protection */
+extern void (* lock_LTC)();
+extern void (* unlock_LTC)();
+
+/* PHY state machine runs just in ISR context */
+static void PHY_lock_LTC()
+{
+    PHY_PhyIrqDisable();
+}
+
+static void PHY_unlock_LTC()
+{
+    PHY_PhyIrqEnable();
+}
 #endif
 
 #if (gMWS_Enabled_d) || (gMWS_UseCoexistence_d)
@@ -223,6 +235,9 @@ void Phy_Init(void)
 
 #if gMWS_Enabled_d
     MWS_Register(gMWS_802_15_4_c, MWS_802_15_4_Callback);
+
+    lock_LTC = PHY_lock_LTC;
+    unlock_LTC = PHY_unlock_LTC;
 #endif
 
 #if gMWS_UseCoexistence_d

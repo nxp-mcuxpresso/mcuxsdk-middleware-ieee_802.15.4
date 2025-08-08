@@ -79,11 +79,6 @@ enum
 /*!
  *  The number of MAC instances used
  */
-#ifdef PHY_LP_TMR
-#undef gMacInstancesCnt_c
-#define gMacInstancesCnt_c 2
-#endif
-
 #ifndef gMacInstancesCnt_c
 #define gMacInstancesCnt_c  1
 #endif

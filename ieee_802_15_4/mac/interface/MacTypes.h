@@ -491,6 +491,7 @@ typedef PACKED_STRUCT panDescriptor_tag
     macSuperframeSpec_t superframeSpec;            /*!< The superframe specification as specified in the received beacon frame.*/
     bool_t              gtsPermit;                 /*!< TRUE if the beacon is from the PAN coordinator that is accepting GTS requests.*/
     uint8_t             linkQuality;               /*!< The LQI at which the network beacon was received. Lower values represent lower LQI.*/
+    uint8_t             rssi;                      /*!< The Received Signal Strength Indicator. Higher value means stronger signal. */
     uint8_t             timeStamp[3];              /*!< The time, in symbols, at which the data were transmitted. This is a 24-bit value.*/
     macSecurityLevel_t  securityLevel;             /*!< Indicates the security level to be used. */
     keyIdModeType_t     keyIdMode;                 /*!< This parameter is ignored if the securityLevel parameter is set to gMacSecurityNone_c. */

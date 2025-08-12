@@ -193,6 +193,7 @@ typedef MAC_STRUCT mcpsDataInd_tag
     addrModeType_t          srcAddrMode; /*!< The source addressing mode for this primitive. */
     uint8_t                 msduLength;      /*!< The number of octets contained in the MSDU being indicated by the MAC sublayer entity. */
     uint8_t                 mpduLinkQuality; /*!< The LQI value measured during the reception of the MPDU. Lower values represent lower LQI */
+    uint8_t                 mpduRssi;        /*!< The RSSI value measured during the reception of the MPDU. */
     uint8_t                 dsn;             /*!< Data Sequence Number of the packet */
     uint32_t                timestamp;       /*!< The time, in symbols, at which the data were received. This is a 24-bit value */
     macSecurityLevel_t      securityLevel; /*!< The security level to be used */
@@ -259,9 +260,7 @@ typedef MAC_STRUCT mlmeAssociateCnf_tag
     keyIdModeType_t         keyIdMode; /*!< The mode used to identify the key to be used. This parameter is ignored if the SecurityLevel parameter is set to 0x00. */
     uint64_t                keySource; /*!< The originator of the key to be used. This parameter is ignored if the KeyIdMode parameter is ignored or set to 0x00. */
     uint8_t                 keyIndex;  /*!< The index of the key to be used. This parameter is ignored if the KeyIdMode parameter is ignored or set to 0x00. */
-#if defined(USE_ZBOSS_STACK) && (USE_ZBOSS_STACK==1)
     uint64_t                parentAddress;  /* non-standard field, but used for Zboss */
-#endif
 } mlmeAssociateCnf_t;
 
 /*!  The MLME-ASSOCIATE.response primitive is used to initiate a response to an MLME-ASSOCIATE.indication primitive. */

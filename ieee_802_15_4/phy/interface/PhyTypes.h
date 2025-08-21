@@ -75,7 +75,7 @@
 #define gInvalidTimerId_c (0xFF)
 
 #define gPhyTimeShift_c   (24)          /* 24bit hw timer */
-#define gPhyTimeMask_c    (0x00FFFFFF)
+#define gPhyTimeMask_c    ((uint32_t)(1 << gPhyTimeShift_c) - 1)
 
 /* Security defines */
 #ifndef gSmacUseInlineDecrypt

@@ -430,7 +430,7 @@ phyTime_t PhyTimeGetEventTimeout(void)
 
 phyTime_t PhyTime_ReadClock()
 {
-    return (phyTime_t)(ZLL->EVENT_TMR >> ZLL_EVENT_TMR_EVENT_TMR_SHIFT);
+    return (phyTime_t)((ZLL->EVENT_TMR >> ZLL_EVENT_TMR_EVENT_TMR_SHIFT) & gPhyTimeMask_c);
 }
 
 void PhyTime_ISR(void)

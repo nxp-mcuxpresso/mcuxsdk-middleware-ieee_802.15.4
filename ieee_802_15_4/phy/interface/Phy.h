@@ -631,6 +631,22 @@ phyStatus_t PhyPlmeSetPwrLevelRequest(int8_t pwr_dbm);
 int8_t PhyPlmeGetPwrLevelRequest(void);
 
 /*! *********************************************************************************
+ * \brief Get the TX power capabilities (min and max) in dBm
+ *
+ * \return status
+ *
+ ********************************************************************************** */
+phyStatus_t PhyGetTxPowerCapabilities(uint8_t channel, int8_t *max, int8_t *min);
+
+/*! *********************************************************************************
+ * \brief Get the RX sensitivity in dBm
+ *
+ * \return status, rx sensitivity in dBm
+ *
+ ********************************************************************************** */
+phyStatus_t PhyGetRxSensitivity(int8_t *rx_sensitivity);
+
+/*! *********************************************************************************
  * \brief Set a PHY PIB
  *
  * \param[in] pibId           The Id of the PIB

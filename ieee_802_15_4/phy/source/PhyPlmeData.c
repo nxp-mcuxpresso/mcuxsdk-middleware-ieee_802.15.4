@@ -1098,6 +1098,83 @@ int8_t PhyPlmeGetPwrLevelRequest(void)
 }
 
 /*! *********************************************************************************
+ * \brief Get the receiver sensitivity in dBm
+ *
+ * \return status
+ *
+ ********************************************************************************** */
+phyStatus_t PhyGetRxSensitivity(int8_t *rx_sensitivity)
+{
+    phyStatus_t status = gPhyUnsupportedAttribute_c;
+#if !(defined(K32W1480_SERIES) || defined(CPU_KW45B41Z83AFPA_NBU) || \
+      defined(MCXW727C_cm33_core0_SERIES)                         || \
+      defined(MCXW727C_cm33_core1_SERIES)                         || \
+      defined(MCXW716A_SERIES) || defined(MCXW716C_SERIES)        || \
+      defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES) || \
+      defined(RW610N_BT_CM3_SERIES))
+
+    // Get SoC sensitivity (noise floor) in dBm
+    *rx_sensitivity = gPhyRxSensitivityValue_d;
+
+    status = gPhySuccess_c;
+#endif
+    return status;
+}
+
+/*! *********************************************************************************
+ * \brief Get the TX power capabilities (min and max) in dBm
+ *
+ * \return status
+ *
+ ********************************************************************************** */
+phyStatus_t PhyGetTxPowerCapabilities(uint8_t channel, int8_t *max, int8_t *min)
+{
+    phyStatus_t status = gPhyUnsupportedAttribute_c;
+#if !(defined(RW610N_BT_CM3_SERIES))
+#if !(defined(K32W1480_SERIES) || defined(CPU_KW45B41Z83AFPA_NBU) || \
+      defined(MCXW727C_cm33_core0_SERIES)                         || \
+      defined(MCXW727C_cm33_core1_SERIES)                         || \
+      defined(MCXW716A_SERIES) || defined(MCXW716C_SERIES)        || \
+      defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES))
+#if (FFU_CNS_TX_PWR_TABLE_CALIBRATION == 1)
+    status = gPhyInvalidParameter_c;
+
+    int8_t max_tmp = 0;
+
+    if ((channel >= 11) && (channel <= 26))
+    {
+        *min = ((int8_t)gPhyMinTxPowerLevel_d) / 2;
+
+        max_tmp = gPhyMaxTxPowerLevel_d - FE_LOSS_VALUE;
+        if (FE_POWER_AMPLIFIER_ENABLE && FE_POWER_AMPLIFIER_GAIN)
+        {
+        max_tmp += 2 * FE_POWER_AMPLIFIER_GAIN;
+        }
+        if (max_tmp > gPhyChannelTxPowerLimits[channel - 11])
+        {
+        max_tmp = gPhyChannelTxPowerLimits[channel - 11];
+        }
+        *max = max_tmp / 2;
+
+        status = gPhySuccess_c;
+    }
+#endif /* FFU_CNS_TX_PWR_TABLE_CALIBRATION == 1 */
+#else /* !(MCXW7x || K32W1 || MCXW30) */
+    status = gPhyInvalidParameter_c;
+
+    if ((channel >= 11) && (channel <= 26))
+    {
+         *min = (int8_t)gPhyMinTxPower_low_rf_dBm_Int8_d;
+         *max  = gPhyChannelTxPowerLimits[channel - 11];
+
+         status = gPhySuccess_c;
+    }
+#endif
+#endif /* !RW610N_BT_CM3_SERIES */
+    return status;
+}
+
+/*! *********************************************************************************
 * \brief  This function will set the value of PHY PIBs
 *
 * \param[in]   pibId            the Id of the PIB

@@ -303,6 +303,13 @@ typedef PACKED_STRUCT filterAddr_tag
     bool_t   block;
 } filterAddr_t;
 
+typedef PACKED_STRUCT TxPwrCapabilities_tag
+{
+    uint8_t channel;
+    int8_t max;
+    int8_t min;
+} TxPwrCapabilities_t;
+
 /*! PHY Management Requests messages */
 typedef struct macToPlmeMessage_tag
 {
@@ -329,6 +336,10 @@ typedef struct macToPlmeMessage_tag
 
         MacKeyData_t          MacKeyData;
         uint32_t              MacFrameCounter;
+
+        TxPwrCapabilities_t   txPwrCapa;
+        int8_t                rxSensitivity;
+
     } msgData;
 } macToPlmeMessage_t;
 

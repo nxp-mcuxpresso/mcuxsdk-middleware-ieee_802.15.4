@@ -676,6 +676,11 @@ phyStatus_t MAC_PLME_SapHandler(macToPlmeMessage_t *pMsg, instanceId_t phyInstan
 
         break;
 
+    case gPlmeClearNeighbourTable:
+         PhyPp_ClearNeighbourTbl(phyInstance);
+
+         break;
+
     case gPlmeRemoveFromSAMTable_c:
         PhyRemoveFromSamTable(phyInstance, pMsg->msgData.deviceAddr.addr,
                               pMsg->msgData.deviceAddr.mode,
@@ -738,6 +743,16 @@ phyStatus_t MAC_PLME_SapHandler(macToPlmeMessage_t *pMsg, instanceId_t phyInstan
         PHY_updateLocalWithExtAddr(phyInstance, pMsg->msgData.filterAddr.extAddr, pMsg->msgData.filterAddr.shortAddr);
         break;
 #endif
+
+    case gPlmeGetRxSensitivity:
+        result = PhyGetRxSensitivity(&pMsg->msgData.rxSensitivity);
+        break;
+
+    case gPlmeGetTxPowerCapabilities:
+        result = PhyGetTxPowerCapabilities(pMsg->msgData.txPwrCapa.channel,
+                                           &pMsg->msgData.txPwrCapa.max,
+                                           &pMsg->msgData.txPwrCapa.min);
+        break;
 
     default:
         result = gPhyInvalidPrimitive_c;

@@ -86,6 +86,11 @@ typedef enum
     gPlmeSetBeaconFiltering_c,         /* Filter beacon frame                      */
     gPlmeUpdateLocalWithExtAddr_c,     /* Link short address with ieee 64b address */
 
+    gPlmeClearNeighbourTable,          /* Clear the contents of the neighbour table */
+
+    gPlmeGetRxSensitivity,             /* Get the radio receive sensitivity */
+    gPlmeGetTxPowerCapabilities,       /* Get the radio tx power capabilties per channel */
+
     gPhyExtCmd = EXT_CMD_ID
 } phyMessageId_t;
 

@@ -451,6 +451,7 @@ typedef enum
     gMPibiDeviceDescriptorHandleListCrtEntry_c  = 0xA6,
 #endif
     gMPibiKeyUsageListCrtEntry_c                = 0x9A,
+    gMPibCcaBeforeTxMode_c                      = 0x9C,
 
     gMacGetId = 0xf0,       /* used for BindToMAC() */
     gMacGetPhyId            /* used for MAC_get_PHY_ctx() */

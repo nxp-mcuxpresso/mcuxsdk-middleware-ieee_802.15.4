@@ -213,6 +213,7 @@ typedef MAC_STRUCT mcpsPurgeReq_tag
 /*!  The MCPS-PURGE.request primitive allows the next higher layer to purge an MSDU from the transaction queue. */
 typedef MAC_STRUCT mcpsPurgeIndQueueReq_tag
 {
+    uint8_t                 msduHandle;   /*!< The handle of the request */
     uint64_t                srcIeeeAddr;     /*!< The individual device address of the entity from which the MSDU was received. */
     uint16_t                srcShortAddr; /*!< The source addressing mode for this primitive. */
     uint16_t                srcPanId;    /*!< PAN identifier of the entity from which the MSDU was received. */

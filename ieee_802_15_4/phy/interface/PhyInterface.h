@@ -39,7 +39,9 @@
 * Public type definitions
 *************************************************************************************
 ********************************************************************************** */
+#ifndef CONCAT
 #define CONCAT(a, b) a ## b // Concatenate
+#endif
 #define CONCAT_EXPAND(a,b) CONCAT(a, b) // expand then paste
 #define _Static_assert(cond, STR) typedef char CONCAT_EXPAND(static_assert_line_, __LINE__)[(cond) ? 1 : -1] // Define _Static_assert for Backward Compatibility to support lower C11 C-Standard versions.
 

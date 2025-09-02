@@ -570,6 +570,7 @@ AspStatus_t ASP_TelecSendRawData(uint8_t *dataPtr)
     AspStatus_t status = gAspSuccess_c;
     uint8_t *pTxBuffer = (uint8_t*)TX_PACKET_RAM;
     uint32_t len;
+    volatile uint32_t phy_ctrl, irq_stats;
 
     /* Validate the length */
     if ((dataPtr[0] + 2) > gMaxPHYPacketSize_c)
@@ -593,8 +594,30 @@ AspStatus_t ASP_TelecSendRawData(uint8_t *dataPtr)
         {
             *pTxBuffer++ = *dataPtr++;
         }
+
         /* Program a Tx sequence */
-        ZLL->PHY_CTRL |= ZLL_PHY_CTRL_XCVSEQ(gTX_c);
+        /* Save PHY_CTRL first, it will be restored later */
+        phy_ctrl = ZLL->PHY_CTRL;
+
+        /* start TX SEQ, and mask all ZB interrupts */
+        ZLL->PHY_CTRL |= ZLL_PHY_CTRL_XCVSEQ(gTX_c) | ZLL_PHY_CTRL_TRCV_MSK(1);
+
+        /*
+         * Wait for the TX interrupt, but don't go through the
+         * standard processing flow: this will lead to cont. TX the same
+         * packet from packet buffer; I could have relied on this, but
+         * I did not want to affect the PHY state machine, as such,
+         * I'm hiding this "spurious TX".
+         */
+        do {
+            irq_stats = ZLL->IRQSTS;
+        } while (!((irq_stats & ZLL_IRQSTS_TXIRQ_MASK) >> ZLL_IRQSTS_TXIRQ_SHIFT));
+
+        /* Clear the TX interrupt here */
+        irq_stats &= ~(ZLL_IRQSTS_TXIRQ_MASK);
+
+        /* Restore the PHY_CTRL to the original value */
+        ZLL->PHY_CTRL = phy_ctrl;
     }
 
     return status;

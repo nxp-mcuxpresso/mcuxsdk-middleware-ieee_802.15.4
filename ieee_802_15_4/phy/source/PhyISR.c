@@ -1343,9 +1343,11 @@ void PHY_InterruptHandler_base(
                 }
                 else if (irqStatus & ZLL_IRQSTS_RXIRQ_MASK)
                 {
+                    crc_valid = (ZLL->SEQ_STATE & ZLL_SEQ_STATE_CRCVALID_MASK) >> ZLL_SEQ_STATE_CRCVALID_SHIFT;
+
                     /* Avoid to process unsupported enh ACK in TR sequence.
                        Filter fail interrupt occurred if unsupported packet received */
-                    if (ctx && !ctx->filter_fail)
+                    if (ctx && !ctx->filter_fail && crc_valid)
                     {
                         Phy_GetRxInfo(ctx);  /* timestamp, length */
 
@@ -1412,7 +1414,6 @@ void PHY_InterruptHandler_base(
 
                     /* Copy the received packet */
                     PHY_MemCpy(ctx->trx_buff, RX_PB, ctx->rxParams.psduLength);
-
 
                     Radio_Phy_PdDataIndication(ctx);
                 }

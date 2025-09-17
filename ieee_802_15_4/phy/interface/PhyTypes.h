@@ -74,7 +74,14 @@
 /*! This constant defines the identification value of an invalid timer. */
 #define gInvalidTimerId_c (0xFF)
 
+#if defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES)
+#define gPhyTimeShift_c   (28)
+#endif
+
+#ifndef gPhyTimeShift_c
 #define gPhyTimeShift_c   (24)          /* 24bit hw timer */
+#endif
+
 #define gPhyTimeMask_c    ((uint32_t)(1 << gPhyTimeShift_c) - 1)
 
 /* Security defines */

@@ -381,13 +381,12 @@ static void Phy24Task(Phy_PhyLocalStruct_t *ctx)
 
     OSA_InterruptDisable();
 
-    if (ctx->ps == PS_RX)
+    if ((ctx->ps == PS_RX) && (PhyPpGetState_base(ctx) == gIdle_c))
     {
         uint32_t t = PhyTime_ReadClock();
         uint32_t dt = (ctx->rx_poll_to - t) & gPhyTimeMask_c;
 
-        if ((PhyPpGetState_base(ctx) == gIdle_c) &&
-            t1_less_t2(t, ctx->rx_poll_to) && (dt > PHY_IMM_ACK_LENGTH))
+        if (t1_less_t2(t, ctx->rx_poll_to) && (dt > PHY_IMM_ACK_LENGTH))
         {
             ctx->flags &= ~(gPhyFlagIdleRx_c | gPhyFlagRxSilent_c);
 

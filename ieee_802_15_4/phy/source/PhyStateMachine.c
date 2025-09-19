@@ -1110,6 +1110,30 @@ void Radio_Phy_PdDataConfirm(Phy_PhyLocalStruct_t *ctx, bool_t framePending)
     PD_SendMessage(ctx, gPdDataCnf_c);
 }
 
+static void ctx_data_ind(Phy_PhyLocalStruct_t *ctx)
+{
+    if (!ctx)
+    {
+        return;
+    }
+
+    uint16_t fcf = PHY_TransformArrayToUint16(ctx->trx_buff);
+    bool_t is_unicast = !!(fcf & phyFcfAckRequest);
+
+    if (is_unicast)
+    {
+        /* stop rx for POLL after a unicast packet is received */
+        ctx->ps = PS_NONE;
+    }
+
+    if (is_unicast || (ctx->ps != PS_RX))
+    {
+        PD_SendMessage(ctx, gPdDataInd_c);
+    }
+
+    ctx->flags &= ~gPhyFlagRxSilent_c;
+}
+
 /*! *********************************************************************************
 * \brief  This function signals the PHY task that new data has been received
 *
@@ -1118,23 +1142,7 @@ void Radio_Phy_PdDataConfirm(Phy_PhyLocalStruct_t *ctx, bool_t framePending)
 ********************************************************************************** */
 void Radio_Phy_PdDataIndication(Phy_PhyLocalStruct_t *ctx)
 {
-    if (!ctx)
-    {
-        return;
-    }
-
-    uint16_t fcf = PHY_TransformArrayToUint16(ctx->trx_buff);
-
-    if (fcf & phyFcfAckRequest)
-    {
-        /* stop rx for POLL after a unicast packet is received */
-        ctx->ps = PS_NONE;
-    }
-
-    PD_SendMessage(ctx, gPdDataInd_c);
-
-    ctx->flags &= ~gPhyFlagRxSilent_c;
-
+    ctx_data_ind(ctx);
     ctx_data_ind_all(ctx);
 }
 
@@ -2196,23 +2204,13 @@ void ctx_data_ind_all(Phy_PhyLocalStruct_t *ctx)
     ctx_2->rxParams = ctx->rxParams;
     memcpy(ctx_2->trx_buff, ctx->trx_buff, ctx->rxParams.psduLength);
 
-    uint16_t fcf = PHY_TransformArrayToUint16(ctx_2->trx_buff);
-
-    if (fcf & phyFcfAckRequest)
-    {
-        /* stop rx for POLL after a unicast packet is received */
-        ctx_2->ps = PS_NONE;
-    }
-
     /* Phy_GetRxInfo() */
     ctx_2->mPhyLastRxRSSI = ctx->mPhyLastRxRSSI;
     ctx_2->mPhyLastRxLQI = ctx->mPhyLastRxLQI;
 
     scheduler.rxed_on_all = FALSE;
 
-    PD_SendMessage(ctx_2, gPdDataInd_c);
-
-    ctx_2->flags &= ~gPhyFlagRxSilent_c;
+    ctx_data_ind(ctx_2);
 }
 
 bool_t all_ctx_rx()

@@ -404,7 +404,8 @@ void PhyHwInit(void)
                     ZLL_PHY_CTRL_TRCV_MSK_MASK;
 
 #if defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES)
-    ZLL->RX_FRAME_FILTER |= ZLL_RX_FRAME_FILTER_AUTOACK_MASK;
+    ZLL->RX_FRAME_FILTER |= ZLL_RX_FRAME_FILTER_AUTOACK_MASK | \
+                            ZLL_RX_FRAME_FILTER_AUTOACK_PAN1_MASK;
 #else
     ZLL->PHY_CTRL |= ZLL_PHY_CTRL_AUTOACK_MASK;
 #endif
@@ -486,6 +487,13 @@ void PhyHwInit(void)
                         ZLL_ENHACK_CTRL0_ACK_ABORT_IRQ_MASK | ZLL_ENHACK_CTRL0_ACK_ABORT_MSK_MASK |
                         ZLL_ENHACK_CTRL0_EMPTY_SRC_ADDR_MODE(2) |
                         ZLL_ENHACK_CTRL0_ENHACK_EN_MASK;
+#if defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES)
+    /*
+     * MCXW30 Radio BG 0.95: ENHACK_CTRL0[ENABLE_HW_MODE7_8] must be set to
+     * 0b1 to enable EnhAck response with extended addresses.
+     */
+    ZLL->ENHACK_CTRL0 |= ZLL_ENHACK_CTRL0_ENABLE_HW_MODE7_8_MASK;
+#endif
 
 #if (WEIGHT_IN_LQI_CALCULATION == 1)
     /* Get NB RSSI control values */

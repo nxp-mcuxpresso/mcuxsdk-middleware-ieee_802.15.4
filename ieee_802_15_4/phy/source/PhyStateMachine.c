@@ -2037,7 +2037,7 @@ void ctx_init_single(uint8_t id)
     ctx->filter_fail = 0;
     ctx->neighbourTblEnabled = FALSE;
 
-    ctx->rx_time_poll = PHY_RX_TIME_POLL;
+    ctx->rx_time_poll = 0;
     ctx->ps = PS_NONE;
 
 #ifdef CTX_SCHED

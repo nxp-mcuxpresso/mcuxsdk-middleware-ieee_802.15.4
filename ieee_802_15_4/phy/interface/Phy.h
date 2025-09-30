@@ -94,8 +94,6 @@ typedef enum
 
 #define PHY_TMR_CMP_MIN 4   /* symbols (64 us). Comparator threshold */
 
-#define PHY_RX_TIME_POLL 6250   /* symbols */
-
 #define PHY_TEN_SYMBOLS_US 160
 #define PHY_SYMBOLS_US 16
 

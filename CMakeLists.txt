@@ -86,6 +86,11 @@ if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.MAC)
 endif()
 
 if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.split_MAC)
+    mcux_add_source(
+        SOURCES
+            ieee_802_15_4/mac/source/App/mac_intf_rpmsg.c
+    )
+
     mcux_add_library(
         LIBS
             ieee_802_15_4/lib/libieee-802.15.4_MAC_intf.a
@@ -128,6 +133,11 @@ if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.MAC)
 endif()
 
 if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.split_MAC)
+    mcux_add_source(
+        SOURCES
+            ieee_802_15_4/mac/source/App/mac_intf_rpmsg.c
+    )
+
     mcux_add_library(
         LIBS
             ieee_802_15_4/lib/libieee-802.15.4_MAC_intf_MCXW72.a

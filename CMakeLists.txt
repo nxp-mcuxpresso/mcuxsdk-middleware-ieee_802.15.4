@@ -54,7 +54,7 @@ if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.generic_PHY.NBU)
     )
 endif()
 
-if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.split_PHY)
+if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.generic_split_PHY)
     mcux_add_source(
         SOURCES
             ieee_802_15_4/phy/source/SerialDevice/Phy.c

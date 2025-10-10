@@ -224,6 +224,15 @@ void Phy_Init(void)
 #endif
 #endif
 
+#if defined(CPU_KW45B41Z83AFPA_NBU) || defined(MCXW727C_cm33_core1_SERIES) || defined(KW43B43ZC7_NBU_SERIES)
+    /* Wait for the XTAL to be ready before running anything else
+     * The XTAL is started by the main core, so we need to wait for its readiness */
+    RF_CMC1->IRQ_CTRL |= RF_CMC1_IRQ_CTRL_RDY_IE_MASK;
+    while ((RF_CMC1->IRQ_CTRL & RF_CMC1_IRQ_CTRL_XTAL_RDY_MASK) == 0U)
+    {
+    }
+#endif
+
     /* ISR registration. Must be done before IRQ enablement (PHY_Enable()).
        PhyHwInit() => PHY_Enable() */
     PHY_PhyIrqCreate();

@@ -450,6 +450,10 @@ void main_task(uint32_t param)
         }
 #endif /*gAppLedCnt_c > 0*/
 
+#if defined(gPlatformEnableLdoForce) && (gPlatformEnableLdoForce > 0)
+        PLATFORM_EnableLdoForce();
+#endif
+
         OSA_EventCreate((osa_event_handle_t)gTaskEvent, TRUE);
 
         InitApp();

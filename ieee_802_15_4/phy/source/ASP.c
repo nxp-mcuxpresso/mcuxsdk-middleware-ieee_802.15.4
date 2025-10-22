@@ -30,6 +30,14 @@
 #include "fsl_component_mem_manager.h"
 #include "FunctionLib.h"
 
+#if defined(gMWS_Enabled_d) && (gMWS_Enabled_d == 1)
+void do_ble_phy_coex();
+bool_t PHY_is_active();
+#else
+#define do_ble_phy_coex()
+#define PHY_is_active() TRUE
+#endif
+
 #if MFG_ENABLE
 #include "fsl_adapter_rpmsg.h"
 #include "fsl_adapter_rfimu.h"
@@ -567,7 +575,7 @@ AspStatus_t ASP_TelecSetFreq(uint8_t channel)
 ********************************************************************************** */
 AspStatus_t ASP_TelecSendRawData(uint8_t *dataPtr)
 {
-    AspStatus_t status = gAspSuccess_c;
+    AspStatus_t status = gAspDenied_c;
     uint8_t *pTxBuffer = (uint8_t*)TX_PACKET_RAM;
     uint32_t len;
     volatile uint32_t phy_ctrl, irq_stats;
@@ -595,29 +603,40 @@ AspStatus_t ASP_TelecSendRawData(uint8_t *dataPtr)
             *pTxBuffer++ = *dataPtr++;
         }
 
-        /* Program a Tx sequence */
-        /* Save PHY_CTRL first, it will be restored later */
-        phy_ctrl = ZLL->PHY_CTRL;
+        do_ble_phy_coex();
 
-        /* start TX SEQ, and mask all ZB interrupts */
-        ZLL->PHY_CTRL |= ZLL_PHY_CTRL_XCVSEQ(gTX_c) | ZLL_PHY_CTRL_TRCV_MSK(1);
+        if (PHY_is_active())
+        {
+            /* Program a Tx sequence */
+            /* Save PHY_CTRL first, it will be restored later */
+            phy_ctrl = ZLL->PHY_CTRL;
 
-        /*
-         * Wait for the TX interrupt, but don't go through the
-         * standard processing flow: this will lead to cont. TX the same
-         * packet from packet buffer; I could have relied on this, but
-         * I did not want to affect the PHY state machine, as such,
-         * I'm hiding this "spurious TX".
-         */
-        do {
-            irq_stats = ZLL->IRQSTS;
-        } while (!((irq_stats & ZLL_IRQSTS_TXIRQ_MASK) >> ZLL_IRQSTS_TXIRQ_SHIFT));
+            ProtectFromXcvrInterrupt();
 
-        /* Clear the TX interrupt here */
-        irq_stats &= ~(ZLL_IRQSTS_TXIRQ_MASK);
+            /* start TX SEQ, and mask all ZB interrupts */
+            ZLL->PHY_CTRL |= ZLL_PHY_CTRL_XCVSEQ(gTX_c);
 
-        /* Restore the PHY_CTRL to the original value */
-        ZLL->PHY_CTRL = phy_ctrl;
+            /*
+             * Wait for the TX interrupt, but don't go through the
+             * standard processing flow: this will lead to cont. TX the same
+             * packet from packet buffer; I could have relied on this, but
+             * I did not want to affect the PHY state machine, as such,
+             * I'm hiding this "spurious TX".
+             */
+            do {
+                irq_stats = ZLL->IRQSTS;
+            } while (!((irq_stats & ZLL_IRQSTS_TXIRQ_MASK) >> ZLL_IRQSTS_TXIRQ_SHIFT));
+
+            /* Clear the TX interrupt here */
+            irq_stats &= ~(ZLL_IRQSTS_TXIRQ_MASK);
+
+            /* Restore the PHY_CTRL to the original value */
+            ZLL->PHY_CTRL = phy_ctrl;
+
+            UnprotectFromXcvrInterrupt();
+
+            status = gAspSuccess_c;
+        }
     }
 
     return status;

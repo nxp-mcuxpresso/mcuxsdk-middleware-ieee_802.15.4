@@ -2699,7 +2699,7 @@ smacTestMode_t  mode  /*IN: The test mode to start.*/
 
     if(gTestModeForceIdle_c == mode)
     {
-        MLMEPhySoftReset();
+        //MLMEPhySoftReset();
         aspTestRequestMsg.msgData.aspTelecTest.mode = gTestForceIdle_c;
     }
     else if(gTestModeContinuousTxModulated_c == mode)

@@ -1408,6 +1408,9 @@ phyStatus_t PhyPlmeGetPIBRequest(phyPibId_t pibId, uint8_t *pibValue, instanceId
     }
 
     /* Avoid unaligned memory access issues */
-    memcpy(pibValue, &value, size);
+    if (size > 0u)
+    {
+        memcpy(pibValue, &value, size);
+    }
     return result;
 }

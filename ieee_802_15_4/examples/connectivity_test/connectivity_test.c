@@ -960,7 +960,8 @@ bool_t SerialContinuousTxRxTest(void)
         if(evDataFromUART && 'p' == gu8UartData)
         {
             contTestRunning = gTestModeForceIdle_c;
-            (void)TestMode(gTestModeForceIdle_c);
+
+            MLMEPhySoftReset();
             (void)MLMESetChannelRequest(testChannel);
             ConnTestTimers_StopDelay(AppDelayTmr);
             timePassed = FALSE;

@@ -217,7 +217,11 @@
 #endif
 
 #ifndef gPhyMaxTxPowerLevel_d
+#if defined(MCXW727C_cm33_core0_SERIES) || defined(MCXW727C_cm33_core1_SERIES)
+#define gPhyMaxTxPowerLevel_d         (54U)   // PA slice 54, maximum output power
+#else
 #define gPhyMaxTxPowerLevel_d         (0x3F)   // PA slice 63, maximum output power
+#endif
 #endif
 
 /*

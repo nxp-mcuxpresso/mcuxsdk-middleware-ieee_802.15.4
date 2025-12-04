@@ -658,7 +658,7 @@ phyStatus_t PhyPlmeSetCurrentChannelRequest(uint8_t channel, uint8_t pan)
     pwr_dbm = PhyPlmeGetPwrLevelRequest();
 
     /* Make sure the current Tx power doesn't exceed the Tx power limit for the new channel */
-    if (pwr_dbm > gPhyChannelTxPowerLimits[channel - 11])
+    if ((pwr_dbm != TX_OUTPUT_INVALID_DBM_VALUE) && (pwr_dbm > gPhyChannelTxPowerLimits[channel - 11]))
     {
         PhyPlmeSetPwrLevelRequest(gPhyChannelTxPowerLimits[channel - 11]);
     }

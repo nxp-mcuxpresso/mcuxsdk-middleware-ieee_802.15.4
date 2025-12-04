@@ -87,11 +87,7 @@
 *************************************************************************************
 ************************************************************************************/
 /* Power expressed as an index value into the register PA_PWR */
-#if defined(MCXW727C_cm33_core0_SERIES) || defined(MCXW727C_cm33_core1_SERIES)
-#define gMaxOutputPower_c              ( 54 )
-#else
 #define gMaxOutputPower_c              ( 63 )
-#endif
 #define gMinOutputPower_c              (  0 )
 #define gDefaultOutputPower_c          (  5 )
 

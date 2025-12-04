@@ -654,6 +654,7 @@ AspStatus_t ASP_TelecTest(uint8_t mode)
 {
 #if !defined(RW610N_BT_CM3_SERIES)
     uint32_t tx_pwr = 0;
+    uint32_t reg = 0;
 #endif
     uint8_t channel = 11; /* force initialization here to avoid C4017W */
     static bool_t fracSet = FALSE;
@@ -752,20 +753,20 @@ AspStatus_t ASP_TelecTest(uint8_t mode)
 
     case gTestContinuousTxNoMod_c: /* Sets the device to continuously transmit an unmodulated CW */
 #if !defined(RW610N_BT_CM3_SERIES)
-        /*
-         * Get the current PA_PWR from ZLL and convert it to
-         * XCVR_TX_DIG->PA_CTRL[PA_TGT_POWER] , which goes 0..63 (even numbers
-         * only , applies only for radio gen < 450; the radio driver handles
-         * both cases).
-         */
         tx_pwr = (ZLL->PA_PWR & ZLL_PA_PWR_PA_PWR_MASK) >> ZLL_PA_PWR_PA_PWR_SHIFT;
+
         XCVR_ChangeMode(&xcvr_gfsk_config, &xcvr_coding_config);
 
         XCVR_SetActiveLL(XCVR_ACTIVE_LL_GENFSK);
 
         XCVR_SetPLLBand(XCVR_BAND_SEL_GENERIC);
 
-        XCVR_ForcePAPower(tx_pwr >> 1);
+        /* Apply the same TX power to the GENFSK as the one we had for ZLL */
+        reg  = GENFSK->TX_POWER;
+        reg &= ~(GENFSK_TX_POWER_TX_POWER_MASK);
+        reg |= GENFSK_TX_POWER_TX_POWER(tx_pwr);
+        GENFSK->TX_POWER = reg;
+
 #endif /* !defined(RW610N_BT_CM3_SERIES) */
         XCVR_DftTxCW(CH2FREQ(channel));
 

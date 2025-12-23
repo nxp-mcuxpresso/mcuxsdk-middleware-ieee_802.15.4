@@ -1,6 +1,6 @@
 /*! *********************************************************************************
 * Copyright (c) 2015, Freescale Semiconductor, Inc.
-* Copyright 2016-2025 NXP
+* Copyright 2016-2026 NXP
 * All rights reserved.
 *
 * \file
@@ -79,6 +79,11 @@ enum
 /*!
  *  The number of MAC instances used
  */
+#if defined(PHY_LP_TMR) && defined(MCXW727C_cm33_core1_SERIES)
+#undef gMacInstancesCnt_c
+#define gMacInstancesCnt_c 2
+#endif
+
 #ifndef gMacInstancesCnt_c
 #define gMacInstancesCnt_c  1
 #endif

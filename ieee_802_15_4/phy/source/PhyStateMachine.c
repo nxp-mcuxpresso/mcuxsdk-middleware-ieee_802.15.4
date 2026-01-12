@@ -1665,6 +1665,12 @@ static void mode_switch_ZB()
         return;
     }
 
+#if (defined(HDI_MODE) && (HDI_MODE == 1L))
+#if (defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES))
+    HDI_Set_Mode_Zigbee();
+#endif
+#endif
+
     XCVR_ChangeMode(&xcvrConfig, &rbmeConfig);
     XCVR_SetActiveLL(XCVR_ACTIVE_LL_ZIGBEE_LL);
 
@@ -1705,6 +1711,12 @@ static void mode_switch_BLE()
     {
         return;
     }
+
+#if (defined(HDI_MODE) && (HDI_MODE == 1L))
+#if (defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES))
+    HDI_Set_Mode_Ble();
+#endif
+#endif
 
     XCVR_ChangeMode(&xcvrConfigBLE, &rbmeConfigBLE);
     XCVR_SetActiveLL(XCVR_ACTIVE_LL_BTLE);

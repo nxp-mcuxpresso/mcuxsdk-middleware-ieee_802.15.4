@@ -20,9 +20,7 @@
 #include "SMAC_Interface.h"         /*@CMA Conn Test*/
 #include "FunctionLib.h"
 #include "AspInterface.h"
-#ifdef gPHY_802_15_4g_d
 #include "PhyTime.h"
-#endif
 #include "fsl_os_abstraction.h"
 #include "board.h"
 
@@ -186,13 +184,8 @@ typedef enum MpmPerConfigStates_tag
 #define gDefaultOperationMode_c         mTxOperation_c
 #define gDefaultPayload_c               20
 
-#ifdef gPHY_802_15_4g_d
- #define gMaxChannel_c                   ((channels_t)(gTotalChannels - 1))
- #define gMinChannel_c                   (gChannel0_c)
-#else
- #define gMaxChannel_c                   ((channels_t)gTotalChannels)
- #define gMinChannel_c                   (gChannel11_c)
-#endif
+#define gMaxChannel_c                   ((channels_t)gTotalChannels)
+#define gMinChannel_c                   (gChannel11_c)
 
 extern smacErrors_t smacToAppMlmeSap(smacToAppMlmeMessage_t* pMsg, instanceId_t instance);
 extern smacErrors_t smacToAppMcpsSap(smacToAppDataMessage_t* pMsg, instanceId_t instance);

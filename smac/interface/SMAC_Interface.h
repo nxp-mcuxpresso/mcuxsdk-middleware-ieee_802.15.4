@@ -183,43 +183,25 @@ typedef enum smacErrors_tag
   gErrorMaxError_c
 } smacErrors_t;
 
-#if defined (gPHY_802_15_4g_d)
-
-typedef enum smacRFModes_tag
-{
-  gRFMode1_c = gPhyMode1_c,
-  gRFMode2_c = gPhyMode2_c,
-  gRFMode3_c = gPhyMode3_c,
-  gRFMode4_c = gPhyMode4_c,
-  gRFMode5_c = gPhyMode1ARIB_c, /*ARIB mode 1*/
-  gRFMode6_c = gPhyMode2ARIB_c, /*ARIB mode 2*/
-  gRFMaxMode_c
-} smacRFModes_t;
-
-typedef enum smacFrequencyBands_tag
-{
-  gSMAC_863_870MHz_c = gFreq863__870MHz_c, /* 863-870   (Europe) */
-  gSMAC_902_928MHz_c = gFreq902__928MHz_c, /* 902-928   (US)     */
-  gSMAC_920_928MHz_c = gFreq920__928MHz_c, /* 920-928 (Japan)    */
-  gSMAC_169_400__169_475MHz_c = gFreq169_400__169_475MHz_c /* 169-475 */
-}smacFrequencyBands_t;
-
-#endif
-
-#if defined (gPHY_802_15_4g_d)
-
-typedef struct packetConfig_tag
-{
-  uint16_t u16PreambleSize;
-  uint8_t u8SyncWordSize;
-  uint8_t *pu8SyncWord;
-} packetConfig_t;
-
-#endif
-
 typedef enum channels_tag
 {
-#include "SMAC_Channels.h"
+    gChannel11_c = 0x0B,
+    gChannel12_c,
+    gChannel13_c,
+    gChannel14_c,
+    gChannel15_c,
+    gChannel16_c,
+    gChannel17_c,
+    gChannel18_c,
+    gChannel19_c,
+    gChannel20_c,
+    gChannel21_c,
+    gChannel22_c,
+    gChannel23_c,
+    gChannel24_c,
+    gChannel25_c,
+    gChannel26_c,
+    gChannelInvalid_c,
 } channels_t;
 
 typedef enum smacTestMode_tag
@@ -472,26 +454,6 @@ extern smacErrors_t MLMERXDisableRequest(void);
 extern uint8_t  MLMELinkQuality(void);
 
 /************************************************************************************
-* MLMESetInterPacketRxDelay
-*
-* This sets the inter packet delay for the packet handler
-*
-*  Interface assumptions:
-*   The SMAC and radio driver have been initialized and are ready to be used.
-*
-*  Arguments:
-*   uint8_t u8InterPacketRxDelay: interpacket delay in ms
-*
-*  Return Value:
-*      gErrorNoValidCondition_c If the Radio is not in Rx state.
-*      gErrorNoError_c When the message was aborted or disabled.
-*
-*************************************************************************************/
-#if defined(gPHY_802_15_4g_d)
-extern smacErrors_t MLMESetInterPacketRxDelay(uint8_t u8InterPacketRxDelay);
-#endif
-
-/************************************************************************************
 * MLMESetChannelRequest
 *
 * This sets the frequency on which the radio will transmit or receive on.
@@ -593,80 +555,6 @@ extern uint8_t MLMEGetAdditionalEDOffset( void );
 *************************************************************************************/
 extern channels_t MLMEGetChannelRequest(void);
 
-
-/************************************************************************************
-* MLMERssi
-*
-* This call starts an energy detect (ED) cycle and returns the energy value (-power/2)
-* via the returned argument. For example, if the Energy Detect returns 80 then the
-* interpreted value is -80/2 or -40 dBm
-*
-*  Interface assumptions:
-*   The SMAC and radio driver have been initialized and are ready to be used.
-*
-*  Arguments:
-*   None
-*
-*  Return Value:
-*  uint8_t: An unsigned 8-bit value representing the energy on the current channel.
-*************************************************************************************/
-#if defined(gPHY_802_15_4g_d)
-extern uint8_t MLMERssi(void);
-#endif
-
-/************************************************************************************
-* MLMESetCCADuration
-*
-* This call sets the amount of time necessary to perform CCA or ED
-*  Interface assumptions:
-*   The SMAC and radio driver have been initialized and are ready to be used.
-*
-*  Arguments:
-*   uint64_t usCCADuration: duration in microseconds
-*
-*  Return Value:
-*  gErrorNoError_c in case of success, error code otherwise.
-*************************************************************************************/
-#if defined(gPHY_802_15_4g_d)
-extern smacErrors_t MLMESetCCADuration(uint64_t usCCADuration );
-#endif
-/************************************************************************************
-* MLMEPacketConfig
-*
-* This function sets the following parameters for OTA packets in radio�s registers:
-* Preamble size, synchronization word size, and synchronization word value.
-*
-*  Interface assumptions:
-*   The SMAC and radio driver have been initialized and are ready to be used.
-*
-*  Arguments:
-*   packetConfig_t *pPacketCfg
-*
-*  Return Value:
-*  gErrorBusy_c: when SMAC is busy in other radio activity as transmitting or receiving data.
-*  Or performing a channel scan.
-*  gErrorNoError_c: the packet has been configured
-*************************************************************************************/
-#if defined(gPHY_802_15_4g_d)
-extern smacErrors_t MLMEPacketConfig(packetConfig_t *pPacketCfg);
-#endif
-/************************************************************************************
-* MLMERadioInit
-*
-* This function initializes the Radio parameters.
-*
-*  Interface assumptions:
-*   None
-*
-*  Arguments:
-*   None
-*
-*  Return Value:
-*  gErrorNoError_c: the Radio initialization has been done successfully
-*************************************************************************************/
-#if defined(gPHY_802_15_4g_d)
-extern smacErrors_t MLMERadioInit(void);
-#endif
 /************************************************************************************
 * MLMEPhySoftReset
 *
@@ -690,48 +578,6 @@ extern smacErrors_t MLMEPhySoftReset(void);
 *************************************************************************************/
 extern smacErrors_t MLMEPAOutputAdjust(uint8_t u8PaValue);
 
-/************************************************************************************
-* MLMESetPreambleLength
-*
-*
-*************************************************************************************/
-#if defined(gPHY_802_15_4g_d)
-extern smacErrors_t MLMESetPreambleLength(uint16_t u16preambleLength);
-#endif
-/************************************************************************************
-* MLMESetSyncWordValue
-*
-*
-*************************************************************************************/
-#if defined(gPHY_802_15_4g_d)
-extern smacErrors_t MLMESetSyncWordValue(uint8_t *u8syncWordValue);
-#endif
-/************************************************************************************
-* MLMESetSyncWordSize
-*
-*
-*************************************************************************************/
-#if defined(gPHY_802_15_4g_d)
-extern smacErrors_t MLMESetSyncWordSize(uint8_t u8syncWordSize);
-#endif
-/************************************************************************************
-* MLMESetFreqBand
-*
-*
-*
-************************************************************************************/
-#if defined(gPHY_802_15_4g_d)
-extern smacErrors_t MLMESetFreqBand(smacFrequencyBands_t freqBand, smacRFModes_t phyMode);
-#endif
-/************************************************************************************
-* MLMESetPhyMode
-*
-*
-*
-************************************************************************************/
-#if defined(gPHY_802_15_4g_d)
-extern smacErrors_t MLMESetPhyMode(smacRFModes_t phyMode);
-#endif
 /***********************************************************************************/
 /***************************** SMAC Management primitives **************************/
 /***********************************************************************************/

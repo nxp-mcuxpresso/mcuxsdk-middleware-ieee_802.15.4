@@ -23,12 +23,6 @@
 #include "fsl_component_timer_manager.h"
 #include "fsl_adapter_rng.h"
 
-#if defined (gPHY_802_15_4g_d)
-#include "PhyPib.h"
-#include "PhyExtended.h"
-#include "PhyTime.h"
-#endif
-
 #include "ModuleInfo.h"
 
 /************************************************************************************
@@ -39,12 +33,6 @@
 void SmacSetRxTimeout(smacTime_t timeoutSymbols);
 extern void InitSmac(void);
 
-#if defined (gPHY_802_15_4g_d)
-
-#define smacPreambleSizeOf16_c			(16)
-#define smacPreambleSizeOf3_c			(3)
-
-#endif
 /*smacParametersValidation_d:
 TRUE :  SMAC primitives validate their incoming parameters.
 FALSE:  SMAC primitives do their stuff without validating their incoming 
@@ -101,9 +89,6 @@ typedef struct smacInternalAttrib_tag
   prssPacketPtr_t smacProccesPacketPtr;
   phyRxParams_t   smacLastDataRxParams;
   txContextConfig_t txConfigurator;
-#if (gPHY_802_15_4g_d)
-  uint8_t u8SyncWordSize;
-#endif
   macToPdDataMessage_t * gSmacDataMessage;
   macToPlmeMessage_t *   gSmacMlmeMessage;
   SMAC_APP_MCPS_SapHandler_t gSMAC_APP_MCPS_SapHandler;

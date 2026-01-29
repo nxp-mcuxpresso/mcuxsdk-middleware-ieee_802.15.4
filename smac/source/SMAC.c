@@ -1,6 +1,6 @@
 /*! *********************************************************************************
 * Copyright (c) 2014 - 2025, Freescale Semiconductor, Inc.
-* Copyright 2016-2024 NXP
+* Copyright 2016-2026 NXP
 * All rights reserved.
 *
 * \file
@@ -149,17 +149,13 @@ txPacket_t *psTxPacket        //IN:Pointer to the packet to be transmitted
   pMsg->ctx_id = mSmacActivePan;
   pMsg->msgType = gPdDataReq_c;
   pMsg->msgData.dataReq.startTime = gPhySeqStartAsap_c;
-#ifdef gPHY_802_15_4g_d
-  //for sub-Gig phy handles duration in case of ACK
-  pMsg->msgData.dataReq.txDuration = 0xFFFFFFFF;
-#else
 
 #if !gUseSMACLegacy_c
   if(maSmacAttributes[mSmacActivePan].txConfigurator.autoAck &&
      psTxPacket->smacHeader.destAddr != 0xFFFF
 #if !gEnhAckMode8
          && psTxPacket->smacHeader.panId != 0xFFFF
-#endif
+#endif /* gEnhAckMode8 */
              )
   {
                                     //Turn@       +       phy payload(symbols)+ Turn@ + ACK
@@ -173,14 +169,14 @@ txPacket_t *psTxPacket        //IN:Pointer to the packet to be transmitted
     pMsg->msgData.dataReq.txDuration += ( ENC_BLOCK_SIZE - ((psTxPacket->u8DataLength - gSmacHeaderBytes_c
                                                             +ENC_BLOCK_SIZE)&(ENC_BLOCK_SIZE-1))
                                          )*2;
-#endif
+#endif /* gSmacUseSecurity_c */
   }
   else
-#endif
+#endif /* gUseSMACLegacy_c */
   {
     pMsg->msgData.dataReq.txDuration = 0xFFFFFFFF;
   }
-#endif
+
   pMsg->msgData.dataReq.psduLength = psTxPacket->u8DataLength + gSmacHeaderBytes_c + gPhyFCSSize_c; // include FCS bytes in data psdu length
   pMsg->msgData.dataReq.pPsdu = (uint8_t*)pMsg + sizeof(macToPdDataMessage_t);
 
@@ -451,157 +447,6 @@ smacTime_t stTimeout     //IN:  64-bit timeout value, absolute value in symbols
     return gErrorNoResourcesAvailable_c;
   }
 }
-#if defined (gPHY_802_15_4g_d)
-/************************************************************************************
-* MLMESetPreambleLength
-*
-* Function used to change the preamble size in the OTA Packet
-*
-************************************************************************************/
-smacErrors_t MLMESetPreambleLength
-(
-uint16_t u16preambleLength
-)
-{
-#if(TRUE == smacInitializationValidation_d)
-  if(FALSE == mSmacInitialized)
-  {
-    return gErrorNoValidCondition_c;
-  }
-#endif     /* TRUE == smacInitializationValidation_d */
-
-  if(mSmacStateIdle_c != maSmacAttributes[mSmacActivePan].smacState)
-  {
-    return gErrorBusy_c;
-  }
-  gPhyPib.mPIBphyFSKPreambleRepetitions = u16preambleLength;
-  PhyPib_RFUpdatePreambleLength();
-
-  return gErrorNoError_c;
-
-}
-
-/************************************************************************************
-* MLMESetSyncWordSize
-*
-* Function used to change the synchronization word size. Values from 0 to 8 required.
-* IMPORTANT-> Use below arguments only (indicating a direct value from 1-8 will not work)
-* Inputs      :
-* 	SyncConfig_SyncSize_1
-*	SyncConfig_SyncSize_2
-*	SyncConfig_SyncSize_3
-*	SyncConfig_SyncSize_4
-* 	SyncConfig_SyncSize_5
-* 	SyncConfig_SyncSize_6
-*	SyncConfig_SyncSize_7
-*  	SyncConfig_SyncSize_8
-*
-************************************************************************************/
-smacErrors_t MLMESetSyncWordSize
-(
-uint8_t u8syncWordSize
-)
-{
-
-  phyStatus_t status;
-#if(TRUE == smacInitializationValidation_d)
-  if(FALSE == mSmacInitialized)
-  {
-    return gErrorNoValidCondition_c;
-  }
-#endif     /* TRUE == smacInitializationValidation_d */
-
-  if(mSmacStateIdle_c != maSmacAttributes[mSmacActivePan].smacState)
-  {
-    return gErrorBusy_c;
-  }
-
-  status = (phyStatus_t)Phy_SetSyncWordSize(u8syncWordSize);
-  if(status == gPhyInvalidParameter_c)
-    return gErrorOutOfRange_c;
-
-  maSmacAttributes[mSmacActivePan].u8SyncWordSize = u8syncWordSize;
-
-  return gErrorNoError_c;
-
-}
-
-/************************************************************************************
-* MLMESetSyncWordValue
-*
-* Function used to change the synchronization word value.
-*
-*
-************************************************************************************/
-smacErrors_t MLMESetSyncWordValue
-(
-uint8_t *u8syncWordValue
-)
-{
-  uint8_t syncWordSizeTemp = maSmacAttributes[mSmacActivePan].u8SyncWordSize;
-  uint8_t syncValueRegIndex = 0;
-
-#if(TRUE == smacInitializationValidation_d)
-  if(FALSE == mSmacInitialized)
-  {
-    return gErrorNoValidCondition_c;
-  }
-#endif     /* TRUE == smacInitializationValidation_d */
-
-  if(mSmacStateIdle_c != maSmacAttributes[mSmacActivePan].smacState)
-  {
-    return gErrorBusy_c;
-  }
-
-  while (syncWordSizeTemp--)
-  {
-    Phy_SetSyncWordValue(syncValueRegIndex, (uint8_t)*u8syncWordValue);
-    syncValueRegIndex++;
-    u8syncWordValue++;
-  }
-  while(syncValueRegIndex < 8)
-  {
-    Phy_SetSyncWordValue(syncValueRegIndex, 0x00);
-    syncValueRegIndex++;
-  }
-
-  return gErrorNoError_c;
-
-}
-
-/************************************************************************************
-* MLMEPacketConfig
-*
-*
-*
-************************************************************************************/
-smacErrors_t MLMEPacketConfig
-(
-packetConfig_t *pPacketCfg
-)
-{
-  smacErrors_t err = gErrorNoError_c;
-#if(TRUE == smacInitializationValidation_d)
-  if(FALSE == mSmacInitialized)
-  {
-    return gErrorNoValidCondition_c;
-  }
-#endif     /* TRUE == smacInitializationValidation_d */
-
-  if(mSmacStateIdle_c != maSmacAttributes[mSmacActivePan].smacState)
-  {
-    return gErrorBusy_c;
-  }
-  err  = MLMESetSyncWordSize(pPacketCfg->u8SyncWordSize);
-  err |=  MLMESetSyncWordValue(pPacketCfg->pu8SyncWord);
-  err |= MLMESetPreambleLength(pPacketCfg->u16PreambleSize);
-  if(err != gErrorNoError_c)
-    return gErrorOutOfRange_c;
-
-  return gErrorNoError_c;
-}
-
-#endif
 
 /************************************************************************************
 * MLMESetChannelRequest
@@ -721,55 +566,6 @@ uint8_t MLMEGetAdditionalEDOffset( void )
 #endif
 }
 
-#if defined (gPHY_802_15_4g_d)
-/************************************************************************************
-* MLMESetFreqBand
-*
-************************************************************************************/
-smacErrors_t MLMESetFreqBand
-(
-smacFrequencyBands_t freqBand,
-smacRFModes_t phyMode
-)
-{
-  return gErrorNoResourcesAvailable_c;
-}
-
-smacErrors_t MLMESetPhyMode(smacRFModes_t phyMode)
-{
-#if(TRUE == smacInitializationValidation_d)
-  if(FALSE == mSmacInitialized)
-  {
-    return gErrorNoValidCondition_c;
-  }
-#endif     /* TRUE == smacInitializationValidation_d */
-  phyStatus_t err;
-  macToPlmeMessage_t lMsg;
-
-  if(mSmacStateIdle_c != maSmacAttributes[mSmacActivePan].smacState)
-  {
-    return gErrorBusy_c;
-  }
-  lMsg.ctx_id = mSmacActivePan;
-  lMsg.msgType = gPlmeSetReq_c;
-  lMsg.msgData.setReq.PibAttribute = gPhyPibCurrentMode_c;
-  lMsg.msgData.setReq.PibAttributeValue = (uint64_t)phyMode;
-
-  err = MAC_PLME_SapHandler(&lMsg, 0);
-  if(err == gPhyInvalidParameter_c)
-  {
-    return gErrorOutOfRange_c;
-  }
-  if(err == gPhyBusy_c)
-  {
-    return gErrorBusy_c;
-  }
-
-  gTotalChannels = gPhyPib.pPIBphyRfConstants->totalNumChannels;
-
-  return gErrorNoError_c;
-}
-#endif
 /************************************************************************************
 * MLMEGetChannelRequest
 *
@@ -799,116 +595,6 @@ void
   return currentChannel;
 }
 
-#if defined (gPHY_802_15_4g_d)
-/************************************************************************************
-* MLMERssi
-*
-*
-*
-************************************************************************************/
-uint8_t MLMERssi(void )
-{
-  uint8_t rssiVal;
-
-#if(TRUE == smacInitializationValidation_d)
-  if(FALSE == mSmacInitialized)
-  {
-    return gErrorNoValidCondition_c;
-  }
-#endif     /* TRUE == smacInitializationValidation_d */
-
-  if(mSmacStateIdle_c != maSmacAttributes[mSmacActivePan].smacState)
-  {
-    return gErrorBusy_c;
-  }
-
-  rssiVal = Phy_GetRssi();
-
-  return rssiVal;
-}
-
-/************************************************************************************
-* MLMESetCCADuration
-*
-*
-*
-************************************************************************************/
-smacErrors_t MLMESetCCADuration(uint64_t usCCADuration )
-{
-  macToPlmeMessage_t lMsg;
-  phyStatus_t status;
-
-#if(TRUE == smacInitializationValidation_d)
-  if(FALSE == mSmacInitialized)
-  {
-    return gErrorNoValidCondition_c;
-  }
-#endif     /* TRUE == smacInitializationValidation_d */
-
-  if(mSmacStateIdle_c != maSmacAttributes[mSmacActivePan].smacState)
-  {
-    return gErrorBusy_c;
-  }
-
-  usCCADuration = TIME_US_TO_TICKS(usCCADuration);
-  Phy_TimeDivider((phyTime_t*)&usCCADuration);
-
-  lMsg.ctx_id = mSmacActivePan;
-  lMsg.msgType = gPlmeSetReq_c;
-  lMsg.msgData.setReq.PibAttribute = gPhyPibCCADuration_c;
-  lMsg.msgData.setReq.PibAttributeValue = usCCADuration;
-  status = MAC_PLME_SapHandler(&lMsg, 0);
-
-  if(status == gPhySuccess_c)
-    return gErrorNoError_c;
-  else
-    return gErrorNoResourcesAvailable_c;
-}
-
-/************************************************************************************
-* MLMESetInterPacketRxDelay
-*
-* IMPORTANT-> Use below arguments only (indicating a direct value from 1-12 will not work)
-* Inputs      :
-*
-* InterPacketRxDelay_0
-* InterPacketRxDelay_1
-* InterPacketRxDelay_2
-* InterPacketRxDelay_3
-* InterPacketRxDelay_4
-* InterPacketRxDelay_5
-* InterPacketRxDelay_6
-* InterPacketRxDelay_7
-* InterPacketRxDelay_8
-* InterPacketRxDelay_9
-* InterPacketRxDelay_A
-* InterPacketRxDelay_B
-************************************************************************************/
-smacErrors_t MLMESetInterPacketRxDelay
-(
-uint8_t u8InterPacketRxDelay
-)
-{
-#if(TRUE == smacInitializationValidation_d)
-  if(FALSE == mSmacInitialized)
-  {
-    return gErrorNoValidCondition_c;
-  }
-#endif     /* TRUE == smacInitializationValidation_d */
-
-  if(mSmacStateIdle_c != maSmacAttributes[mSmacActivePan].smacState)
-  {
-    return gErrorBusy_c;
-  }
-
-  if (gPhySuccess_c != Phy_SetInterPacketRxDelay(u8InterPacketRxDelay))
-  {
-    return gErrorOutOfRange_c;
-  }
-  return gErrorNoError_c;
-}
-
-#endif
 /************************************************************************************
 * MLMERXDisableRequest
 *
@@ -1561,13 +1247,11 @@ void InitSmac(void)
   uint32_t u32RandomNo = 0;
   HAL_RngInit();
 #if gSmacUseSecurity_c
-  SecLib_Init();
+    SecLib_Init();
 #endif
-#if defined(gPHY_802_15_4g_d)
-  gTotalChannels = gPhyPib.pPIBphyRfConstants->totalNumChannels;
-#else
-  gTotalChannels = 26;
-#endif
+
+    gTotalChannels = 26;
+
 #if(TRUE == smacInitializationValidation_d)
     mSmacInitialized = TRUE;
 #endif

@@ -39,11 +39,7 @@ void ConnTestTimers_StopDelay(ConnTestTimer_t *tmr)
 
 uint64_t ConnTestTimers_GetTime(void)
 {
-#ifdef gPHY_802_15_4g_d
-    return PhyTime_GetTimestampUs();
-#else
 	return 16 * PhyTime_GetTimestamp();
-#endif
 }
 
 #else

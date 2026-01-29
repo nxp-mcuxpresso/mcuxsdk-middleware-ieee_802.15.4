@@ -68,15 +68,9 @@ gMlme_TimeoutInd_EVENT_c | gMlme_EdCnf_EVENT_c | gMlme_CcaCnf_EVENT_c | \
 
 #define GetTimestampUS() ConnTestTimers_GetTime()
 
-#ifdef gPHY_802_15_4g_d
-#define GetTransmissionTime(payload, bitrate) ((((gPhyFSKPreambleLength_c + \
-gPhyMRFSKPHRLength_c + gPhyMRFSKSFDLength_c + \
-    sizeof(smacHeader_t) + payload +  gPhyFCSSize_c )*8000 )/ bitrate))
-#else
 #define GetTransmissionTime(payload, bitrate) (((6 + sizeof(smacHeader_t) + payload + 2)*32))
 //bitrate is fixed for 2.4 GHz
 #define crtBitrate      (0)
-#endif
 
 #if gMpmMaxPANs_c == 2
 #define gNumPans_c   2
@@ -2715,11 +2709,7 @@ smacTestMode_t  mode  /*IN: The test mode to start.*/
         }
         else if(contTxModBitValue == gContTxModSelectPN9_c)
         {
-#ifdef gPHY_802_15_4g_d
-            aspTestRequestMsg.msgData.aspTelecTest.mode = gTestContinuousTxContPN9_c;
-#else
             aspTestRequestMsg.msgData.aspTelecTest.mode = gTestPulseTxPrbs9_c;
-#endif
         }
     }
     else if(gTestModeContinuousTxUnmodulated_c == mode)

@@ -1,6 +1,6 @@
 /*! *********************************************************************************
 * Copyright (c) 2004 - 2015, Freescale Semiconductor, Inc.
-* Copyright 2016-2024 NXP
+* Copyright 2016-2026 NXP
 * All rights reserved.
 *
 * \file
@@ -11,18 +11,16 @@
 #ifndef SMAC_INTERFACE_H_
 #define SMAC_INTERFACE_H_
 
-/************************************************************************************
-*************************************************************************************
-* Includes
-*************************************************************************************
-************************************************************************************/
+/* -------------------------------------------------------------------------- */
+/*                                  Includes                                  */
+/* -------------------------------------------------------------------------- */
+
 #include "EmbeddedTypes.h"
 #include "PhyTypes.h"
-/************************************************************************************
-*************************************************************************************
-* Interface macro definitions
-*************************************************************************************
-************************************************************************************/
+
+/* -------------------------------------------------------------------------- */
+/*                               Private macros                               */
+/* -------------------------------------------------------------------------- */
 #ifndef gUseSMACLegacy_c
 #define gUseSMACLegacy_c           (0)
 #endif
@@ -62,19 +60,17 @@
 #endif
 
 #define gSmacDefaultSeqNo_c        (0xAC)
-/************************************************************************************
-*************************************************************************************
-* Public memory declarations
-*************************************************************************************
-************************************************************************************/
-// extern bool_t smacStandalone;
+
+/* -------------------------------------------------------------------------- */
+/*                               Public memory                                */
+/* -------------------------------------------------------------------------- */
+
 extern uint8_t gTotalChannels;
 
-/************************************************************************************
-*************************************************************************************
-* Interface Type definitions
-*************************************************************************************
-************************************************************************************/
+/* -------------------------------------------------------------------------- */
+/*                                Public types                                */
+/* -------------------------------------------------------------------------- */
+
 #if !gUseSMACLegacy_c
 typedef uint16_t address_size_t;
 #else
@@ -83,104 +79,99 @@ typedef uint8_t address_size_t;
 
 typedef enum smacMultiPanInstances_tag
 {
-  gSmacPan0_c = 0,
+    gSmacPan0_c = 0,
 #if gMpmMaxPANs_c == 2
-  gSmacPan1_c,
+    gSmacPan1_c,
 #endif
-  gSmacMaxPan_c
+    gSmacMaxPan_c
 }smacMultiPanInstances_t;
 
 typedef enum smacMessageDefs_tag
 {
-  gMcpsDataCnf_c,
-  gMcpsDataInd_c,
-
-  gMlmeCcaCnf_c,
-
-  gMlmeEdCnf_c,
-
-  gMlmeSetReq_c,
-  gMlmeSetCnf_c,
-
-  gMlmeTimeoutInd_c,
-
-  gMlme_UnexpectedRadioResetInd_c
-}smacMessageDefs_t;
+    gMcpsDataCnf_c,
+    gMcpsDataInd_c,
+    gMlmeCcaCnf_c,
+    gMlmeEdCnf_c,
+    gMlmeSetReq_c,
+    gMlmeSetCnf_c,
+    gMlmeTimeoutInd_c,
+    gMlme_UnexpectedRadioResetInd_c
+} smacMessageDefs_t;
 
 typedef uint64_t smacTime_t;
 
 typedef struct smacPdu_tag
 {
-  uint8_t smacPdu[1];
-}smacPdu_t;
+    uint8_t smacPdu[1];
+} smacPdu_t;
 
 typedef PACKED_STRUCT smacHeader_tag
 {
-  uint16_t frameControl;
+    uint16_t frameControl;
 #if !gUseSMACLegacy_c
-  uint8_t seqNo;
+    uint8_t seqNo;
 #if !gEnhAckMode8
-  address_size_t   panId;
+    address_size_t   panId;
 #endif
 #if gSmacUseExtendedAddr_c
-  uint64_t        destAddr;
-  uint64_t        srcAddr;
+    uint64_t        destAddr;
+    uint64_t        srcAddr;
 #else
-  address_size_t  destAddr;
-  address_size_t  srcAddr;
+    address_size_t  destAddr;
+    address_size_t  srcAddr;
 #endif  
 #else
-  address_size_t destAddr;
+    address_size_t destAddr;
 #endif
-}smacHeader_t;
+} smacHeader_t;
 
 typedef struct txPacket_tag
 {
-  uint8_t u8DataLength;
-  smacHeader_t smacHeader;
-  smacPdu_t smacPdu;
-}txPacket_t;
+    uint8_t u8DataLength;
+    smacHeader_t smacHeader;
+    smacPdu_t smacPdu;
+} txPacket_t;
 
 typedef struct txContextConfig_tag
 {
-  bool_t ccaBeforeTx;
-  bool_t autoAck;
-  bool_t enhAck;
-  uint8_t retryCountCCAFail;
-  uint8_t retryCountAckFail;
-}txContextConfig_t;
+    bool_t ccaBeforeTx;
+    bool_t autoAck;
+    bool_t enhAck;
+    uint8_t retryCountCCAFail;
+    uint8_t retryCountAckFail;
+} txContextConfig_t;
 
 typedef enum rxStatus_tag
 {
-  rxInitStatus,
-  rxProcessingReceptionStatus_c,
-  rxSuccessStatus_c,
-  rxTimeOutStatus_c,
-  rxAbortedStatus_c,
-  rxMaxStatus_c
+    rxInitStatus,
+    rxProcessingReceptionStatus_c,
+    rxSuccessStatus_c,
+    rxTimeOutStatus_c,
+    rxAbortedStatus_c,
+    rxMaxStatus_c
 } rxStatus_t;
 
 typedef struct rxPacket_tag
 {
-  uint8_t    u8MaxDataLength;
-  uint8_t    u8DataLength;
-  rxStatus_t rxStatus;
-  smacMultiPanInstances_t instanceId;
-  smacHeader_t smacHeader;
-  smacPdu_t  smacPdu;
-}rxPacket_t;
+    uint8_t    u8MaxDataLength;
+    uint8_t    u8DataLength;
+    rxStatus_t rxStatus;
+    smacMultiPanInstances_t instanceId;
+    smacHeader_t smacHeader;
+    smacPdu_t  smacPdu;
+} rxPacket_t;
 
 typedef enum smacErrors_tag
 {
-  gErrorNoError_c = 0,
-  gErrorBusy_c,
-  gErrorChannelBusy_c,
-  gErrorNoAck_c,
-  gErrorOutOfRange_c,
-  gErrorNoResourcesAvailable_c,
-  gErrorNoValidCondition_c,
-  gErrorCorrupted_c,
-  gErrorMaxError_c
+    gErrorNoError_c = 0,
+    gErrorBusy_c,
+    gErrorChannelBusy_c,
+    gErrorNoAck_c,
+    gErrorOutOfRange_c,
+    gErrorNoResourcesAvailable_c,
+    gErrorNoValidCondition_c,
+    gErrorCorrupted_c,
+    gErrorMaxError_c
 } smacErrors_t;
 
 typedef enum channels_tag
@@ -206,272 +197,242 @@ typedef enum channels_tag
 
 typedef enum smacTestMode_tag
 {
-  gTestModeForceIdle_c = 0,
-  gTestModeContinuousTxModulated_c,
-  gTestModeContinuousTxUnmodulated_c,
-  gTestModePRBS9_c,
-  gTestModeContinuousRxBER_c,
-  gMaxTestMode_c
+    gTestModeForceIdle_c = 0,
+    gTestModeContinuousTxModulated_c,
+    gTestModeContinuousTxUnmodulated_c,
+    gTestModePRBS9_c,
+    gTestModeContinuousRxBER_c,
+    gMaxTestMode_c
 } smacTestMode_t;
 
 typedef  struct smacDataCnf_tag
 {
-  smacErrors_t         status;
+    smacErrors_t status;
 } smacDataCnf_t;
 
 typedef  struct smacDataInd_tag
 {
-  uint8_t                 u8LastRxRssi;
-  rxPacket_t *            pRxPacket;
+    uint8_t     u8LastRxRssi;
+    rxPacket_t *pRxPacket;
 } smacDataInd_t;
 
 typedef  struct smacCcaCnf_tag
 {
-  smacErrors_t       status;
+    smacErrors_t status;
 } smacCcaCnf_t;
 
-typedef  struct smacEdCnf_tag
+typedef struct smacEdCnf_tag
 {
-  smacErrors_t            status;
-  uint8_t                 energyLevel;
-  uint8_t                 energyLeveldB;
-  channels_t              scannedChannel;
+    smacErrors_t status;
+    uint8_t      energyLevel;
+    uint8_t      energyLeveldB;
+    channels_t   scannedChannel;
 } smacEdCnf_t;
 
-typedef  struct smacToAppMlmeMessage_tag
+typedef struct smacToAppMlmeMessage_tag
 {
-  smacMessageDefs_t          msgType;
-  uint8_t                    appInstanceId;
-  union
-  {
-    smacCcaCnf_t       ccaCnf;
-    smacEdCnf_t             edCnf;
-  }msgData;
+    smacMessageDefs_t msgType;
+    uint8_t           appInstanceId;
+
+    union
+    {
+        smacCcaCnf_t ccaCnf;
+        smacEdCnf_t  edCnf;
+    } msgData;
+
 } smacToAppMlmeMessage_t;
 
-typedef  struct smacToAppDataMessage_tag
+typedef struct smacToAppDataMessage_tag
 {
-  smacMessageDefs_t            msgType;
-  uint8_t                    appInstanceId;
-  union
-  {
-    smacDataCnf_t             dataCnf;
-    smacDataInd_t             dataInd;
-  }msgData;
+    smacMessageDefs_t msgType;
+    uint8_t           appInstanceId;
+
+    union
+    {
+        smacDataCnf_t   dataCnf;
+        smacDataInd_t   dataInd;
+    } msgData;
+
 } smacToAppDataMessage_t;
 
 typedef smacErrors_t ( * SMAC_APP_MCPS_SapHandler_t)(smacToAppDataMessage_t * pMsg, instanceId_t instanceId);
 
 typedef smacErrors_t ( * SMAC_APP_MLME_SapHandler_t)(smacToAppMlmeMessage_t * pMsg, instanceId_t instanceId);
 
-#if gSmacUseSecurity_c
+/* -------------------------------------------------------------------------- */
+/*                              Public functions                              */
+/* -------------------------------------------------------------------------- */
 
-#include "SecLib.h"
-typedef struct smacEncryptionKeyIV_tag
-{
-  uint8_t IV[16];
-  uint8_t KEY[16];
-#if (defined(FSL_FEATURE_SOC_LTC_COUNT) && (FSL_FEATURE_SOC_LTC_COUNT > 0))
-  uint8_t DKEY[16];
-#endif
-}smacEncryptionKeyIV_t;
-
-#endif
-/************************************************************************************
-*************************************************************************************
-* External Prototypes
-*************************************************************************************
-************************************************************************************/
-/***********************************************************************************
-* Smac_RegisterSapHandlers
-* This function registers the data and management components callbacks to the application
-* After calling this function and providing two function pointers, SMAC will call
-* one of these two, for each async request, based on request type (data or management)
-*
-* Interface assumptions:
-*   The SMAC and radio driver have been initialized and are ready to be used.
-*
-* Return value:
-*   None
-************************************************************************************/
+/*!
+ * \brief Registers the data and management callbacks to the application
+ *
+ * After calling this function and providing two function pointers, SMAC will call
+ * one of these two, for each async request, based on request type (data or management)
+ * Interface assumptions: the SMAC and radio driver have been initialized and are ready
+ * to be used.
+ *
+ * \param[in] pSMAC_APP_MCPS_SapHandler pointer to the data application callback
+ * \param[in] pSMAC_APP_MLME_SapHandler pointer to the management application callback
+ * \param[in] smacInstanceId the SMAC instance these callbacks apply to
+ * \return none
+ */
 extern void Smac_RegisterSapHandlers(SMAC_APP_MCPS_SapHandler_t pSMAC_APP_MCPS_SapHandler,
                                      SMAC_APP_MLME_SapHandler_t pSMAC_APP_MLME_SapHandler,
                                      instanceId_t smacInstanceId);
 
-/***********************************************************************************
-* App to Smac SAP HANDLERS
-************************************************************************************/
-//smacErrors_t AppToSmac_Data_SapHandler(AppToSmacDataMessage_t* pMsg, uint8_t MACInstance);
-//smacErrors_t AppToSmac_Mlme_SapHandler(AppToSmacMlmeMessage_t* pMsg, uint8_t MACInstance);
-/***********************************************************************************/
+/*!
+ * \brief Initialize SMAC layer
+ *
+ */
+void InitSmac(void);
 
-/******************************** SMAC Data primitives *****************************/
-/***********************************************************************************/
-
-/************************************************************************************
-* MCPSDataRequest
-*
-* This data primitive is used to send an over the air packet. This is an asyncronous
-* function,  it means it ask SMAC to transmit one OTA packet,  but when the function
-* returns it is not sent already.
-*
-* Interface assumptions:
-*   The SMAC and radio driver have been initialized and are ready to be used.
-*
-* Return value:
-*   gErrorNoError_c: Everything is ok and the transmission will be performed.
-*   gErrorOutOfRange_c: One of the members in the pTxMessage structure is out of
-*                      range (no valid bufer size or data buffer pointer is NULL)
-*   gErrorNoResourcesAvailable_c: the radio is performing another action.
-*   gErrorNoValidCondition_c: The SMAC has not been initialized
-*
-************************************************************************************/
+/*!
+ * \brief Send a packet over the air
+ *
+ * This is an asyncronous function: after returning from it the request is queued but
+ * the packet may not be sent yet.
+ *
+ * \param[in] psTxPacket pointer to the packet data
+ * \return gErrorNoError_c: everything is ok and the transmission will be performed.
+ * \return gErrorOutOfRange_c: one of the members of the packet is out of range.
+ * \return gErrorNoResourcesAvailable_c: the radio is performing another action.
+ * \return gErrorNoValidCondition_c: the SMAC has not been initialized
+ */
 extern smacErrors_t MCPSDataRequest(txPacket_t *psTxPacket);
 
-/***********************************************************************************/
-/******************************** SMAC Radio primitives ****************************/
-/***********************************************************************************/
+/*!
+ * \brief Returns the radio to idle mode from Tx mode.
+ *
+ */
+extern void MLMETXDisableRequest(void);
 
-/************************************************************************************
-* MLMEConfigureTxContext
-*
-* This management primitive sets up the transmission conditions used by MCPSDataRequest
-*
-* Interface assumptions:
-*   SMAC is initialized
-*
-* Return value:
-*   gErrorNoError_c: Everything is set accordingly.
-*   gErrorOutOfRange_c: More than gMaxRetriesAllowed_c are required
-*   gErrorNoValidCondition_c: Retries are required but neither Ack nor CCA are requested
-*
-************************************************************************************/
-extern smacErrors_t MLMEConfigureTxContext(txContextConfig_t* pTxConfig);
-
-/************************************************************************************
-* MLMESetActivePan
-*
-* This management primitive switches between pans
-*
-* Interface assumptions:
-*   SMAC is initialized
-*
-* Parameters: panID the ID of the pan to switch to.
-*
-* Return value:
-*   gErrorNoError_c: Everything is set accordingly.
-*   gErrorOutOfRange_c: Maximum available pans is exceeded
-*   gErrorNoValidCondition_c: Not initialized
-*
-************************************************************************************/
-extern smacErrors_t MLMESetActivePan(smacMultiPanInstances_t panID);
-
-/************************************************************************************
-* MLMEConfigureDualPanSettings
-*
-* This management primitive configures the multipan settings
-*
-* Interface assumptions:
-*   SMAC is initialized
-*
-* Parameters: bUseAutoMode specifies if automatical switch between pans
-*                          in rx is enabled
-*             bModifyDwell specifies if next parameters should be taken
-*                          into consideration
-*             u8Prescaler  can be 0,1,2,3. Check MpmInterface.h for its meaning
-*             u8Scale      can be between 0 and 63. Check MpmInterface for its meaning
-*
-* Return value:
-*   gErrorNoError_c: Everything is set accordingly.
-*   gErrorOutOfRange_c: Parameters exceed range
-*   gErrorNoValidCondition_c: Not initialized
-*   gErrorBusy_c SMAC is busy on (at least) one of the pans
-*
-************************************************************************************/
-extern smacErrors_t MLMEConfigureDualPanSettings
-(
-bool_t bUseAutoMode,
-bool_t bModifyDwell,
-uint8_t u8Prescaler,
-uint8_t u8Scale
-);
-
-/************************************************************************************
-* MLMERXEnableRequest
-*
-* Function used to place the radio into receive mode
-*
-* Interface assumptions:
-*   The SMAC and radio driver have been initialized and are ready to be used.
-*
-* Arguments:
-*
-*        rxPacket_t *gsRxPacket: Pointer to the structure where the reception results will be stored.
-*        smacTime_t stTimeout: 64-bit timeout value, absolute time in symbols
-*
-*  Return Value:
-*		gErrorNoError_c: Everything is ok and the reception will be performed.
-*		gErrorOutOfRange_c: One of the members in the pRxMessage structure is out of range (no valid bufer size or data buffer pointer is NULL).
-*		gErrorBusy_c: the radio is performing another action.
-*		gErrorNoValidCondition_c: The SMAC has not been initialized.
-*************************************************************************************/
+/*!
+ * \brief Place the radio in receive mode
+ *
+ * \param[out] gsRxPacket pointer to the structure where the reception results will be stored
+ * \param[in]  stTimeout: 64-bit timeout value, absolute time in symbols
+ * \return gErrorNoError_c: Success
+ * \return gErrorOutOfRange_c: no valid bufer size or data buffer pointer is NULL.
+ * \return gErrorBusy_c: the radio is performing another action.
+ * \return gErrorNoValidCondition_c: The SMAC has not been initialized.
+ */
 extern smacErrors_t MLMERXEnableRequest(rxPacket_t *gsRxPacket, smacTime_t stTimeout);
 
-
-/************************************************************************************
-* MLMERXDisableRequest
-*
-* Returns the radio to idle mode from receive mode.
-*
-*   Interface assumptions:
-*   The SMAC and radio driver have been initialized and are ready to be used.
-*
-*   Arguments:
-*   None
-*
-*   Return Value:
-*      gErrorNoValidCondition_c If the Radio is not in Rx state.
-*      gErrorNoError_c When the message was aborted or disabled.
-*************************************************************************************/
+/*!
+ * \brief Returns the radio to idle mode from receive mode.
+ *
+ * \return gErrorNoError_c: Success
+ * \return gErrorNoValidCondition_c If the Radio is not in Rx state.
+ */
 extern smacErrors_t MLMERXDisableRequest(void);
 
-/************************************************************************************
-* MLMELinkQuality
-*
-*  This function returns an integer value that is the link quality from the last received
-*  packet.
-*
-*   Interface assumptions:
-*   The SMAC and radio driver have been initialized and are ready to be used.
-*
-*   Arguments:
-*   None
-*
-*   Return Value:
-*   uint8_t: 8 bit value representing the link quality value in dBm.
-*   Returns the result in smacLastDataRxParams.linkQuality.
-*************************************************************************************/
-extern uint8_t  MLMELinkQuality(void);
+/*!
+ * \brief Switch between pans
+ *
+ * \param[in] panId the pan to switch to
+ * \return gErrorNoError_c: Success
+ * \return gErrorOutOfRange_c: Maximum available pans is exceeded
+ * \return gErrorNoValidCondition_c: SMAC not initialized
+ */
+extern smacErrors_t MLMESetActivePan(smacMultiPanInstances_t panID);
 
-/************************************************************************************
-* MLMESetChannelRequest
-*
-* This sets the frequency on which the radio will transmit or receive on.
-*
-*  Interface assumptions:
-*   The SMAC and radio driver have been initialized and are ready to be used.
-*
-*  Arguments:
-*    channels_t newChannel: channel to be set
-*
-*  Return Value:
-*   gErrorNoError_c: The channel set has been performed
-*   gErrorOutOfRange_c : channel requested is not valid
-*   gErrorBusy_c: when SMAC is busy in other radio activity as transmitting or receiving data. Or performing a channel scan.
-*************************************************************************************/
+/*!
+ * \brief Configure multi-pan settings.
+ *
+ * \param[in] panId the pan to switch to
+ * \param[in] bUseAutoMode true if HW switches the pans automatically
+ * \param[in] bModifyDwell true if u8Prescaler and u8Scale are to be used
+ * \param[in] u8Prescaler can be 0,1,2,3. Check MpmInterface.h for its meaning
+ * \param[in] u8Scale can be between 0 and 63. Check MpmInterface for its meaning
+ * \return gErrorNoError_c: Success
+ * \return gErrorOutOfRange_c: Parameters exceed range
+ * \return gErrorNoValidCondition_c: SMAC not initialized
+ * \return gErrorBusy_c SMAC is busy on (at least) one of the pans
+ */
+extern smacErrors_t MLMEConfigureDualPanSettings(bool_t bUseAutoMode,
+                                                 bool_t bModifyDwell,
+                                                 uint8_t u8Prescaler,
+                                                 uint8_t u8Scale);
+/*!
+ * \brief Set up transmission conditions used by MCPSDataRequest
+ *
+ * \param[in] pTxConfig pointer to transmission context
+ * \return gErrorNoError_c: Success
+ * \return gErrorOutOfRange_c: More than gMaxRetriesAllowed_c are required
+ * \return gErrorNoValidCondition_c: Retries are required but neither Ack nor CCA are requested
+ */
+extern smacErrors_t MLMEConfigureTxContext(txContextConfig_t* pTxConfig);
+
+/*!
+ * \brief Set the radio's channel
+ *
+ * \param[in] newChannel: the channel to be set
+ * \return gErrorNoError_c
+ * \return gErrorOutOfRange_c: channel requested is not valid
+ * \return gErrorBusy_c: SMAC is busy doing Tx/Rx or doing channel scan
+ */
 extern smacErrors_t MLMESetChannelRequest (channels_t newChannel);
 
+/*!
+ * \brief return the current channel, if an error is detected it returns gChannelOutOfRange_c.
+ *
+ * \return the channel
+ * \return gChannelOutOfRange_c in case of error
+ */
+extern channels_t MLMEGetChannelRequest(void);
+
+/*!
+ * \brief Set the radio's short address
+ *
+ * \param[in] nwShortAddress: the address to be set
+ * \return gErrorNoError_c
+ * \return gErrorBusy_c Radio busy doing Rx/Tx
+ * \return gErrorNoResourcesAvailable_c Radio is not available
+ */
+extern smacErrors_t SMACSetShortSrcAddress(address_size_t nwShortAddress);
+
+/*!
+ * \brief Set the radio's extended address
+ *
+ * \param[in] nwExtendedAddress: the address to be set
+ * \return gErrorNoError_c
+ * \return gErrorBusy_c Radio is busy doing Rx/Tx
+ * \return gErrorNoResourcesAvailable_c Radio is not available
+ */
+extern smacErrors_t SMACSetExtendedSrcAddress(uint64_t nwExtendedAddress);
+
+/*!
+ * \brief Set the radio's pan-id
+ *
+ * \param[in] nwShortPanId: the pan-id
+ * \return gErrorNoError_c
+ * \return gErrorBusy_c Radio is busy doing Rx/Tx
+ * \return gErrorNoResourcesAvailable_c Radio is not available
+ */
+extern smacErrors_t SMACSetPanID(address_size_t nwShortPanID);
+
+/*!
+ * \brief Set the Power Amplifier's power
+ *
+ * \param[in] u8PaValue: the output power
+ * \return gErrorNoError_c
+ * \return gErrorBusy_c Radio is busy doing Rx/Tx
+ * \return gErrorOutOfRange_c power value is out of range
+ */
+extern smacErrors_t MLMEPAOutputAdjust(uint8_t u8PaValue);
+
+/*!
+ * \brief returns the link quality from the last received packet.
+ *
+ * This  function  returns  an  integer  value  that is the link quality from the last
+ * received packet of the form:  dBm = (-Link Quality/2).
+ *
+ * \return 8 bit value representing the link quality value in dBm.
+ */
+extern uint8_t  MLMELinkQuality(void);
+
 #if CT_Feature_Calibration
+
 /************************************************************************************
 * MLMESetAdditionalRFOffset
 *
@@ -537,128 +498,56 @@ extern smacErrors_t MLMESetAdditionalEDOffset (uint8_t additionalEDOffset);
 *   ED calibration offset
 *************************************************************************************/
 extern uint8_t MLMEGetAdditionalEDOffset( void );
-#endif
-/************************************************************************************
-* MLMEGetChannelRequest
-*
-* This function returns the current channel, if an error is detected it returns gChannelOutOfRange_c.
-*
-*  Interface assumptions:
-*   The SMAC and radio driver have been initialized and are ready to be used.
-*
-*  Arguments:
-*   None
-*
-*  Return Value:
-*  channels_t (uint8_t): The current RF channel.
-*  gChannelOutOfRange_c: If current channel could not be detected
-*************************************************************************************/
-extern channels_t MLMEGetChannelRequest(void);
 
-/************************************************************************************
-* MLMEPhySoftReset
-*
-* This function performs a software reset on the radio, PHY and SMAC state machines.
-*
-*  Interface assumptions:
-*   None
-*
-*  Arguments:
-*   None
-*
-*  Return Value:
-*  gErrorNoError_c: If the action is performed.
-*************************************************************************************/
+#endif /* CT_Feature_Calibration */
+
+/*!
+ * \brief This function performs a software reset on the radio, PHY and SMAC state machines.
+ *
+ * \return gErrorNoError_c
+ * \return gErrorNoValidCondition_c SMAC is not initialized
+ */
 extern smacErrors_t MLMEPhySoftReset(void);
 
-/************************************************************************************
-* MLMEPAOutputAdjust
-*
-*
-*************************************************************************************/
-extern smacErrors_t MLMEPAOutputAdjust(uint8_t u8PaValue);
-
-/***********************************************************************************/
-/***************************** SMAC Management primitives **************************/
-/***********************************************************************************/
-
-/************************************************************************************
-* MLMEScanRequest
-*
-*  This function scans the channel passed as parameter using CCA or ED mode
-*  returns the RSSI in that channel.
-*
-*  Interface assumptions:
-*   The SMAC and radio driver have been initialized and are ready to be used.
-*
-*  Arguments:
-*   channels_t u8ChannelToScan: channel to scan
-*  uint8_t *u8ChannelScanResult: to return the RSSI value
-*
-*  Return Value:
-*   gErrorNoError_c:  If the action was performed correctly.
-*   gErrorBusy_c:     If SMAC is busy.
-*************************************************************************************/
+/*!
+ * \brief Scan the channel passed as parameter using ED mode and return the RSSI
+ *
+ * \param[in] u8channeltoscan: the channel
+ * \return gErrorNoError_c
+ * \return gErrorBusy_c Radio busy doing Rx/Tx
+ * \return gErrorNoValidCondition_c SMAC is not initialized
+ * \return gErrorNoResourcesAvailable_c Radio is not available
+ */
 extern smacErrors_t MLMEScanRequest(channels_t u8ChannelToScan);
 
-/*@CMA, Conn Test Added*/
-/************************************************************************************
-* MLMECcaRequest
-*
-* This  function  performs Clear Channel Assessment on the active channel
-*
-* Return value:
-* gErrorNoError_c: SMAC will perform Cca
-* gErrorBusy_c:    SMAC is busy
-************************************************************************************/
+/*!
+ * \brief Perform Clear Channel Assessment on the active channel
+ *
+ * \return gErrorNoError_c
+ * \return gErrorBusy_c Radio busy doing Rx/Tx
+ * \return gErrorNoValidCondition_c SMAC is not initialized
+ * \return gErrorNoResourcesAvailable_c Radio is not available
+ */
 extern smacErrors_t MLMECcaRequest();
 
-/************************************************************************************
-* MLMETXDisableRequest
-*
-* Returns the radio to idle mode from Tx mode.
-*
-************************************************************************************/
-extern void MLMETXDisableRequest(void);
+/*!
+ * \brief Enable/Disable Auto Acknoledgement
+ */
+extern void SMACSetTxAutoAck(bool_t enable);
 
-/***********************************************************************************
-******************************** SMAC MCU primitives *******************************
-***********************************************************************************/
+/*!
+ * \brief Enable/Disable Enhanced Acknoledgement
+ */
+extern void SMACSetTxEnhAck(bool_t enable);
 
-/************************************************************************************
-*SMAC auxiliary functions
-*************************************************************************************/
-
-/************************************************************************************
-*SMACFillHeader
-*This is a replacement for the u8DestAddress in the txPacket_t structure
-*To set the destination address simply call this function with a pointer to
-*txPacket->smacHeader and a uint16_t variable resembling the address.
-*Also, to change the default source address and panID, modify gDefaultPanID_c and
-*gNodeAddress_c from SMAC_Config.h or call SMACSetShortSrcAddress and SMACSetPanID.
-*************************************************************************************/
+/*!
+ * \brief Fills the SMAC header (short hardcoded MAC header) with the desired short
+ * destination address.
+ *
+ * \param[out] pSmacHeader: the channel
+ * \param[in]  destAddr: the channel
+ */
 extern void SMACFillHeader(smacHeader_t* pSmacHeader, address_size_t destAddr);
-
-/***********************************************************************************/
-extern smacErrors_t SMACSetShortSrcAddress(address_size_t nwShortAddress);
-
-/***********************************************************************************/
-extern smacErrors_t SMACSetExtendedSrcAddress(uint64_t nwExtendedAddress);
-
-/***********************************************************************************/
-extern smacErrors_t SMACSetPanID(address_size_t nwShortPanID);
-
-/***********************************************************************************/
-extern smacErrors_t SMACSetTxEnhAck(bool_t enable);
-
-/***********************************************************************************/
-extern smacErrors_t SMACSetTxAutoAck(bool_t enable);
-
-/***********************************************************************************/
-#if gSmacUseSecurity_c
-extern void SMAC_SetIVKey(uint8_t* KEY, uint8_t* IV );
-#endif
-/***********************************************************************************/
 
 
 #endif /* SMAC_INTERFACE_H_ */

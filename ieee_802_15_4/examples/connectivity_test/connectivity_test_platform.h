@@ -49,11 +49,6 @@
 #define CT_Feature_Indirect_Registers (0)
 #endif
 
-/*This feature is currently supported only on KW01 platforms*/
-#ifndef CT_Feature_Calibration
-#define CT_Feature_Calibration	   (0)
-#endif
-
 /*This feature is only for sub-ghz platforms*/
 #ifndef CT_Feature_Custom_CCA_Dur
 #define CT_Feature_Custom_CCA_Dur  (0)
@@ -77,10 +72,6 @@
  #endif
 #endif
 
-#if CT_Feature_Calibration
-#include "Flash_Adapter.h"
-#endif
-
 /************************************************************************************
 *************************************************************************************
 * Macros
@@ -91,11 +82,6 @@
 #define gMinOutputPower_c              (  0 )
 #define gDefaultOutputPower_c          (  5 )
 
-#if CT_Feature_Calibration
-#define gMinAdditionalRFOffset_c       ( -1000)
-#define gMaxAdditionalRFOffset_c       ( 1000 )
-#endif
-             
 #define gDefaultChannelNumber_c         gChannel11_c                                    
 #define gMaxCCAThreshold_c              0x6EU
 #define gMinCCAThreshold_c              0x00U

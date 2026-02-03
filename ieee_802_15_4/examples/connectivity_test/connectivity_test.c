@@ -174,9 +174,6 @@ static OSA_TASK_HANDLE_DEFINE(s_startTaskHandle);
 * Private prototypes
 *************************************************************************************
 ************************************************************************************/
-#if CT_Feature_Calibration
-extern void StoreTrimValueToFlash (uint32_t trimValue, CalibrationOptionSelect_t option);
-#endif
 
 /*platform independent functions*/
 static void SerialUIStateMachine(void);
@@ -590,9 +587,6 @@ void SerialUIStateMachine(void)
 {
     if((gConnSelectTest_c == connState) && evTestParameters)
     {
-#if CT_Feature_Calibration
-        (void)MLMESetAdditionalRFOffset(gOffsetIncrement);
-#endif
         (void)MLMESetChannelRequest(testChannel);
         (void)MLMEPAOutputAdjust(testPower);
 #if CT_Feature_Xtal_Trim
@@ -647,13 +641,6 @@ void SerialUIStateMachine(void)
             {
                 bsState = gBSStateInit_c;
                 connState = gConnBitrateSelectState_c;
-            }
-#endif
-#if CT_Feature_Calibration
-            else if('7' == gu8UartData)
-            {
-                connState = gConnEDMeasCalib_c;
-                edCalState= gEdCalStateInit_c;
             }
 #endif
             else if('!' == gu8UartData)
@@ -729,15 +716,6 @@ void SerialUIStateMachine(void)
             SelfNotificationEvent();
         }
         break;
-#if CT_Feature_Calibration
-    case gConnEDMeasCalib_c:
-        if(EDCalibrationMeasurement())
-        {
-            connState = gConnIdleState_c;
-            SelfNotificationEvent();
-        }
-        break;
-#endif
     default:
         break;
 
@@ -766,9 +744,6 @@ bool_t SerialContinuousTxRxTest(void)
     if(evTestParameters)
     {
         (void)TestMode(gTestModeForceIdle_c);
-#if CT_Feature_Calibration
-        (void)MLMESetAdditionalRFOffset(gOffsetIncrement);
-#endif
         (void)MLMESetChannelRequest(testChannel);
         (void)MLMEPAOutputAdjust(testPower);
 #if CT_Feature_Xtal_Trim
@@ -1112,9 +1087,6 @@ bool_t PacketErrorRateTx(void)
     if(evTestParameters)
     {
         (void)MLMERXDisableRequest();
-#if CT_Feature_Calibration
-        (void)MLMESetAdditionalRFOffset(gOffsetIncrement);
-#endif
         (void)MLMESetChannelRequest(testChannel);
         (void)MLMEPAOutputAdjust(testPower);
 #if CT_Feature_Xtal_Trim
@@ -1291,9 +1263,6 @@ bool_t PacketErrorRateRx(void)
     bool_t bBackFlag = FALSE;
     if(evTestParameters)
     {
-#if CT_Feature_Calibration
-        (void)MLMESetAdditionalRFOffset(gOffsetIncrement);
-#endif
         (void)MLMESetChannelRequest(testChannel);
         (void)MLMEPAOutputAdjust(testPower);
 #if CT_Feature_Xtal_Trim
@@ -1562,9 +1531,6 @@ bool_t RangeTx(void)
 
     if(evTestParameters)
     {
-#if CT_Feature_Calibration
-        (void)MLMESetAdditionalRFOffset(gOffsetIncrement);
-#endif
         (void)MLMESetChannelRequest(testChannel);
         (void)MLMEPAOutputAdjust(testPower);
 #if CT_Feature_Xtal_Trim
@@ -1728,9 +1694,6 @@ bool_t RangeRx(void)
 
     if(evTestParameters)
     {
-#if CT_Feature_Calibration
-        (void)MLMESetAdditionalRFOffset(gOffsetIncrement);
-#endif
         (void)MLMESetChannelRequest(testChannel);
         (void)MLMEPAOutputAdjust(testPower);
 #if CT_Feature_Xtal_Trim
@@ -1874,9 +1837,6 @@ bool_t EditRegisters(void)
     bool_t bBackFlag = FALSE;
     if(evTestParameters)
     {
-#if CT_Feature_Calibration
-        (void)MLMESetAdditionalRFOffset(gOffsetIncrement);
-#endif
         (void)MLMESetChannelRequest(testChannel);
         (void)MLMEPAOutputAdjust(testPower);
 #if CT_Feature_Xtal_Trim
@@ -2301,9 +2261,6 @@ bool_t CSenseAndTCtrl(void)
     if(evTestParameters)
     {
         (void)MLMESetChannelRequest(testChannel);
-#if CT_Feature_Calibration
-        (void)MLMESetAdditionalRFOffset(gOffsetIncrement);
-#endif
         (void)MLMEPAOutputAdjust(testPower);
 #if CT_Feature_Xtal_Trim
         aspTestRequestMsg.msgType = aspMsgTypeSetXtalTrimReq_c;
@@ -2533,16 +2490,6 @@ void CarrierSenseHandler(void)
     switch(cstcState)
     {
     case gCsTcStateCarrierSenseStart_c:
-#if CT_Feature_Calibration
-        if( gMode1Bitrate_c == crtBitrate )
-        {
-            (void)MLMESetAdditionalRFOffset(gOffsetIncrement + 30);
-        }
-        else
-        {
-            (void)MLMESetAdditionalRFOffset(gOffsetIncrement + 60);
-        }
-#endif
         (void)MLMESetChannelRequest(testChannel);
 
         Serial_Print(mAppSer, "\r\n\r\n Press [SPACE] to begin/interrupt test",gAllowToBlock_d);
@@ -2574,9 +2521,6 @@ void CarrierSenseHandler(void)
             }
             else if ('p' == gu8UartData)
             {
-#if CT_Feature_Calibration
-                (void)MLMESetAdditionalRFOffset(gOffsetIncrement);
-#endif
                 (void)MLMESetChannelRequest(testChannel);
                 cstcState = gCsTcStateInit_c;
                 SelfNotificationEvent();
@@ -2628,9 +2572,6 @@ void CarrierSenseHandler(void)
     case gCsTcStateCarrierSenseEndTest_c:
         if(evDataFromUART && gu8UartData == '\r')
         {
-#if CT_Feature_Calibration
-            (void)MLMESetAdditionalRFOffset(gOffsetIncrement);
-#endif
             (void)MLMESetChannelRequest(testChannel);
             cstcState = gCsTcStateInit_c;
             SelfNotificationEvent();

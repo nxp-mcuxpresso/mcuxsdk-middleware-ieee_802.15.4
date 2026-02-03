@@ -258,9 +258,9 @@ typedef smacErrors_t ( * SMAC_APP_MLME_SapHandler_t)(smacToAppMlmeMessage_t * pM
  * \param[in] smacInstanceId the SMAC instance these callbacks apply to
  * \return none
  */
-extern void Smac_RegisterSapHandlers(SMAC_APP_MCPS_SapHandler_t pSMAC_APP_MCPS_SapHandler,
-                                     SMAC_APP_MLME_SapHandler_t pSMAC_APP_MLME_SapHandler,
-                                     instanceId_t smacInstanceId);
+void Smac_RegisterSapHandlers(SMAC_APP_MCPS_SapHandler_t pSMAC_APP_MCPS_SapHandler,
+                              SMAC_APP_MLME_SapHandler_t pSMAC_APP_MLME_SapHandler,
+                              instanceId_t smacInstanceId);
 
 /*!
  * \brief Initialize SMAC layer
@@ -280,13 +280,13 @@ void InitSmac(void);
  * \return gErrorNoResourcesAvailable_c: the radio is performing another action.
  * \return gErrorNoValidCondition_c: the SMAC has not been initialized
  */
-extern smacErrors_t MCPSDataRequest(txPacket_t *psTxPacket);
+smacErrors_t MCPSDataRequest(txPacket_t *psTxPacket);
 
 /*!
  * \brief Returns the radio to idle mode from Tx mode.
  *
  */
-extern void MLMETXDisableRequest(void);
+void MLMETXDisableRequest(void);
 
 /*!
  * \brief Place the radio in receive mode
@@ -298,7 +298,7 @@ extern void MLMETXDisableRequest(void);
  * \return gErrorBusy_c: the radio is performing another action.
  * \return gErrorNoValidCondition_c: The SMAC has not been initialized.
  */
-extern smacErrors_t MLMERXEnableRequest(rxPacket_t *gsRxPacket, smacTime_t stTimeout);
+smacErrors_t MLMERXEnableRequest(rxPacket_t *gsRxPacket, smacTime_t stTimeout);
 
 /*!
  * \brief Returns the radio to idle mode from receive mode.
@@ -306,7 +306,7 @@ extern smacErrors_t MLMERXEnableRequest(rxPacket_t *gsRxPacket, smacTime_t stTim
  * \return gErrorNoError_c: Success
  * \return gErrorNoValidCondition_c If the Radio is not in Rx state.
  */
-extern smacErrors_t MLMERXDisableRequest(void);
+smacErrors_t MLMERXDisableRequest(void);
 
 /*!
  * \brief Switch between pans
@@ -316,7 +316,7 @@ extern smacErrors_t MLMERXDisableRequest(void);
  * \return gErrorOutOfRange_c: Maximum available pans is exceeded
  * \return gErrorNoValidCondition_c: SMAC not initialized
  */
-extern smacErrors_t MLMESetActivePan(smacMultiPanInstances_t panID);
+smacErrors_t MLMESetActivePan(smacMultiPanInstances_t panID);
 
 /*!
  * \brief Configure multi-pan settings.
@@ -331,10 +331,10 @@ extern smacErrors_t MLMESetActivePan(smacMultiPanInstances_t panID);
  * \return gErrorNoValidCondition_c: SMAC not initialized
  * \return gErrorBusy_c SMAC is busy on (at least) one of the pans
  */
-extern smacErrors_t MLMEConfigureDualPanSettings(bool_t bUseAutoMode,
-                                                 bool_t bModifyDwell,
-                                                 uint8_t u8Prescaler,
-                                                 uint8_t u8Scale);
+smacErrors_t MLMEConfigureDualPanSettings(bool_t bUseAutoMode,
+                                          bool_t bModifyDwell,
+                                          uint8_t u8Prescaler,
+                                          uint8_t u8Scale);
 /*!
  * \brief Set the radio's channel
  *
@@ -343,7 +343,7 @@ extern smacErrors_t MLMEConfigureDualPanSettings(bool_t bUseAutoMode,
  * \return gErrorOutOfRange_c: channel requested is not valid
  * \return gErrorBusy_c: SMAC is busy doing Tx/Rx or doing channel scan
  */
-extern smacErrors_t MLMESetChannelRequest (channels_t newChannel);
+smacErrors_t MLMESetChannelRequest (channels_t newChannel);
 
 /*!
  * \brief return the current channel, if an error is detected it returns gChannelOutOfRange_c.
@@ -351,7 +351,7 @@ extern smacErrors_t MLMESetChannelRequest (channels_t newChannel);
  * \return the channel
  * \return gChannelOutOfRange_c in case of error
  */
-extern channels_t MLMEGetChannelRequest(void);
+channels_t MLMEGetChannelRequest(void);
 
 /*!
  * \brief Set the radio's short address
@@ -361,7 +361,7 @@ extern channels_t MLMEGetChannelRequest(void);
  * \return gErrorBusy_c Radio busy doing Rx/Tx
  * \return gErrorNoResourcesAvailable_c Radio is not available
  */
-extern smacErrors_t SMACSetShortSrcAddress(address_size_t nwShortAddress);
+smacErrors_t SMACSetShortSrcAddress(address_size_t nwShortAddress);
 
 /*!
  * \brief Set the radio's extended address
@@ -371,7 +371,7 @@ extern smacErrors_t SMACSetShortSrcAddress(address_size_t nwShortAddress);
  * \return gErrorBusy_c Radio is busy doing Rx/Tx
  * \return gErrorNoResourcesAvailable_c Radio is not available
  */
-extern smacErrors_t SMACSetExtendedSrcAddress(uint64_t nwExtendedAddress);
+smacErrors_t SMACSetExtendedSrcAddress(uint64_t nwExtendedAddress);
 
 /*!
  * \brief Set the radio's pan-id
@@ -381,7 +381,7 @@ extern smacErrors_t SMACSetExtendedSrcAddress(uint64_t nwExtendedAddress);
  * \return gErrorBusy_c Radio is busy doing Rx/Tx
  * \return gErrorNoResourcesAvailable_c Radio is not available
  */
-extern smacErrors_t SMACSetPanID(address_size_t nwShortPanID);
+smacErrors_t SMACSetPanID(address_size_t nwShortPanID);
 
 /*!
  * \brief Set the Power Amplifier's power
@@ -391,7 +391,7 @@ extern smacErrors_t SMACSetPanID(address_size_t nwShortPanID);
  * \return gErrorBusy_c Radio is busy doing Rx/Tx
  * \return gErrorOutOfRange_c power value is out of range
  */
-extern smacErrors_t MLMEPAOutputAdjust(uint8_t u8PaValue);
+smacErrors_t MLMEPAOutputAdjust(uint8_t u8PaValue);
 
 /*!
  * \brief returns the link quality from the last received packet.
@@ -401,7 +401,7 @@ extern smacErrors_t MLMEPAOutputAdjust(uint8_t u8PaValue);
  *
  * \return 8 bit value representing the link quality value in dBm.
  */
-extern uint8_t  MLMELinkQuality(void);
+uint8_t MLMELinkQuality(void);
 
 /*!
  * \brief This function performs a software reset on the radio, PHY and SMAC state machines.
@@ -409,7 +409,7 @@ extern uint8_t  MLMELinkQuality(void);
  * \return gErrorNoError_c
  * \return gErrorNoValidCondition_c SMAC is not initialized
  */
-extern smacErrors_t MLMEPhySoftReset(void);
+smacErrors_t MLMEPhySoftReset(void);
 
 /*!
  * \brief Scan the channel passed as parameter using ED mode and return the RSSI
@@ -420,7 +420,7 @@ extern smacErrors_t MLMEPhySoftReset(void);
  * \return gErrorNoValidCondition_c SMAC is not initialized
  * \return gErrorNoResourcesAvailable_c Radio is not available
  */
-extern smacErrors_t MLMEScanRequest(channels_t u8ChannelToScan);
+smacErrors_t MLMEScanRequest(channels_t u8ChannelToScan);
 
 /*!
  * \brief Perform Clear Channel Assessment on the active channel
@@ -430,17 +430,17 @@ extern smacErrors_t MLMEScanRequest(channels_t u8ChannelToScan);
  * \return gErrorNoValidCondition_c SMAC is not initialized
  * \return gErrorNoResourcesAvailable_c Radio is not available
  */
-extern smacErrors_t MLMECcaRequest();
+smacErrors_t MLMECcaRequest();
 
 /*!
  * \brief Enable/Disable Auto Acknoledgement
  */
-extern void SMACSetTxAutoAck(bool_t enable);
+void SMACSetTxAutoAck(bool_t enable);
 
 /*!
  * \brief Enable/Disable Enhanced Acknoledgement
  */
-extern void SMACSetTxEnhAck(bool_t enable);
+void SMACSetTxEnhAck(bool_t enable);
 
 /*!
  * \brief Fills the SMAC header (short hardcoded MAC header) with the desired short
@@ -449,7 +449,7 @@ extern void SMACSetTxEnhAck(bool_t enable);
  * \param[out] pSmacHeader: the channel
  * \param[in]  destAddr: the channel
  */
-extern void SMACFillHeader(smacHeader_t* pSmacHeader, address_size_t destAddr);
+void SMACFillHeader(smacHeader_t* pSmacHeader, address_size_t destAddr);
 
 
 #endif /* SMAC_INTERFACE_H_ */

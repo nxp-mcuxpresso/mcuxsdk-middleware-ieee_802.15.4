@@ -21,10 +21,6 @@
 /* -------------------------------------------------------------------------- */
 /*                               Private macros                               */
 /* -------------------------------------------------------------------------- */
-#ifndef gUseSMACLegacy_c
-#define gUseSMACLegacy_c           (0)
-#endif
-
 #ifndef gSmacUseExtendedAddr_c
 #define gSmacUseExtendedAddr_c     (0)
 #endif
@@ -43,20 +39,14 @@
 
 #define gMinSmacSDULength_c	   (0)
 
-#if !gUseSMACLegacy_c
- #define gNodeAddress_c            (0xBEAD)
- #define gDefaultPanID_c           (0xFACE)
- #define gBroadcastAddress_c	   (0xFFFF)
+#define gNodeAddress_c         (0xBEAD)
+#define gDefaultPanID_c        (0xFACE)
+#define gBroadcastAddress_c	   (0xFFFF)
+
 #if gSmacUseExtendedAddr_c
  #define gSmacDefaultFrameCtrl_c   (0xCC41)
 #else
  #define gSmacDefaultFrameCtrl_c   (0x8841)
-#endif
-#else
- #define gNodeAddress_c            (0xAA)
- #define gDefaultPanID_c           (0xBB)
- #define gBroadcastAddress_c	   (0xFF)
- #define gSmacDefaultFrameCtrl_c   (0xFF7E)
 #endif
 
 #define gSmacDefaultSeqNo_c        (0xAC)
@@ -71,11 +61,7 @@ extern uint8_t gTotalChannels;
 /*                                Public types                                */
 /* -------------------------------------------------------------------------- */
 
-#if !gUseSMACLegacy_c
 typedef uint16_t address_size_t;
-#else
-typedef uint8_t address_size_t;
-#endif
 
 typedef enum smacMultiPanInstances_tag
 {
@@ -108,7 +94,6 @@ typedef struct smacPdu_tag
 typedef PACKED_STRUCT smacHeader_tag
 {
     uint16_t frameControl;
-#if !gUseSMACLegacy_c
     uint8_t seqNo;
 #if !gEnhAckMode8
     address_size_t   panId;
@@ -120,9 +105,6 @@ typedef PACKED_STRUCT smacHeader_tag
     address_size_t  destAddr;
     address_size_t  srcAddr;
 #endif  
-#else
-    address_size_t destAddr;
-#endif
 } smacHeader_t;
 
 typedef struct txPacket_tag

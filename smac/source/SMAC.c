@@ -144,23 +144,12 @@ static void BackoffTimeElapsed(void* param)
 
 static bool_t SMACPacketCheck(pdDataToMacMessage_t* pMsgFromPhy, smacMultiPanInstances_t instance)
 {
-#if !gUseSMACLegacy_c
     //check if packet is of type Data
     if((pMsgFromPhy->msgData.dataInd.pPsdu[0] & 0x07) != 0x01)
     {
         return FALSE;
     }
-#else
-    if((pMsgFromPhy->msgData.dataInd.pPsdu[0] != 0x7E) || (pMsgFromPhy->msgData.dataInd.pPsdu[1] != 0xFF))
-    {
-        return FALSE;
-    }
 
-    if((pMsgFromPhy->msgData.dataInd.pPsdu[2] != gBroadcastAddress_c) && (pMsgFromPhy->msgData.dataInd.pPsdu[2] != u16ShortSrcAddress))
-    {
-        return FALSE;
-    }
-#endif
     //check if PSDU length is at least of SMAC header size.
     if(pMsgFromPhy->msgData.dataInd.psduLength < gSmacHeaderBytes_c)
     {
@@ -549,10 +538,6 @@ void InitSmac(void)
     }
     mSmacActivePan = gSmacPan0_c;
 
-#if gUseSMACLegacy_c
-    PhyPpSetPromiscuous(TRUE);
-#endif
-
     //Notify the PHY what function to call for communicating with SMAC
     Phy_RegisterSapHandlers((PD_MAC_SapHandler_t)PD_SMAC_SapHandler, (PLME_MAC_SapHandler_t)PLME_SMAC_SapHandler, 0);
 }
@@ -603,7 +588,6 @@ smacErrors_t MCPSDataRequest (txPacket_t *psTxPacket)
     pMsg->msgType = gPdDataReq_c;
     pMsg->msgData.dataReq.startTime = gPhySeqStartAsap_c;
 
-#if !gUseSMACLegacy_c
     if(maSmacAttributes[mSmacActivePan].txConfigurator.autoAck &&
             psTxPacket->smacHeader.destAddr != 0xFFFF
 #if !gEnhAckMode8
@@ -625,7 +609,6 @@ smacErrors_t MCPSDataRequest (txPacket_t *psTxPacket)
 #endif
     }
     else
-#endif /* gUseSMACLegacy_c */
     {
         pMsg->msgData.dataReq.txDuration = 0xFFFFFFFF;
     }
@@ -645,7 +628,6 @@ smacErrors_t MCPSDataRequest (txPacket_t *psTxPacket)
         pMsg->msgData.dataReq.CCABeforeTx = gPhyNoCCABeforeTx_c;
     }
 
-#if !gUseSMACLegacy_c
     if(maSmacAttributes[mSmacActivePan].txConfigurator.autoAck &&
             psTxPacket->smacHeader.destAddr != 0xFFFF
 #if !gEnhAckMode8
@@ -661,7 +643,7 @@ smacErrors_t MCPSDataRequest (txPacket_t *psTxPacket)
             // Set version 2
             pMsg->msgData.dataReq.pPsdu[1] |= (2 << 4);
 
-#if gSmacUseExtendedAddr_c      
+#if gSmacUseExtendedAddr_c
 #if !gEnhAckMode8
             // Set PAN ID compression to false
             pMsg->msgData.dataReq.pPsdu[0] &= 0xBF;
@@ -670,7 +652,6 @@ smacErrors_t MCPSDataRequest (txPacket_t *psTxPacket)
         }
     }
     else
-#endif
     {
         pMsg->msgData.dataReq.ackRequired = gPhyNoAckRqd_c;
     }
@@ -684,9 +665,7 @@ smacErrors_t MCPSDataRequest (txPacket_t *psTxPacket)
     pMsg->msgData.dataReq.psduLength = inputLen + gSmacHeaderBytes_c + gPhyFCSSize_c;
 #endif
 
-#if !gUseSMACLegacy_c
     pMsg->msgData.dataReq.pPsdu[2] = maSmacAttributes[mSmacActivePan].u8SmacSeqNo;
-#endif
 
     maSmacAttributes[mSmacActivePan].gSmacDataMessage = pMsg;      //Store pointer for freeing later
 
@@ -980,7 +959,6 @@ channels_t MLMEGetChannelRequest(void)
 
 smacErrors_t SMACSetShortSrcAddress(address_size_t nwShortAddress)
 {
-#if !gUseSMACLegacy_c
     macToPlmeMessage_t lMsg;
 
     lMsg.ctx_id = mSmacActivePan;
@@ -998,7 +976,6 @@ smacErrors_t SMACSetShortSrcAddress(address_size_t nwShortAddress)
     {
         return gErrorNoResourcesAvailable_c;
     }
-#endif
 
     maSmacAttributes[mSmacActivePan].u16ShortSrcAddress = nwShortAddress;
     return gErrorNoError_c;
@@ -1030,7 +1007,6 @@ smacErrors_t SMACSetExtendedSrcAddress(uint64_t nwExtendedAddress)
 
 smacErrors_t SMACSetPanID(address_size_t nwShortPanID)
 {
-#if !gUseSMACLegacy_c
     macToPlmeMessage_t lMsg;
 
     lMsg.ctx_id = mSmacActivePan;
@@ -1048,7 +1024,6 @@ smacErrors_t SMACSetPanID(address_size_t nwShortPanID)
     {
         return gErrorNoResourcesAvailable_c;
     }
-#endif
 
     maSmacAttributes[mSmacActivePan].u16PanID = nwShortPanID;
     return gErrorNoError_c;
@@ -1242,13 +1217,10 @@ void SMACFillHeader(smacHeader_t* pSmacHeader, address_size_t destAddr)
 {
     pSmacHeader->frameControl = gSmacDefaultFrameCtrl_c;
 
-#if !gUseSMACLegacy_c
 #if !gEnhAckMode8
     pSmacHeader->panId        = maSmacAttributes[mSmacActivePan].u16PanID;
 #endif
     pSmacHeader->seqNo        = gSmacDefaultSeqNo_c;
     pSmacHeader->srcAddr      = maSmacAttributes[mSmacActivePan].u16ShortSrcAddress;
-#endif
-
     pSmacHeader->destAddr     = destAddr;
 }

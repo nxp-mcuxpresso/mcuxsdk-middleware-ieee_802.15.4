@@ -354,16 +354,6 @@ extern smacErrors_t MLMEConfigureDualPanSettings(bool_t bUseAutoMode,
                                                  uint8_t u8Prescaler,
                                                  uint8_t u8Scale);
 /*!
- * \brief Set up transmission conditions used by MCPSDataRequest
- *
- * \param[in] pTxConfig pointer to transmission context
- * \return gErrorNoError_c: Success
- * \return gErrorOutOfRange_c: More than gMaxRetriesAllowed_c are required
- * \return gErrorNoValidCondition_c: Retries are required but neither Ack nor CCA are requested
- */
-extern smacErrors_t MLMEConfigureTxContext(txContextConfig_t* pTxConfig);
-
-/*!
  * \brief Set the radio's channel
  *
  * \param[in] newChannel: the channel to be set

@@ -915,38 +915,6 @@ smacErrors_t MLMEConfigureDualPanSettings(bool_t bUseAutoMode,
 #endif
 }
 
-smacErrors_t MLMEConfigureTxContext(txContextConfig_t* pTxConfig)
-{
-    if((pTxConfig->autoAck == FALSE && pTxConfig->retryCountAckFail !=0) ||
-       (pTxConfig->ccaBeforeTx == FALSE && pTxConfig->retryCountCCAFail !=0) )
-    {
-        return gErrorNoValidCondition_c;
-    }
-
-    if(pTxConfig->retryCountAckFail > gMaxRetriesAllowed_c ||
-       pTxConfig->retryCountCCAFail > gMaxRetriesAllowed_c)
-    {
-        return gErrorOutOfRange_c;
-    }
-
-#if gUseSMACLegacy_c
-    if(pTxConfig->autoAck)
-    {
-        return gErrorOutOfRange_c;
-    }
-#endif
-
-    smacInternalAttrib_t* p = &(maSmacAttributes[mSmacActivePan]);
-
-    p->txConfigurator.autoAck           = pTxConfig->autoAck;
-    p->txConfigurator.enhAck            = pTxConfig->enhAck;
-    p->txConfigurator.ccaBeforeTx       = pTxConfig->ccaBeforeTx;
-    p->txConfigurator.retryCountAckFail = pTxConfig->retryCountAckFail;
-    p->txConfigurator.retryCountCCAFail = pTxConfig->retryCountCCAFail;
-
-    return gErrorNoError_c;
-}
-
 smacErrors_t MLMESetChannelRequest(channels_t newChannel)
 {
     uint8_t errorVal;

@@ -1,6 +1,6 @@
 /*! *********************************************************************************
 * Copyright (c) 2015, Freescale Semiconductor, Inc.
-* Copyright 2016-2024 NXP
+* Copyright 2016-2026 NXP
 * All rights reserved.
 *
 * \file
@@ -72,12 +72,7 @@ gMlme_TimeoutInd_EVENT_c | gMlme_EdCnf_EVENT_c | gMlme_CcaCnf_EVENT_c | \
 //bitrate is fixed for 2.4 GHz
 #define crtBitrate      (0)
 
-#if gMpmMaxPANs_c == 2
-#define gNumPans_c   2
-extern char * const cu8MpmMenuPs[];
-#else
 #define gNumPans_c   1
-#endif
 
 #define Serial_Print(a,b,c)  SerialManager_WriteBlocking((serial_write_handle_t)g_connWriteHandle, (uint8_t *)b, strlen(b))
 #define Serial_PrintDec(a,b) SerialManager_WriteBlocking((serial_write_handle_t)g_connWriteHandle, FORMAT_Dec2Str(b), strlen((char const *)FORMAT_Dec2Str(b)))
@@ -104,10 +99,6 @@ bool_t failedPRBS9;
 uint8_t u8LastRxRssiValue;
 bool_t evTestParameters;
 uint8_t au8ScanResults[129];
-#if gMpmMaxPANs_c == 2
-bool_t bDataInd[2];
-uint8_t u8PanRSSI[2];
-#endif
 
 /*serial manager related variables*/
 uint8_t gu8UartData;
@@ -156,9 +147,6 @@ extern uint8_t u8Prbs9Buffer[gPrbs9BufferLength_c];
 *************************************************************************************
 ************************************************************************************/
 static uint8_t gau8RxDataBuffer[gMaxSmacSDULength_c  + sizeof(rxPacket_t)];
-#if gMpmMaxPANs_c == 2
-static uint8_t gau8RxDataBufferAlt[gMaxSmacSDULength_c + sizeof(rxPacket_t)];
-#endif
 uint8_t gau8TxDataBuffer[gMaxSmacSDULength_c  + sizeof(txPacket_t)];
 
 txPacket_t * gAppTxPacket;
@@ -207,9 +195,6 @@ static void CarrierSenseHandler(void);
 static smacErrors_t TestMode ( smacTestMode_t  mode);
 static void PacketHandler_Prbs9(void);
 static void IncrementChannelOnEdEvent();
-#if gMpmMaxPANs_c == 2
-static bool_t ConfigureAlternatePan(void);
-#endif
 
 extern void ReadRFRegs(registerAddressSize_t, registerAddressSize_t);
 extern void PrintTestParameters(bool_t bEraseLine);
@@ -224,7 +209,6 @@ static void AppDelayCallback(uint32_t param);
 *************************************************************************************
 ************************************************************************************/
 void InitProject(void);
-void InitSmac(void);
 void main_task(uint32_t param);
 void UartRxCallBack(void* param, serial_manager_callback_message_t *message, serial_manager_status_t status );
 
@@ -261,10 +245,6 @@ void InitProject(void)
     ccaThresh        = gDefaultCCAThreshold_c;
     bEdDone          = FALSE;
     evDataFromUART = FALSE;
-#if gMpmMaxPANs_c == 2
-    bDataInd[0]      = FALSE;
-    bDataInd[1]      = FALSE;
-#endif
 
     InitProject_custom();
 }
@@ -309,10 +289,6 @@ smacErrors_t smacToAppMcpsSap(smacToAppDataMessage_t* pMsg, instanceId_t instanc
         if(pMsg->msgData.dataInd.pRxPacket->rxStatus == rxSuccessStatus_c)
         {
             u8LastRxRssiValue = pMsg->msgData.dataInd.u8LastRxRssi;
-#if gMpmMaxPANs_c == 2
-            bDataInd[instance] = TRUE;
-            u8PanRSSI[instance] = pMsg->msgData.dataInd.u8LastRxRssi;
-#endif
             (void)OSA_EventSet(gTaskEvent, gMcps_Ind_EVENT_c);
         }
         break;
@@ -410,7 +386,6 @@ static void HandleEvents(int32_t evSignals)
 /*************************************************************************/
 void main_task(uint32_t param)
 {
-    uint8_t phy_ctx;
     static bool_t bIsInitialized = FALSE;
     static bool_t bUserInteraction = FALSE;
     //Initialize Memory Manager, Timer Manager and LEDs.
@@ -423,16 +398,6 @@ void main_task(uint32_t param)
         PLATFORM_InitTimerManager();
 #endif
 
-        //initialize PHY
-        Phy_Init();
-
-        phy_ctx = PHY_get_ctx();
-
-        /* We ignore the context since it's going to be zero */
-        if (phy_ctx != 0)
-        {
-            assert(0);
-        }
 
 #if (defined(gAppLedCnt_c) && (gAppLedCnt_c > 0))
         for (uint8_t i = 0; i < gAppLedCnt_c; i++)
@@ -547,6 +512,8 @@ void tx_application_define(void* param)
 /*************************************************************************/
 void InitApp()
 {
+    uint8_t phy_ctx;
+
     ConnTestTimers_InitTimer(AppDelayTmr, AppDelayCallback);
     ConnTestTimers_InitTimer(RangeTestTmr, RangeTestDelayCallback);
 
@@ -559,15 +526,19 @@ void InitApp()
     SerialManager_OpenWriteHandle((serial_handle_t)mAppSer, (serial_write_handle_t)g_connWriteHandle);
     (void)SerialManager_InstallRxCallback((serial_read_handle_t)g_connReadHandle, (serial_manager_callback_t)UartRxCallBack, NULL);
 
-	ASP_Init(0);
+    Phy_Init();
 
-    //Initialise SMAC
-    InitSmac();
-    //Tell SMAC who to call when it needs to pass a message to the application thread.
-    Smac_RegisterSapHandlers((SMAC_APP_MCPS_SapHandler_t)smacToAppMcpsSap,(SMAC_APP_MLME_SapHandler_t)smacToAppMlmeSap,0);
-#if gMpmMaxPANs_c == 2
-    Smac_RegisterSapHandlers((SMAC_APP_MCPS_SapHandler_t)smacToAppMcpsSap,(SMAC_APP_MLME_SapHandler_t)smacToAppMlmeSap,1);
-#endif
+    phy_ctx = PHY_get_ctx();
+
+    /* we can get only context 1 or context 2 */
+    if (phy_ctx > 1)
+    {
+        assert(0);
+    }
+	ASP_Init(phy_ctx);
+
+    InitSmac(phy_ctx);
+    Smac_RegisterSapHandlers((SMAC_APP_MCPS_SapHandler_t)smacToAppMcpsSap,(SMAC_APP_MLME_SapHandler_t)smacToAppMlmeSap, phy_ctx);
 
     InitProject();
 
@@ -1251,16 +1222,15 @@ bool_t PacketErrorRateTx(void)
 ************************************************************************************/
 bool_t PacketErrorRateRx(void)
 {
-    static energy32_t e32RssiSum[gNumPans_c];
-    static uint16_t u16ReceivedPackets[gNumPans_c];
-    static uint16_t u16PacketsIndex[gNumPans_c];
-    static uint16_t u16TotalPackets[gNumPans_c];
-    static energy8_t  e8AverageRssi[gNumPans_c];
-    static bool_t bPrintStatistics = FALSE;
-    energy8_t e8TempRssivalue;
-    uint8_t u8PanCount = 0;
+    static energy32_t e32RssiSum;
+    static uint16_t   u16ReceivedPackets;
+    static uint16_t   u16PacketsIndex;
+    static uint16_t   u16TotalPackets;
+    static energy8_t  e8AverageRssi;
+    static bool_t     bPrintStatistics = FALSE;
+    energy8_t         e8TempRssivalue;
+    bool_t            bBackFlag        = FALSE;
 
-    bool_t bBackFlag = FALSE;
     if(evTestParameters)
     {
         (void)MLMESetChannelRequest(testChannel);
@@ -1273,46 +1243,25 @@ bool_t PacketErrorRateRx(void)
         PrintTestParameters(TRUE);
         evTestParameters = FALSE;
     }
+
     switch(perRxState)
     {
     case gPerRxStateInit_c:
         shortCutsEnabled = TRUE;
         bPrintStatistics = FALSE;
+
         PrintMenu(cu8ShortCutsBar, (serial_write_handle_t)g_connWriteHandle);
         PrintMenu(cu8PerRxTestMenu, (serial_write_handle_t)g_connWriteHandle);
         PrintTestParameters(FALSE);
-        u16TotalPackets[0] = 0;
-        u16ReceivedPackets[0] = 0;
-        u16PacketsIndex[0] = 0;
-        e32RssiSum[0] = 0;
-#if gMpmMaxPANs_c == 2
-        u16TotalPackets[1] = 0;
-        u16ReceivedPackets[1] = 0;
-        u16PacketsIndex[1] = 0;
-        e32RssiSum[1] = 0;
-        bDataInd[0] = FALSE;
-        bDataInd[1] = FALSE;
-        perRxState = gPerRxConfigureAlternatePan_c;
-        SelfNotificationEvent();
-#else
+
+        u16TotalPackets    = 0;
+        u16ReceivedPackets = 0;
+        u16PacketsIndex    = 0;
+        e32RssiSum         = 0;
+
         perRxState = gPerRxWaitStartTest_c;
-#endif
+
         break;
-#if gMpmMaxPANs_c == 2
-    case gPerRxConfigureAlternatePan_c:
-        if(evDataFromUART && gu8UartData == 'p')
-        {
-            evDataFromUART = FALSE;
-            perRxState = gPerRxStateInit_c;
-            bBackFlag = TRUE;
-            break;
-        }
-        if(ConfigureAlternatePan() == TRUE)
-        {
-            perRxState = gPerRxWaitStartTest_c;
-        }
-        break;
-#endif
     case gPerRxWaitStartTest_c:
         if(evDataFromUART)
         {
@@ -1321,14 +1270,7 @@ bool_t PacketErrorRateRx(void)
                 Serial_Print(mAppSer, "\f\n\rPER Test Rx Running\r\n\r\n", gAllowToBlock_d);
                 bRxDone = FALSE;
                 gAppRxPacket->u8MaxDataLength = gMaxSmacSDULength_c;
-                MLMESetActivePan(gSmacPan0_c);
                 (void)MLMERXEnableRequest(gAppRxPacket, 0);
-#if gMpmMaxPANs_c == 2
-                MLMESetActivePan(gSmacPan1_c);
-                gAppRxPacket = (rxPacket_t*)gau8RxDataBufferAlt;
-                gAppRxPacket->u8MaxDataLength = gMaxSmacSDULength_c;
-                (void)MLMERXEnableRequest(gAppRxPacket, 0);
-#endif
                 shortCutsEnabled = FALSE;
                 perRxState = gPerRxStateStartTest_c;
             }
@@ -1339,180 +1281,137 @@ bool_t PacketErrorRateRx(void)
             evDataFromUART = FALSE;
         }
         break;
+
     case gPerRxStateStartTest_c:
         if(bRxDone)
         {
-#if gMpmMaxPANs_c == 2
-            if(bDataInd[gSmacPan0_c] == TRUE)
-            {
-                gAppRxPacket = (rxPacket_t*)(gau8RxDataBuffer);
-                bDataInd[gSmacPan0_c] = FALSE;
-                if(bDataInd[gSmacPan1_c] == TRUE)
-                {
-                    OSA_EventSet(gTaskEvent, gMcps_Ind_EVENT_c);
-                }
-            }
-            else if(bDataInd[gSmacPan1_c] == TRUE)
-            {
-                gAppRxPacket = (rxPacket_t*)(gau8RxDataBufferAlt);
-                bDataInd[gSmacPan1_c] = FALSE;
-                if(bDataInd[gSmacPan0_c] == TRUE)
-                {
-                    OSA_EventSet(gTaskEvent, gMcps_Ind_EVENT_c);
-                }
-            }
-#endif
             if (gAppRxPacket->rxStatus == rxSuccessStatus_c)
             {
                 if(stringComp((uint8_t*)"SMAC PER Demo",&gAppRxPacket->smacPdu.smacPdu[4],13))
                 {
-                    u16TotalPackets[gAppRxPacket->instanceId] =
-                        ((uint16_t)gAppRxPacket->smacPdu.smacPdu[0] <<8) + gAppRxPacket->smacPdu.smacPdu[1];
-                    u16PacketsIndex[gAppRxPacket->instanceId] =
-                        ((uint16_t)gAppRxPacket->smacPdu.smacPdu[2] <<8) + gAppRxPacket->smacPdu.smacPdu[3];
-                    u16ReceivedPackets[gAppRxPacket->instanceId]++;
-#if gMpmMaxPANs_c == 2
-                    e32RssiSum[gAppRxPacket->instanceId] +=
-                        (energy8_t)u8PanRSSI[gAppRxPacket->instanceId];
-#else
-                    e32RssiSum[gAppRxPacket->instanceId] += (energy8_t)u8LastRxRssiValue;
-#endif
-                    e8AverageRssi[gAppRxPacket->instanceId] =
-                        (energy8_t)(e32RssiSum[gAppRxPacket->instanceId]/u16ReceivedPackets[gAppRxPacket->instanceId]);
-#if gMpmMaxPANs_c == 2
-                    Serial_Print(mAppSer, "Pan: ", gAllowToBlock_d);
-                    Serial_PrintDec(mAppSer, (uint32_t)gAppRxPacket->instanceId);
-                    Serial_Print(mAppSer,". ", gAllowToBlock_d);
-#endif
+                    u16TotalPackets = ((uint16_t)gAppRxPacket->smacPdu.smacPdu[0] <<8) + gAppRxPacket->smacPdu.smacPdu[1];
+                    u16PacketsIndex = ((uint16_t)gAppRxPacket->smacPdu.smacPdu[2] <<8) + gAppRxPacket->smacPdu.smacPdu[3];
+                    u16ReceivedPackets++;
+                    e32RssiSum += (energy8_t)u8LastRxRssiValue;
+                    e8AverageRssi = (energy8_t)(e32RssiSum/u16ReceivedPackets);
+
                     Serial_Print(mAppSer, "Packet ", gAllowToBlock_d);
-                    Serial_PrintDec(mAppSer,(uint32_t)u16ReceivedPackets[gAppRxPacket->instanceId]);
+                    Serial_PrintDec(mAppSer,(uint32_t)u16ReceivedPackets);
+
                     Serial_Print(mAppSer, ". Packet index: ",gAllowToBlock_d);
-                    Serial_PrintDec(mAppSer, (uint32_t)u16PacketsIndex[gAppRxPacket->instanceId]);
+                    Serial_PrintDec(mAppSer, (uint32_t)u16PacketsIndex);
+
                     Serial_Print(mAppSer, ". Rssi during RX: ", gAllowToBlock_d);
-#if gMpmMaxPANs_c == 2
-                    e8TempRssivalue = (energy8_t)u8PanRSSI[gAppRxPacket->instanceId];
-#else
+
                     e8TempRssivalue = (energy8_t)u8LastRxRssiValue;
-#endif
+
 #if CT_Feature_RSSI_Has_Sign
                     if(e8TempRssivalue < 0)
                     {
                         e8TempRssivalue *= -1;
+                        Serial_Print(mAppSer, "-", gAllowToBlock_d);
+                    }
 #else
                     if(e8TempRssivalue != 0)
                     {
-#endif
                         Serial_Print(mAppSer, "-", gAllowToBlock_d);
                     }
+#endif
+
                     Serial_PrintDec(mAppSer, (uint32_t)e8TempRssivalue);
                     Serial_Print(mAppSer, "\r\n", gAllowToBlock_d);
-                    if(u16PacketsIndex[gAppRxPacket->instanceId] ==
-                       u16TotalPackets[gAppRxPacket->instanceId])
+
+                    if(u16PacketsIndex == u16TotalPackets)
                     {
-#if gMpmMaxPANs_c != 2
                         bPrintStatistics = TRUE;
                         SelfNotificationEvent();
                         perRxState = gPerRxStateIdle_c;
-#else
-                        if(u16PacketsIndex[1-gAppRxPacket->instanceId] ==
-                           u16TotalPackets[1-gAppRxPacket->instanceId] &&
-                               u16TotalPackets[1-gAppRxPacket->instanceId] != 0)
-                        {
-                            bPrintStatistics = TRUE;
-                            SelfNotificationEvent();
-                            perRxState = gPerRxStateIdle_c;
-                        }
-#endif
                     }
                 }
            }
+
            bRxDone = FALSE;
-           if(u16PacketsIndex[gAppRxPacket->instanceId] < u16TotalPackets[gAppRxPacket->instanceId])
+           if(u16PacketsIndex < u16TotalPackets)
            {
-               /*set active pan and enter rx after receiving packet*/
-               MLMESetActivePan(gAppRxPacket->instanceId);
                gAppRxPacket->u8MaxDataLength = gMaxSmacSDULength_c;
                MLMERXEnableRequest(gAppRxPacket, 0);
            }
        }
+
        if(evDataFromUART)
        {
            if(' ' == gu8UartData)
            {
-               u8PanCount = 0;
-               do
-               {
-                   Serial_Print(mAppSer,"\r\n Statistics on PAN", gAllowToBlock_d);
-                   Serial_PrintDec(mAppSer, (uint32_t)u8PanCount);
-                   Serial_Print(mAppSer, "\r\n", gAllowToBlock_d);
-                   MLMESetActivePan((smacMultiPanInstances_t)u8PanCount);
-                   (void)MLMERXDisableRequest();
-                   Serial_Print(mAppSer,"\r\nAverage Rssi during PER: ",gAllowToBlock_d);
+                (void)MLMERXDisableRequest();
+
+                Serial_Print(mAppSer,"\r\n Statistics:", gAllowToBlock_d);
+                Serial_Print(mAppSer,"\r\nAverage Rssi during PER: ",gAllowToBlock_d);
+
 #if CT_Feature_RSSI_Has_Sign
-                   if(e8AverageRssi[u8PanCount] < 0)
-                   {
-                       e8AverageRssi[u8PanCount] *= -1;
-#else
-                   if(e8AverageRssi[u8PanCount] != 0)
-                   {
-#endif
-                       Serial_Print(mAppSer, "-",gAllowToBlock_d);
-                   }
-                   Serial_PrintDec(mAppSer, (uint32_t)e8AverageRssi[u8PanCount]);
-                   Serial_Print(mAppSer," dBm\r\n",gAllowToBlock_d);
-                   Serial_Print(mAppSer, "\n\rPER Test Rx Stopped\r\n\r\n", gAllowToBlock_d);
-                   PrintPerRxFinalLine(u16ReceivedPackets[u8PanCount],u16TotalPackets[u8PanCount]);
+                if(e8AverageRssi < 0)
+                {
+                   e8AverageRssi *= -1;
+                   Serial_Print(mAppSer, "-",gAllowToBlock_d);
                 }
-                while(++u8PanCount < gNumPans_c);
+#else
+                if(e8AverageRssi != 0)
+                {
+                   Serial_Print(mAppSer, "-",gAllowToBlock_d);
+                }
+#endif
+
+                Serial_PrintDec(mAppSer, (uint32_t)e8AverageRssi);
+                Serial_Print(mAppSer," dBm\r\n",gAllowToBlock_d);
+                Serial_Print(mAppSer, "\n\rPER Test Rx Stopped\r\n\r\n", gAllowToBlock_d);
+                PrintPerRxFinalLine(u16ReceivedPackets, u16TotalPackets);
+
                 perRxState = gPerRxStateIdle_c;
            }
+
            evDataFromUART = FALSE;
        }
-            break;
-       case gPerRxStateIdle_c:
-           if(bPrintStatistics == TRUE)
-           {
-               bPrintStatistics = FALSE;
-               u8PanCount = 0;
-               do
-               {
-                   Serial_Print(mAppSer,"\r\nAverage Rssi during PER: ", gAllowToBlock_d);
+       break;
+
+    case gPerRxStateIdle_c:
+        if(bPrintStatistics == TRUE)
+        {
+            bPrintStatistics = FALSE;
+
+            Serial_Print(mAppSer,"\r\nAverage Rssi during PER: ", gAllowToBlock_d);
 #if CT_Feature_RSSI_Has_Sign
-                   if(e8AverageRssi[u8PanCount] < 0)
-                   {
-                       e8AverageRssi[u8PanCount] *= -1;
+            if(e8AverageRssi < 0)
+            {
+                e8AverageRssi *= -1;
+                Serial_Print(mAppSer, "-", gAllowToBlock_d);
+            }
+
 #else
-                   if(e8AverageRssi[u8PanCount] != 0)
-                   {
+            if(e8AverageRssi != 0)
+            {
+                Serial_Print(mAppSer, "-", gAllowToBlock_d);
+            }
 #endif
-                       Serial_Print(mAppSer, "-", gAllowToBlock_d);
-                   }
-                   Serial_PrintDec(mAppSer, (uint32_t)e8AverageRssi[u8PanCount]);
-                   Serial_Print(mAppSer," dBm\r\n",gAllowToBlock_d);
-#if gMpmMaxPANs_c == 2
-                   Serial_Print(mAppSer, "\n\rPER Test Finished on Pan ", gAllowToBlock_d);
-                   Serial_PrintDec(mAppSer, u8PanCount);
-                   Serial_Print(mAppSer, "\r\n\r\n", gAllowToBlock_d);
-#else
-                   Serial_Print(mAppSer, "\n\rPER Test Finished\r\n\r\n", gAllowToBlock_d);
-#endif
-                   PrintPerRxFinalLine(u16ReceivedPackets[u8PanCount],u16TotalPackets[u8PanCount]);
-                }
-                while(++u8PanCount < gNumPans_c);
-           }
-           if((evDataFromUART) && ('\r' == gu8UartData))
-           {
-               MLMESetActivePan(gSmacPan0_c);
-               gAppRxPacket = (rxPacket_t*)gau8RxDataBuffer;
-               perRxState = gPerRxStateInit_c;
-               SelfNotificationEvent();
-           }
-           evDataFromUART = FALSE;
-           break;
-       default:
-           break;
-     }
-     return bBackFlag;
+
+            Serial_PrintDec(mAppSer, (uint32_t)e8AverageRssi);
+            Serial_Print(mAppSer," dBm\r\n",gAllowToBlock_d);
+            Serial_Print(mAppSer, "\n\rPER Test Finished\r\n\r\n", gAllowToBlock_d);
+            PrintPerRxFinalLine(u16ReceivedPackets, u16TotalPackets);
+        }
+
+        if((evDataFromUART) && ('\r' == gu8UartData))
+        {
+            gAppRxPacket = (rxPacket_t*)gau8RxDataBuffer;
+            perRxState = gPerRxStateInit_c;
+            SelfNotificationEvent();
+        }
+
+        evDataFromUART = FALSE;
+        break;
+    default:
+        break;
+    }
+
+    return bBackFlag;
 }
 
 /************************************************************************************
@@ -2733,130 +2632,6 @@ static void IncrementChannelOnEdEvent()
     }
 }
 
-/************************************************************************************
-*
-* Configures channel for second pan and sets dwell time
-*
-************************************************************************************/
-#if gMpmMaxPANs_c == 2
-static bool_t ConfigureAlternatePan(void)
-{
-    bool_t bBackFlag = FALSE;
-    static uint8_t u8Channel = 0;
-    static uint8_t u8PS = 0;
-    static uint8_t u8Range = 0;
-    static MpmPerConfigStates_t mMpmPerState = gMpmStateInit_c;
-
-    switch(mMpmPerState)
-    {
-    case gMpmStateInit_c:
-        if(evDataFromUART)
-        {
-            evDataFromUART = FALSE;
-            if(gu8UartData == ' ')
-            {
-                shortCutsEnabled = FALSE;
-                u8Channel    = 0;
-                u8PS         = 0;
-                u8Range      = 0;
-                Serial_Print(mAppSer, "\r\n\r\nDual Pan RX\r\nType channel number between ", gAllowToBlock_d);
-                Serial_PrintDec(mAppSer, (uint32_t)gMinChannel_c);
-                Serial_Print(mAppSer, " and ", gAllowToBlock_d);
-                Serial_PrintDec(mAppSer, (uint32_t)gMaxChannel_c);
-                Serial_Print(mAppSer, " and press [ENTER]. \r\nMake sure input channel differs from channel"
-                             " selected using shortcut keys\r\n", gAllowToBlock_d);
-                mMpmPerState = gMpmStateConfigureChannel_c;
-            }
-        }
-        break;
-    case gMpmStateConfigureChannel_c:
-        if(evDataFromUART)
-        {
-            evDataFromUART = FALSE;
-            if(gu8UartData == '\r')
-            {
-                mMpmPerState = gMpmStateConfirmChannel_c;
-                SelfNotificationEvent();
-            }
-            else if (gu8UartData >= '0' && gu8UartData <= '9')
-            {
-                if( (uint16_t)(u8Channel*10 + (gu8UartData-'0')) <= 0xFF)
-                {
-                    u8Channel = u8Channel*10 + (gu8UartData - '0');
-                    Serial_PrintDec(mAppSer, (uint32_t)(gu8UartData-'0'));
-                }
-            }
-        }
-        break;
-    case gMpmStateConfirmChannel_c:
-        if(u8Channel < gMinChannel_c || u8Channel > gMaxChannel_c)
-        {
-            Serial_Print(mAppSer, "\r\n\t Error: Invalid channel. Input valid channel\r\n",gAllowToBlock_d);
-            u8Channel = 0;
-            mMpmPerState = gMpmStateConfigureChannel_c;
-        }else if(u8Channel == testChannel)
-        {
-            Serial_Print(mAppSer, "\r\n\t Error: Same channel for both PANs. Input valid channel\r\n", gAllowToBlock_d);
-            u8Channel = 0;
-            mMpmPerState = gMpmStateConfigureChannel_c;
-        }else
-        {
-            (void)MLMESetActivePan(gSmacPan1_c);
-            (void)MLMESetChannelRequest((channels_t)u8Channel);
-            (void)MLMESetActivePan(gSmacPan0_c);
-            Serial_Print(mAppSer,"\r\nConfigure Dwell Time (PS*(RANGE + 1) ms): \r\n", gAllowToBlock_d);
-            PrintMenu(cu8MpmMenuPs, mAppSer);
-            mMpmPerState = gMpmStateInputDwellPS_c;
-        }
-        break;
-    case gMpmStateInputDwellPS_c:
-        if(evDataFromUART)
-        {
-            evDataFromUART = FALSE;
-            if(gu8UartData >='0' && gu8UartData <='3')
-            {
-                u8PS = gu8UartData - '0';
-                Serial_Print(mAppSer, "\r\nInput RANGE parameter between 0 and 63"
-                             " and press [ENTER]\r\n",gAllowToBlock_d);
-                mMpmPerState = gMpmStateInputDwellRange_c;
-            }
-        }
-        break;
-    case gMpmStateInputDwellRange_c:
-        if(evDataFromUART)
-        {
-            evDataFromUART = FALSE;
-            if(gu8UartData >='0' && gu8UartData <='9')
-            {
-                u8Range = u8Range*10 + (gu8UartData - '0');
-                if(u8Range >= ((mDualPanDwellTimeMask_c >> mDualPanDwellTimeShift_c) + 1))
-                {
-                    Serial_Print(mAppSer,"\r\n\tError: Invalid RANGE. Input new value.\r\n",gAllowToBlock_d);
-                    u8Range = 0;
-                }
-                else
-                {
-                    Serial_PrintDec(mAppSer, (uint32_t)(gu8UartData - '0'));
-                }
-            }
-            else if(gu8UartData == '\r')
-            {
-                (void)MLMEConfigureDualPanSettings(TRUE, TRUE, u8PS, u8Range);
-                Serial_Print(mAppSer,"\r\n\t Done! Press [SPACE] to start test\r\n", gAllowToBlock_d);
-                mMpmPerState = gMpmStateExit_c;
-                SelfNotificationEvent();
-            }
-        }
-        break;
-    case gMpmStateExit_c:
-        bBackFlag = TRUE;
-        mMpmPerState = gMpmStateInit_c;
-        break;
-    }
-
-    return bBackFlag;
-}
-#endif
 /***********************************************************************
 *********************Utilities Software********************************
 ************************************************************************/

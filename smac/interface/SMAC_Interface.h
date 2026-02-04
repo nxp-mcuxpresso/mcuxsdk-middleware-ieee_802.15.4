@@ -63,15 +63,6 @@ extern uint8_t gTotalChannels;
 
 typedef uint16_t address_size_t;
 
-typedef enum smacMultiPanInstances_tag
-{
-    gSmacPan0_c = 0,
-#if gMpmMaxPANs_c == 2
-    gSmacPan1_c,
-#endif
-    gSmacMaxPan_c
-}smacMultiPanInstances_t;
-
 typedef enum smacMessageDefs_tag
 {
     gMcpsDataCnf_c,
@@ -135,12 +126,11 @@ typedef enum rxStatus_tag
 
 typedef struct rxPacket_tag
 {
-    uint8_t    u8MaxDataLength;
-    uint8_t    u8DataLength;
-    rxStatus_t rxStatus;
-    smacMultiPanInstances_t instanceId;
+    uint8_t      u8MaxDataLength;
+    uint8_t      u8DataLength;
+    rxStatus_t   rxStatus;
     smacHeader_t smacHeader;
-    smacPdu_t  smacPdu;
+    smacPdu_t    smacPdu;
 } rxPacket_t;
 
 typedef enum smacErrors_tag
@@ -265,8 +255,9 @@ void Smac_RegisterSapHandlers(SMAC_APP_MCPS_SapHandler_t pSMAC_APP_MCPS_SapHandl
 /*!
  * \brief Initialize SMAC layer
  *
+ * \param[in] phy_context_id the ID of the phy that is going to server this SMAC instance.
  */
-void InitSmac(void);
+void InitSmac(instanceId_t phy_context_id);
 
 /*!
  * \brief Send a packet over the air
@@ -308,33 +299,6 @@ smacErrors_t MLMERXEnableRequest(rxPacket_t *gsRxPacket, smacTime_t stTimeout);
  */
 smacErrors_t MLMERXDisableRequest(void);
 
-/*!
- * \brief Switch between pans
- *
- * \param[in] panId the pan to switch to
- * \return gErrorNoError_c: Success
- * \return gErrorOutOfRange_c: Maximum available pans is exceeded
- * \return gErrorNoValidCondition_c: SMAC not initialized
- */
-smacErrors_t MLMESetActivePan(smacMultiPanInstances_t panID);
-
-/*!
- * \brief Configure multi-pan settings.
- *
- * \param[in] panId the pan to switch to
- * \param[in] bUseAutoMode true if HW switches the pans automatically
- * \param[in] bModifyDwell true if u8Prescaler and u8Scale are to be used
- * \param[in] u8Prescaler can be 0,1,2,3. Check MpmInterface.h for its meaning
- * \param[in] u8Scale can be between 0 and 63. Check MpmInterface for its meaning
- * \return gErrorNoError_c: Success
- * \return gErrorOutOfRange_c: Parameters exceed range
- * \return gErrorNoValidCondition_c: SMAC not initialized
- * \return gErrorBusy_c SMAC is busy on (at least) one of the pans
- */
-smacErrors_t MLMEConfigureDualPanSettings(bool_t bUseAutoMode,
-                                          bool_t bModifyDwell,
-                                          uint8_t u8Prescaler,
-                                          uint8_t u8Scale);
 /*!
  * \brief Set the radio's channel
  *

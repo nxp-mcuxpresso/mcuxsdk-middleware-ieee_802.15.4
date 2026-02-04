@@ -106,6 +106,7 @@ typedef phyStatus_t ( * PLME_SMAC_SapHandler_t)(plmeToMacMessage_t * pMsg, insta
 typedef struct smacInternalAttrib_tag
 {
     smacStates_t smacState;
+    instanceId_t phy_context_id;
     prssPacketPtr_t smacProccesPacketPtr;
     phyRxParams_t   smacLastDataRxParams;
     txContextConfig_t txConfigurator;

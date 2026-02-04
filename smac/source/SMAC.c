@@ -48,9 +48,7 @@ RegisterModuleInfo(SMAC, /* DO NOT MODIFY */
                    gSmacVerPatch_c, /* DO NOT MODIFY, EDIT in SMAC.h */
                    gSmacBuildNo_c); /* DO NOT MODIFY, EDIT in SMAC.h */
 
-static smacInternalAttrib_t maSmacAttributes[gSmacMaxPan_c];
-
-static smacMultiPanInstances_t mSmacActivePan;
+static smacInternalAttrib_t maSmacAttributes;
 
 static uint8_t mSmacInitialized;
 
@@ -91,21 +89,21 @@ uint8_t gTotalChannels;
 
 static void SMAC_SetIVKey(uint8_t* KEY, uint8_t* IV)
 {
-    FLib_MemCpy(maSmacAttributes[mSmacActivePan].secInit.KEY, KEY, ENC_BLOCK_SIZE);
-    FLib_MemCpy(maSmacAttributes[mSmacActivePan].secInit.IV, IV, ENC_BLOCK_SIZE);
+    FLib_MemCpy(maSmacAttributes.secInit.KEY, KEY, ENC_BLOCK_SIZE);
+    FLib_MemCpy(maSmacAttributes.secInit.IV, IV, ENC_BLOCK_SIZE);
 
 #if (defined(FSL_FEATURE_SOC_LTC_COUNT) && (FSL_FEATURE_SOC_LTC_COUNT > 0))
     // This API is not working on K4W1 FPGA, see KFOURWONE-311 jira ticket
-    //LTC_AES_GenerateDecryptKey(LTC0, maSmacAttributes[mSmacActivePan].secInit.KEY, maSmacAttributes[mSmacActivePan].secInit.DKEY, ENC_BLOCK_SIZE);
-    FLib_MemCpy(maSmacAttributes[mSmacActivePan].secInit.DKEY, (uint8_t*)TEST_DKEY, ENC_BLOCK_SIZE);
+    //LTC_AES_GenerateDecryptKey(LTC0, maSmacAttributes.secInit.KEY, maSmacAttributes.secInit.DKEY, ENC_BLOCK_SIZE);
+    FLib_MemCpy(maSmacAttributes.secInit.DKEY, (uint8_t*)TEST_DKEY, ENC_BLOCK_SIZE);
 #endif
 }
 
 static void SMAC_Encrypt(uint8_t* pIn, uint8_t* pOut, uint8_t *len, smacMultiPanInstances_t panID)
 {
     *len = AES_128_CBC_Encrypt_And_Pad(pIn, (uint32_t)(*len),
-                                     maSmacAttributes[panID].secInit.IV,
-                                     maSmacAttributes[panID].secInit.KEY,
+                                     maSmacAttributes.secInit.IV,
+                                     maSmacAttributes.secInit.KEY,
                                      pOut);
 }
 
@@ -113,13 +111,13 @@ static void SMAC_Decrypt(uint8_t* pIn, uint8_t* pOut, uint8_t *len, smacMultiPan
 {
 #if (defined(FSL_FEATURE_SOC_LTC_COUNT) && (FSL_FEATURE_SOC_LTC_COUNT > 0))
     *len = AES_128_CBC_Decrypt_And_Depad(pIn, (uint32_t)(*len),
-                                       maSmacAttributes[panID].secInit.IV,
-                                       maSmacAttributes[panID].secInit.DKEY,
+                                       maSmacAttributes.secInit.IV,
+                                       maSmacAttributes.secInit.DKEY,
                                        pOut);
 #else
     *len = AES_128_CBC_Decrypt_And_Depad(pIn, (uint32_t)(*len),
-                                       maSmacAttributes[panID].secInit.IV,
-                                       maSmacAttributes[panID].secInit.KEY,
+                                       maSmacAttributes.secInit.IV,
+                                       maSmacAttributes.secInit.KEY,
                                        pOut);
 #endif
 }
@@ -128,21 +126,19 @@ static void SMAC_Decrypt(uint8_t* pIn, uint8_t* pOut, uint8_t *len, smacMultiPan
 
 static void BackoffTimeElapsed(void* param)
 {
-    uint32_t lsmacInstance = (uint32_t)param;
-
-    uint8_t u8PhyRes = MAC_PD_SapHandler(maSmacAttributes[lsmacInstance].gSmacDataMessage, 0);
+    uint8_t u8PhyRes = MAC_PD_SapHandler(maSmacAttributes.gSmacDataMessage, maSmacAttributes.phy_context_id);
     if(u8PhyRes != gPhySuccess_c)
     {
         OSA_InterruptDisable();
-        maSmacAttributes[lsmacInstance].smacState = mSmacStateIdle_c;
+        maSmacAttributes.smacState = mSmacStateIdle_c;
         OSA_InterruptEnable();
 
-        MSG_Free(maSmacAttributes[lsmacInstance].gSmacDataMessage);
-        maSmacAttributes[lsmacInstance].gSmacDataMessage = NULL;
+        MSG_Free(maSmacAttributes.gSmacDataMessage);
+        maSmacAttributes.gSmacDataMessage = NULL;
     }
 }
 
-static bool_t SMACPacketCheck(pdDataToMacMessage_t* pMsgFromPhy, smacMultiPanInstances_t instance)
+static bool_t SMACPacketCheck(pdDataToMacMessage_t* pMsgFromPhy)
 {
     //check if packet is of type Data
     if((pMsgFromPhy->msgData.dataInd.pPsdu[0] & 0x07) != 0x01)
@@ -157,7 +153,7 @@ static bool_t SMACPacketCheck(pdDataToMacMessage_t* pMsgFromPhy, smacMultiPanIns
     }
 
     //check if PSDU length is greater than the maximum configured SMAC packet size.
-    if(pMsgFromPhy->msgData.dataInd.psduLength > (maSmacAttributes[instance].smacProccesPacketPtr.smacRxPacketPointer->u8MaxDataLength + gSmacHeaderBytes_c))
+    if(pMsgFromPhy->msgData.dataInd.psduLength > (maSmacAttributes.smacProccesPacketPtr.smacRxPacketPointer->u8MaxDataLength + gSmacHeaderBytes_c))
     {
         return FALSE;
     }
@@ -167,65 +163,81 @@ static bool_t SMACPacketCheck(pdDataToMacMessage_t* pMsgFromPhy, smacMultiPanIns
 
 static phyStatus_t PD_SMAC_SapHandler(void* pMsg, instanceId_t instance)
 {
-    phyStatus_t status = gPhySuccess_c;
+    pdDataToMacMessage_t*   pDataMsg = (pdDataToMacMessage_t*)pMsg;
     smacToAppDataMessage_t* pSmacMsg;
-    smacMultiPanInstances_t lSmacInstanceBackup;
-    pdDataToMacMessage_t* pDataMsg = (pdDataToMacMessage_t*)pMsg;
+
+    /* This handler should only come from the Phy Context we explicitly linked with
+     * this SMAC Context.
+     */
+    assert(maSmacAttributes.phy_context_id == instance);
 
     switch(pDataMsg->msgType)
     {
     case gPdDataCnf_c:
-        if(NULL == maSmacAttributes[instance].gSmacDataMessage)
+        if(NULL == maSmacAttributes.gSmacDataMessage)
         {
-            status = gPhySuccess_c;
+            /* TODO: this should never happen: receiving a confirm without having sent/queued
+             * a packet; consider using an assert here.
+             */
+            break;
         }
-        else
+
+        /* TODO: since we're only sending a packet at a time consider allocating a packet statically
+         * and don't use dynamic allocation MSG_BufferAlloc() / MSG_Free() for gSmacDataMessage
+         */
+        MSG_Free(maSmacAttributes.gSmacDataMessage);
+        maSmacAttributes.gSmacDataMessage = NULL;
+
+        pSmacMsg = MEM_BufferAlloc(sizeof(smacToAppDataMessage_t));
+        if(pSmacMsg == NULL)
         {
-            MSG_Free(maSmacAttributes[instance].gSmacDataMessage);
-            maSmacAttributes[instance].gSmacDataMessage = NULL;
-
-            pSmacMsg = MEM_BufferAlloc(sizeof(smacToAppDataMessage_t));
-            if(pSmacMsg == NULL)
-            {
-                status = gPhySuccess_c;
-            }
-            else
-            {
-                pSmacMsg->msgType = gMcpsDataCnf_c;
-                pSmacMsg->msgData.dataCnf.status = gErrorNoError_c;
-                maSmacAttributes[instance].gSMAC_APP_MCPS_SapHandler(pSmacMsg, instance);
-            }
-
-            OSA_InterruptDisable();
-            maSmacAttributes[instance].smacState = mSmacStateIdle_c;
-            OSA_InterruptEnable();
+            break;
         }
+
+        pSmacMsg->msgType = gMcpsDataCnf_c;
+        pSmacMsg->appInstanceId = instance;
+        pSmacMsg->msgData.dataCnf.status = gErrorNoError_c;
+        maSmacAttributes.gSMAC_APP_MCPS_SapHandler(pSmacMsg, instance);
+
+        OSA_InterruptDisable();
+        maSmacAttributes.smacState = mSmacStateIdle_c;
+        OSA_InterruptEnable();
+
         break;
 
     case gPdDataInd_c:
-        if(FALSE == SMACPacketCheck(pDataMsg, (smacMultiPanInstances_t)instance))
-        {
-            //if timeout is asked and packet fails the check, send message with abort status
-            if(maSmacAttributes[instance].mSmacTimeoutAsked)
+        if(FALSE == SMACPacketCheck(pDataMsg))
+        { /* we have received a packet that is not SMAC specific */
+
+            /* if RX started with a timeout it means the RX ended with the reception of this packet
+             * and therefore we need to inform the application.
+             */
+            if(maSmacAttributes.mSmacTimeoutAsked)
             {
                 pSmacMsg = MEM_BufferAlloc(sizeof(smacToAppDataMessage_t));
+                if (pSmacMsg)
+                {
+                    break;
+                }
+
                 pSmacMsg->msgType = gMcpsDataInd_c;
-                pSmacMsg->msgData.dataInd.pRxPacket = maSmacAttributes[instance].smacProccesPacketPtr.smacRxPacketPointer;
+                pSmacMsg->appInstanceId = instance;
+                pSmacMsg->msgData.dataInd.pRxPacket = maSmacAttributes.smacProccesPacketPtr.smacRxPacketPointer;
                 pSmacMsg->msgData.dataInd.pRxPacket->rxStatus = rxAbortedStatus_c;
-                maSmacAttributes[instance].gSMAC_APP_MCPS_SapHandler(pSmacMsg, instance);
+
+                maSmacAttributes.gSMAC_APP_MCPS_SapHandler(pSmacMsg, instance);
 
                 OSA_InterruptDisable();
-                maSmacAttributes[instance].smacState = mSmacStateIdle_c;
+                maSmacAttributes.smacState = mSmacStateIdle_c;
                 OSA_InterruptEnable();
             }
-
-            status = gPhySuccess_c;
         }
         else
-        {
-            maSmacAttributes[instance].smacLastDataRxParams.linkQuality = ((pdDataToMacMessage_t*)pMsg)->msgData.dataInd.ppduLinkQuality;
-            maSmacAttributes[instance].smacLastDataRxParams.timeStamp   = (phyTime_t)((pdDataToMacMessage_t*)pMsg)->msgData.dataInd.timeStamp;
-            maSmacAttributes[instance].smacProccesPacketPtr.smacRxPacketPointer->rxStatus = rxSuccessStatus_c;
+        { /* we have received a packet that is SMAC specific: need to process it */
+
+            maSmacAttributes.smacLastDataRxParams.linkQuality = pDataMsg->msgData.dataInd.ppduLinkQuality;
+            maSmacAttributes.smacLastDataRxParams.timeStamp   = (phyTime_t)pDataMsg->msgData.dataInd.timeStamp;
+            maSmacAttributes.smacProccesPacketPtr.smacRxPacketPointer->rxStatus = rxSuccessStatus_c;
 
 #if gSmacUseSecurity_c
             uint8_t len = pDataMsg->msgData.dataInd.psduLength - gSmacHeaderBytes_c - gPhyFCSSize_c;
@@ -236,44 +248,34 @@ static phyStatus_t PD_SMAC_SapHandler(void* pMsg, instanceId_t instance)
 #endif
 
             // in case no timeout was asked we need to unset RXOnWhenIdle Pib.
-            if(!maSmacAttributes[instance].mSmacTimeoutAsked)
+            if(!maSmacAttributes.mSmacTimeoutAsked)
             {
-                lSmacInstanceBackup = mSmacActivePan;
-                MLMESetActivePan((smacMultiPanInstances_t)instance);
                 (void)MLMERXDisableRequest();
-                MLMESetActivePan(lSmacInstanceBackup);
             }
 
-            maSmacAttributes[instance].smacProccesPacketPtr.smacRxPacketPointer->u8DataLength 
+            maSmacAttributes.smacProccesPacketPtr.smacRxPacketPointer->u8DataLength 
                 = pDataMsg->msgData.dataInd.psduLength - gSmacHeaderBytes_c - gPhyFCSSize_c;
 
-            FLib_MemCpy(&maSmacAttributes[instance].smacProccesPacketPtr.smacRxPacketPointer->smacHeader,
+            FLib_MemCpy(&maSmacAttributes.smacProccesPacketPtr.smacRxPacketPointer->smacHeader,
                       ((smacHeader_t*)pDataMsg->msgData.dataInd.pPsdu),
                       gSmacHeaderBytes_c);
-            FLib_MemCpy(&maSmacAttributes[instance].smacProccesPacketPtr.smacRxPacketPointer->smacPdu,
+            FLib_MemCpy(&maSmacAttributes.smacProccesPacketPtr.smacRxPacketPointer->smacPdu,
                       ((smacPdu_t*)(pDataMsg->msgData.dataInd.pPsdu + gSmacHeaderBytes_c)),
-                      maSmacAttributes[instance].smacProccesPacketPtr.smacRxPacketPointer->u8DataLength);
+                      maSmacAttributes.smacProccesPacketPtr.smacRxPacketPointer->u8DataLength);
 
             pSmacMsg = MEM_BufferAlloc(sizeof(smacToAppDataMessage_t));
             if(pSmacMsg == NULL)
             {
-                status = gPhySuccess_c;
-            }
-            else
-            {
-                pSmacMsg->msgType = gMcpsDataInd_c;
-                pSmacMsg->msgData.dataInd.pRxPacket = maSmacAttributes[instance].smacProccesPacketPtr.smacRxPacketPointer;
-#if gMpmMaxPANs_c == 2
-                pSmacMsg->msgData.dataInd.pRxPacket->instanceId = (smacMultiPanInstances_t)instance;
-#else
-                pSmacMsg->msgData.dataInd.pRxPacket->instanceId = (smacMultiPanInstances_t)0;
-#endif
-                pSmacMsg->msgData.dataInd.u8LastRxRssi = ((pdDataToMacMessage_t *)pMsg)->msgData.dataInd.ppduRssi;
-                maSmacAttributes[instance].gSMAC_APP_MCPS_SapHandler(pSmacMsg, instance);
+                break;
             }
 
+            pSmacMsg->msgType = gMcpsDataInd_c;
+            pSmacMsg->msgData.dataInd.pRxPacket = maSmacAttributes.smacProccesPacketPtr.smacRxPacketPointer;
+            pSmacMsg->msgData.dataInd.u8LastRxRssi = ((pdDataToMacMessage_t *)pMsg)->msgData.dataInd.ppduRssi;
+            maSmacAttributes.gSMAC_APP_MCPS_SapHandler(pSmacMsg, instance);
+
             OSA_InterruptDisable();
-            maSmacAttributes[instance].smacState = mSmacStateIdle_c;
+            maSmacAttributes.smacState = mSmacStateIdle_c;
             OSA_InterruptEnable();
         }
         break;
@@ -283,58 +285,69 @@ static phyStatus_t PD_SMAC_SapHandler(void* pMsg, instanceId_t instance)
     }
 
     MSG_Free(pMsg);
-    return status;
+    return gPhySuccess_c;
 }
 
 static phyStatus_t PLME_SMAC_SapHandler(void* pMsg, instanceId_t instance)
 {
     uint32_t backOffTime = 0;
-    smacMultiPanInstances_t lSmacInstanceBackup;
     smacToAppMlmeMessage_t* pSmacToApp;
     smacToAppDataMessage_t* pSmacMsg;
     plmeToMacMessage_t* pPlmeMsg = (plmeToMacMessage_t*)pMsg;
 
-    if (maSmacAttributes[instance].gSmacMlmeMessage)
+    /* The request should never come from a phy that was not linked to this
+     * SMAC context
+     */
+    assert (maSmacAttributes.phy_context_id == instance);
+
+    /* TODO: check to see why we need to keep a pointer to the MLME message.
+     * If it is because we have to de-allocate the pointer maybe consider using
+     * static allocation.
+     */
+    if (maSmacAttributes.gSmacMlmeMessage)
     {
-        MSG_Free(maSmacAttributes[instance].gSmacMlmeMessage);
-        maSmacAttributes[instance].gSmacMlmeMessage = NULL;
+        MSG_Free(maSmacAttributes.gSmacMlmeMessage);
+        maSmacAttributes.gSmacMlmeMessage = NULL;
     }
 
     switch(pPlmeMsg->msgType)
     {
     case gPlmeCcaCnf_c:
-        if(pPlmeMsg->msgData.ccaCnf.status == gPhyChannelBusy_c && maSmacAttributes[instance].smacState == mSmacStateTransmitting_c)
+        if(pPlmeMsg->msgData.ccaCnf.status == gPhyChannelBusy_c && maSmacAttributes.smacState == mSmacStateTransmitting_c)
         {
-            if(maSmacAttributes[instance].txConfigurator.ccaBeforeTx)
+            /* TODO: check the validity of this branch:
+             * when we start a CCARequest() we always check that the SMAC is in IDLE mode and only then
+             * switch to CCA mode. So there should be no situation when we started CCA but ended with
+             * the confirm in TX mode.
+             */
+            if(maSmacAttributes.txConfigurator.ccaBeforeTx)
             {
-                if(maSmacAttributes[instance].txConfigurator.retryCountCCAFail > maSmacAttributes[instance].u8CCARetryCounter)
+                if(maSmacAttributes.txConfigurator.retryCountCCAFail > maSmacAttributes.u8CCARetryCounter)
                 {
-                    maSmacAttributes[instance].u8CCARetryCounter++;
+                    maSmacAttributes.u8CCARetryCounter++;
                     HAL_RngGetData(&backOffTime, sizeof(backOffTime));
 #if !defined(RW610N_BT_CM3_SERIES)
                     /* TODO: MCRED-2 support timers on Redfinch */
-                    TM_Start(maSmacAttributes[instance].u8BackoffTimerId, kTimerModeSingleShot, ((backOffTime & gMaxBackoffTime_c) + gMinBackoffTime_c));
+                    TM_Start(maSmacAttributes.u8BackoffTimerId, kTimerModeSingleShot, ((backOffTime & gMaxBackoffTime_c) + gMinBackoffTime_c));
 #endif
                 }
                 else
                 {
-                    MSG_Free(maSmacAttributes[instance].gSmacDataMessage);
-                    maSmacAttributes[instance].gSmacDataMessage = NULL;
+                    MSG_Free(maSmacAttributes.gSmacDataMessage);
+                    maSmacAttributes.gSmacDataMessage = NULL;
 
-                    //retries failed so create message for the application
                     pSmacMsg = MEM_BufferAlloc(sizeof(smacToAppDataMessage_t));
                     if(pSmacMsg != NULL)
                     {
-                        //error type : Channel Busy
+                        pSmacMsg->msgType                = gMcpsDataCnf_c;
+                        pSmacMsg->appInstanceId          = instance;
                         pSmacMsg->msgData.dataCnf.status = gErrorChannelBusy_c;
-                        //type is Data Confirm
-                        pSmacMsg->msgType = gMcpsDataCnf_c;
-                        maSmacAttributes[instance].gSMAC_APP_MCPS_SapHandler(pSmacMsg, instance);
+
+                        (void)maSmacAttributes.gSMAC_APP_MCPS_SapHandler(pSmacMsg, instance);
                     }
 
-                    //place SMAC into idle state
                     OSA_InterruptDisable();
-                    maSmacAttributes[instance].smacState = mSmacStateIdle_c;
+                    maSmacAttributes.smacState = mSmacStateIdle_c;
                     OSA_InterruptEnable();
                 }
             }
@@ -347,7 +360,8 @@ static phyStatus_t PLME_SMAC_SapHandler(void* pMsg, instanceId_t instance)
         pSmacToApp = MEM_BufferAlloc(sizeof(smacToAppMlmeMessage_t));
         if(pSmacToApp != NULL)
         {
-            pSmacToApp->msgType = gMlmeCcaCnf_c;
+            pSmacToApp->msgType       = gMlmeCcaCnf_c;
+            pSmacToApp->appInstanceId = instance;
 
             //Channel status translated into SMAC messages: idle channel means no error.
             if(pPlmeMsg->msgData.ccaCnf.status == gPhyChannelIdle_c)
@@ -362,21 +376,16 @@ static phyStatus_t PLME_SMAC_SapHandler(void* pMsg, instanceId_t instance)
         break;
 
     case gPlmeEdCnf_c:
-        //allocate a message for the application
         pSmacToApp = MEM_BufferAlloc(sizeof(smacToAppMlmeMessage_t));
         if(pSmacToApp != NULL)
         {
-            //message type is ED Confirm
-            pSmacToApp->msgType = gMlmeEdCnf_c;
+            pSmacToApp->msgType       = gMlmeEdCnf_c;
+            pSmacToApp->appInstanceId = instance;
             if(pPlmeMsg->msgData.edCnf.status == gPhySuccess_c)
             {
-                pSmacToApp->msgData.edCnf.status = gErrorNoError_c;
-                pSmacToApp->msgData.edCnf.energyLevel = pPlmeMsg->msgData.edCnf.energyLevel;
+                pSmacToApp->msgData.edCnf.status        = gErrorNoError_c;
+                pSmacToApp->msgData.edCnf.energyLevel   = pPlmeMsg->msgData.edCnf.energyLevel;
                 pSmacToApp->msgData.edCnf.energyLeveldB = pPlmeMsg->msgData.edCnf.energyLeveldB;
-
-                lSmacInstanceBackup = mSmacActivePan;
-                MLMESetActivePan((smacMultiPanInstances_t)instance);
-                MLMESetActivePan(lSmacInstanceBackup);
             }
             else
             {
@@ -387,43 +396,42 @@ static phyStatus_t PLME_SMAC_SapHandler(void* pMsg, instanceId_t instance)
 
     case gPlmeTimeoutInd_c:
     case gPlmeAbortInd_c:
-        if(maSmacAttributes[instance].smacState == mSmacStateTransmitting_c)
+        if(maSmacAttributes.smacState == mSmacStateTransmitting_c)
         {
-            if(maSmacAttributes[instance].txConfigurator.autoAck)
+            if(maSmacAttributes.txConfigurator.autoAck)
             {
                 //re-arm retries for channel busy at retransmission.
-                maSmacAttributes[instance].u8CCARetryCounter = 0;
+                maSmacAttributes.u8CCARetryCounter = 0;
 
-                if(maSmacAttributes[instance].txConfigurator.retryCountAckFail > maSmacAttributes[instance].u8AckRetryCounter)
+                if(maSmacAttributes.txConfigurator.retryCountAckFail > maSmacAttributes.u8AckRetryCounter)
                 {
-                    maSmacAttributes[instance].u8AckRetryCounter++;
+                    maSmacAttributes.u8AckRetryCounter++;
 
                     HAL_RngGetData(&backOffTime, sizeof(backOffTime));
                     //start event timer. After time elapses, Data request will be fired.
 #if !defined(RW610N_BT_CM3_SERIES)
                     /* TODO: MCRED-2 support timers on Redfinch */
-                    TM_Start(maSmacAttributes[instance].u8BackoffTimerId, kTimerModeSingleShot, ((backOffTime & gMaxBackoffTime_c) + gMinBackoffTime_c));
+                    TM_Start(maSmacAttributes.u8BackoffTimerId, kTimerModeSingleShot, ((backOffTime & gMaxBackoffTime_c) + gMinBackoffTime_c));
 #endif
                 }
                 else
                 {
-                    (void)MSG_Free(maSmacAttributes[instance].gSmacDataMessage);
-                    maSmacAttributes[instance].gSmacDataMessage = NULL;
+                    (void)MSG_Free(maSmacAttributes.gSmacDataMessage);
+                    maSmacAttributes.gSmacDataMessage = NULL;
 
                     //retries failed so create message for the application
                     pSmacMsg = MEM_BufferAlloc(sizeof(smacToAppDataMessage_t));
                     if(pSmacMsg != NULL)
                     {
-                        //set error code: No Ack
+                        pSmacMsg->msgType       = gMcpsDataCnf_c;
+                        pSmacMsg->appInstanceId = instance;
                         pSmacMsg->msgData.dataCnf.status = gErrorNoAck_c;
-                        //type is Data Confirm
-                        pSmacMsg->msgType = gMcpsDataCnf_c;
 
-                        maSmacAttributes[instance].gSMAC_APP_MCPS_SapHandler(pSmacMsg, instance);
+                        maSmacAttributes.gSMAC_APP_MCPS_SapHandler(pSmacMsg, instance);
                     }
 
                     OSA_InterruptDisable();
-                    maSmacAttributes[instance].smacState = mSmacStateIdle_c;
+                    maSmacAttributes.smacState = mSmacStateIdle_c;
                     OSA_InterruptEnable();
                 }
             }
@@ -436,9 +444,9 @@ static phyStatus_t PLME_SMAC_SapHandler(void* pMsg, instanceId_t instance)
         pSmacToApp = MEM_BufferAlloc(sizeof(smacToAppMlmeMessage_t));
         if(pSmacToApp != NULL)
         {
-            if(maSmacAttributes[instance].smacState == mSmacStateReceiving_c)
+            if(maSmacAttributes.smacState == mSmacStateReceiving_c)
             {
-                maSmacAttributes[instance].smacProccesPacketPtr.smacRxPacketPointer->rxStatus = rxTimeOutStatus_c;
+                maSmacAttributes.smacProccesPacketPtr.smacRxPacketPointer->rxStatus = rxTimeOutStatus_c;
             }
             pSmacToApp->msgType = gMlmeTimeoutInd_c;
         }
@@ -459,12 +467,12 @@ static phyStatus_t PLME_SMAC_SapHandler(void* pMsg, instanceId_t instance)
     }
 
     OSA_InterruptDisable();
-    maSmacAttributes[instance].smacState = mSmacStateIdle_c;
+    maSmacAttributes.smacState = mSmacStateIdle_c;
     OSA_InterruptEnable();
 
     if(pSmacToApp != NULL)
     {
-        maSmacAttributes[instance].gSMAC_APP_MLME_SapHandler(pSmacToApp, instance);
+        maSmacAttributes.gSMAC_APP_MLME_SapHandler(pSmacToApp, instance);
     }
 
     MSG_Free(pMsg);
@@ -479,11 +487,11 @@ void Smac_RegisterSapHandlers(SMAC_APP_MCPS_SapHandler_t pSMAC_APP_MCPS_SapHandl
                               SMAC_APP_MLME_SapHandler_t pSMAC_APP_MLME_SapHandler,
                               instanceId_t smacInstanceId)
 {
-    maSmacAttributes[smacInstanceId].gSMAC_APP_MCPS_SapHandler = pSMAC_APP_MCPS_SapHandler;
-    maSmacAttributes[smacInstanceId].gSMAC_APP_MLME_SapHandler = pSMAC_APP_MLME_SapHandler;
+    maSmacAttributes.gSMAC_APP_MCPS_SapHandler = pSMAC_APP_MCPS_SapHandler;
+    maSmacAttributes.gSMAC_APP_MLME_SapHandler = pSMAC_APP_MLME_SapHandler;
 }
 
-void InitSmac(void)
+void InitSmac(instanceId_t phy_context_id)
 {
     uint32_t u32RandomNo = 0;
 
@@ -499,53 +507,48 @@ void InitSmac(void)
     mSmacInitialized = TRUE;
 #endif
 
-    mSmacActivePan = gSmacPan0_c;
-    while(mSmacActivePan < gSmacMaxPan_c)
-    {
-        maSmacAttributes[mSmacActivePan].smacState = mSmacStateIdle_c;
-        maSmacAttributes[mSmacActivePan].smacLastDataRxParams.linkQuality = 0;
-        maSmacAttributes[mSmacActivePan].smacLastDataRxParams.timeStamp = 0;
+    maSmacAttributes.smacState = mSmacStateIdle_c;
+    maSmacAttributes.phy_context_id = phy_context_id;
+    maSmacAttributes.smacLastDataRxParams.linkQuality = 0;
+    maSmacAttributes.smacLastDataRxParams.timeStamp = 0;
 
-        /*clear defer tx flag*/
-        macToPlmeMessage_t lMsg;
-        lMsg.ctx_id = mSmacActivePan;
-        lMsg.msgType = gPlmeSetReq_c;
-        lMsg.msgData.setReq.PibAttribute = gPhyPibDeferTxIfRxBusy_c;
-        lMsg.msgData.setReq.PibAttributeValue = (uint64_t)FALSE;
-        (void)MAC_PLME_SapHandler(&lMsg, 0);
+    /*clear defer tx flag*/
+    macToPlmeMessage_t lMsg;
+    lMsg.msgType = gPlmeSetReq_c;
+    lMsg.ctx_id = phy_context_id;
+    lMsg.msgData.setReq.PibAttribute = gPhyPibDeferTxIfRxBusy_c;
+    lMsg.msgData.setReq.PibAttributeValue = (uint64_t)FALSE;
+    (void)MAC_PLME_SapHandler(&lMsg, phy_context_id);
 
-        maSmacAttributes[mSmacActivePan].txConfigurator.autoAck = FALSE;
-        maSmacAttributes[mSmacActivePan].txConfigurator.enhAck = FALSE;
-        maSmacAttributes[mSmacActivePan].txConfigurator.ccaBeforeTx = FALSE;
-        maSmacAttributes[mSmacActivePan].txConfigurator.retryCountAckFail = 0;
-        maSmacAttributes[mSmacActivePan].txConfigurator.retryCountCCAFail = 0;
+    maSmacAttributes.txConfigurator.autoAck = FALSE;
+    maSmacAttributes.txConfigurator.enhAck = FALSE;
+    maSmacAttributes.txConfigurator.ccaBeforeTx = FALSE;
+    maSmacAttributes.txConfigurator.retryCountAckFail = 0;
+    maSmacAttributes.txConfigurator.retryCountCCAFail = 0;
+
 #if !defined(RW610N_BT_CM3_SERIES)
         /* TODO: MCRED-2 support timers on Redfinch */
-        (void)TM_Open(maSmacAttributes[mSmacActivePan].u8BackoffTimerId);
-        (void)TM_InstallCallback((timer_handle_t)maSmacAttributes[mSmacActivePan].u8BackoffTimerId, BackoffTimeElapsed, (void*)mSmacActivePan);
+    (void)TM_Open(maSmacAttributes.u8BackoffTimerId);
+    (void)TM_InstallCallback((timer_handle_t)maSmacAttributes.u8BackoffTimerId, BackoffTimeElapsed, NULL);
 #endif
 
-        (void)SMACSetShortSrcAddress(gNodeAddress_c);
-        (void)SMACSetPanID(gDefaultPanID_c);
+    (void)SMACSetShortSrcAddress(gNodeAddress_c);
+    (void)SMACSetPanID(gDefaultPanID_c);
 
-        HAL_RngGetData(&u32RandomNo, sizeof(u32RandomNo));
-        maSmacAttributes[mSmacActivePan].u8SmacSeqNo = (uint8_t)u32RandomNo;
+    HAL_RngGetData(&u32RandomNo, sizeof(u32RandomNo));
+    maSmacAttributes.u8SmacSeqNo = (uint8_t)u32RandomNo;
 
 #if gSmacUseSecurity_c
-        SMAC_SetIVKey((uint8_t*)TEST_KEY, (uint8_t*)TEST_IV);
+    SMAC_SetIVKey((uint8_t*)TEST_KEY, (uint8_t*)TEST_IV);
 #endif
-        mSmacActivePan = (smacMultiPanInstances_t)(mSmacActivePan + 1);
-    }
-    mSmacActivePan = gSmacPan0_c;
 
     //Notify the PHY what function to call for communicating with SMAC
-    Phy_RegisterSapHandlers((PD_MAC_SapHandler_t)PD_SMAC_SapHandler, (PLME_MAC_SapHandler_t)PLME_SMAC_SapHandler, 0);
+    Phy_RegisterSapHandlers((PD_MAC_SapHandler_t)PD_SMAC_SapHandler, (PLME_MAC_SapHandler_t)PLME_SMAC_SapHandler, phy_context_id);
 }
 
 smacErrors_t MCPSDataRequest (txPacket_t *psTxPacket)
 {
     macToPdDataMessage_t *pMsg;
-    phyStatus_t u8PhyRes = gPhySuccess_c;
 
 #if(TRUE == smacInitializationValidation_d)
     if(FALSE == mSmacInitialized)
@@ -561,7 +564,7 @@ smacErrors_t MCPSDataRequest (txPacket_t *psTxPacket)
     }
 #endif
 
-    if(mSmacStateIdle_c != maSmacAttributes[mSmacActivePan].smacState)
+    if(mSmacStateIdle_c != maSmacAttributes.smacState)
     {
         return gErrorBusy_c;
     }
@@ -579,16 +582,16 @@ smacErrors_t MCPSDataRequest (txPacket_t *psTxPacket)
         return gErrorNoResourcesAvailable_c;
     }
 
-    maSmacAttributes[mSmacActivePan].u8SmacSeqNo++;
-    maSmacAttributes[mSmacActivePan].u8AckRetryCounter = 0;
-    maSmacAttributes[mSmacActivePan].u8CCARetryCounter = 0;
+    maSmacAttributes.u8SmacSeqNo++;
+    maSmacAttributes.u8AckRetryCounter = 0;
+    maSmacAttributes.u8CCARetryCounter = 0;
 
     /* Fill with Phy related data */
-    pMsg->ctx_id = mSmacActivePan;
     pMsg->msgType = gPdDataReq_c;
+    pMsg->ctx_id = maSmacAttributes.phy_context_id;
     pMsg->msgData.dataReq.startTime = gPhySeqStartAsap_c;
 
-    if(maSmacAttributes[mSmacActivePan].txConfigurator.autoAck &&
+    if(maSmacAttributes.txConfigurator.autoAck &&
             psTxPacket->smacHeader.destAddr != 0xFFFF
 #if !gEnhAckMode8
          && psTxPacket->smacHeader.panId != 0xFFFF
@@ -598,7 +601,7 @@ smacErrors_t MCPSDataRequest (txPacket_t *psTxPacket)
                                     //Turn@       +       phy payload(symbols)+ Turn@ + ACK
         pMsg->msgData.dataReq.txDuration = 12 + (gSmacHeaderBytes_c + psTxPacket->u8DataLength + 2)*2 + 12 + 42;
 
-        if(maSmacAttributes[mSmacActivePan].txConfigurator.ccaBeforeTx)
+        if(maSmacAttributes.txConfigurator.ccaBeforeTx)
         {
             pMsg->msgData.dataReq.txDuration += 0x08; //CCA Duration: 8 symbols
         }
@@ -619,7 +622,7 @@ smacErrors_t MCPSDataRequest (txPacket_t *psTxPacket)
     FLib_MemCpy(pMsg->msgData.dataReq.pPsdu, &(psTxPacket->smacHeader), gSmacHeaderBytes_c);
     FLib_MemCpy(pMsg->msgData.dataReq.pPsdu + gSmacHeaderBytes_c, &(psTxPacket->smacPdu), psTxPacket->u8DataLength);
 
-    if(maSmacAttributes[mSmacActivePan].txConfigurator.ccaBeforeTx)
+    if(maSmacAttributes.txConfigurator.ccaBeforeTx)
     {
         pMsg->msgData.dataReq.CCABeforeTx = gPhyCCAMode1_c;
     }
@@ -628,7 +631,7 @@ smacErrors_t MCPSDataRequest (txPacket_t *psTxPacket)
         pMsg->msgData.dataReq.CCABeforeTx = gPhyNoCCABeforeTx_c;
     }
 
-    if(maSmacAttributes[mSmacActivePan].txConfigurator.autoAck &&
+    if(maSmacAttributes.txConfigurator.autoAck &&
             psTxPacket->smacHeader.destAddr != 0xFFFF
 #if !gEnhAckMode8
          && psTxPacket->smacHeader.panId != 0xFFFF
@@ -639,7 +642,7 @@ smacErrors_t MCPSDataRequest (txPacket_t *psTxPacket)
         pMsg->msgData.dataReq.pPsdu[0] |=   gFrameCtrlAckReqMsk_c;
         pMsg->msgData.dataReq.ackRequired = gPhyRxAckRqd_c;
 
-        if (maSmacAttributes[mSmacActivePan].txConfigurator.enhAck) {
+        if (maSmacAttributes.txConfigurator.enhAck) {
             // Set version 2
             pMsg->msgData.dataReq.pPsdu[1] |= (2 << 4);
 
@@ -665,26 +668,24 @@ smacErrors_t MCPSDataRequest (txPacket_t *psTxPacket)
     pMsg->msgData.dataReq.psduLength = inputLen + gSmacHeaderBytes_c + gPhyFCSSize_c;
 #endif
 
-    pMsg->msgData.dataReq.pPsdu[2] = maSmacAttributes[mSmacActivePan].u8SmacSeqNo;
+    pMsg->msgData.dataReq.pPsdu[2] = maSmacAttributes.u8SmacSeqNo;
 
-    maSmacAttributes[mSmacActivePan].gSmacDataMessage = pMsg;      //Store pointer for freeing later
+    maSmacAttributes.gSmacDataMessage = pMsg;      //Store pointer for freeing later
 
     OSA_InterruptDisable();
-    maSmacAttributes[mSmacActivePan].smacState = mSmacStateTransmitting_c;
+    maSmacAttributes.smacState = mSmacStateTransmitting_c;
     OSA_InterruptEnable();
 
-    u8PhyRes = MAC_PD_SapHandler(pMsg, 0);
-
-    if(u8PhyRes == gPhySuccess_c)
+    if (MAC_PD_SapHandler(pMsg, maSmacAttributes.phy_context_id) == gPhySuccess_c)
     {
         return gErrorNoError_c;
     }
 
-    MSG_Free(maSmacAttributes[mSmacActivePan].gSmacDataMessage);
-    maSmacAttributes[mSmacActivePan].gSmacDataMessage = NULL;
+    MSG_Free(maSmacAttributes.gSmacDataMessage);
+    maSmacAttributes.gSmacDataMessage = NULL;
 
     OSA_InterruptDisable();
-    maSmacAttributes[mSmacActivePan].smacState = mSmacStateIdle_c;
+    maSmacAttributes.smacState = mSmacStateIdle_c;
     OSA_InterruptEnable();
 
     return gErrorNoResourcesAvailable_c;
@@ -694,19 +695,19 @@ void MLMETXDisableRequest(void)
 {
     macToPlmeMessage_t lMsg;
 
-    lMsg.ctx_id = mSmacActivePan;
     lMsg.msgType     = gPlmeSetTRxStateReq_c;
+    lMsg.ctx_id      = maSmacAttributes.phy_context_id;
     lMsg.msgData.setTRxStateReq.state = gPhyForceTRxOff_c;
-    (void)MAC_PLME_SapHandler(&lMsg, 0);
+    (void)MAC_PLME_SapHandler(&lMsg, maSmacAttributes.phy_context_id);
 
-    if(maSmacAttributes[mSmacActivePan].gSmacDataMessage != NULL)
+    if(maSmacAttributes.gSmacDataMessage != NULL)
     {
-        (void)MSG_Free(maSmacAttributes[mSmacActivePan].gSmacDataMessage);
-        maSmacAttributes[mSmacActivePan].gSmacDataMessage = NULL;
+        (void)MSG_Free(maSmacAttributes.gSmacDataMessage);
+        maSmacAttributes.gSmacDataMessage = NULL;
     }
 
     OSA_InterruptDisable();
-    maSmacAttributes[mSmacActivePan].smacState = mSmacStateIdle_c;
+    maSmacAttributes.smacState = mSmacStateIdle_c;
     OSA_InterruptEnable();
 }
 
@@ -732,17 +733,16 @@ smacErrors_t MLMERXEnableRequest(rxPacket_t *gsRxPacket, smacTime_t stTimeout)
     }
 #endif
 
-    if(mSmacStateIdle_c != maSmacAttributes[mSmacActivePan].smacState)
+    if(mSmacStateIdle_c != maSmacAttributes.smacState)
     {
         return gErrorBusy_c;
     }
 
-    lMsg.ctx_id = mSmacActivePan;
+    lMsg.ctx_id = maSmacAttributes.phy_context_id;
     if(stTimeout)
     {
         lMsg.msgType = gPlmeSetTRxStateReq_c;
         lMsg.msgData.setTRxStateReq.startTime = gPhySeqStartAsap_c;
-        lMsg.ctx_id = mSmacActivePan;
         lMsg.msgData.setTRxStateReq.state = gPhySetRxOn_c;
         lMsg.msgData.setTRxStateReq.rxDuration = stTimeout;
     }
@@ -753,22 +753,22 @@ smacErrors_t MLMERXEnableRequest(rxPacket_t *gsRxPacket, smacTime_t stTimeout)
         lMsg.msgData.setReq.PibAttributeValue = (uint64_t)1;
     }
 
-    maSmacAttributes[mSmacActivePan].mSmacTimeoutAsked = (stTimeout > 0);
+    maSmacAttributes.mSmacTimeoutAsked = (stTimeout > 0);
 
     gsRxPacket->rxStatus = rxProcessingReceptionStatus_c;
-    maSmacAttributes[mSmacActivePan].smacProccesPacketPtr.smacRxPacketPointer = gsRxPacket;
+    maSmacAttributes.smacProccesPacketPtr.smacRxPacketPointer = gsRxPacket;
 
     OSA_InterruptDisable();
-    maSmacAttributes[mSmacActivePan].smacState = mSmacStateReceiving_c;
+    maSmacAttributes.smacState = mSmacStateReceiving_c;
     OSA_InterruptEnable();
 
-    if (MAC_PLME_SapHandler(&lMsg, 0) == gPhySuccess_c)
+    if (MAC_PLME_SapHandler(&lMsg, maSmacAttributes.phy_context_id) == gPhySuccess_c)
     {
         return gErrorNoError_c;
     }
 
     OSA_InterruptDisable();
-    maSmacAttributes[mSmacActivePan].smacState = mSmacStateIdle_c;
+    maSmacAttributes.smacState = mSmacStateIdle_c;
     OSA_InterruptEnable();
 
     return gErrorNoResourcesAvailable_c;
@@ -785,29 +785,28 @@ smacErrors_t MLMERXDisableRequest(void)
     }
 #endif
 
-    if((mSmacStateReceiving_c != maSmacAttributes[mSmacActivePan].smacState) &&
-       (mSmacStateIdle_c != maSmacAttributes[mSmacActivePan].smacState))
+    if((mSmacStateReceiving_c != maSmacAttributes.smacState) && (mSmacStateIdle_c != maSmacAttributes.smacState))
     {
         return gErrorNoValidCondition_c;
     }
 
-    lMsg.ctx_id = mSmacActivePan;
+    lMsg.ctx_id = maSmacAttributes.phy_context_id;
 
     OSA_InterruptDisable();
-    smacStates_t lState = maSmacAttributes[mSmacActivePan].smacState;
-    maSmacAttributes[mSmacActivePan].smacState = mSmacStateIdle_c;
+    smacStates_t lState = maSmacAttributes.smacState;
+    maSmacAttributes.smacState = mSmacStateIdle_c;
     OSA_InterruptEnable();
 
-    if(!maSmacAttributes[mSmacActivePan].mSmacTimeoutAsked)
+    if(!maSmacAttributes.mSmacTimeoutAsked)
     {
         lMsg.msgType                          = gPlmeSetReq_c;
         lMsg.msgData.setReq.PibAttribute      = gPhyPibRxOnWhenIdle;
         lMsg.msgData.setReq.PibAttributeValue = (uint64_t)0;
 
-        if (MAC_PLME_SapHandler(&lMsg, 0) != gPhySuccess_c)
+        if (MAC_PLME_SapHandler(&lMsg, maSmacAttributes.phy_context_id) != gPhySuccess_c)
         {
             OSA_InterruptDisable();
-            maSmacAttributes[mSmacActivePan].smacState = lState;
+            maSmacAttributes.smacState = lState;
             OSA_InterruptEnable();
 
             return gErrorBusy_c;
@@ -815,83 +814,14 @@ smacErrors_t MLMERXDisableRequest(void)
     }
     else
     {
-        maSmacAttributes[mSmacActivePan].mSmacTimeoutAsked = FALSE;
+        maSmacAttributes.mSmacTimeoutAsked = FALSE;
 
         lMsg.msgType = gPlmeSetTRxStateReq_c;
         lMsg.msgData.setTRxStateReq.state = gPhyForceTRxOff_c;
-        (void)MAC_PLME_SapHandler(&lMsg, 0);
+        (void)MAC_PLME_SapHandler(&lMsg, maSmacAttributes.phy_context_id);
     }
 
     return gErrorNoError_c;
-}
-
-smacErrors_t MLMESetActivePan(smacMultiPanInstances_t panID)
-{
-#if(TRUE == smacInitializationValidation_d)
-    if(FALSE == mSmacInitialized)
-    {
-        return gErrorNoValidCondition_c;
-    }
-#endif
-
-    if(panID >= gSmacMaxPan_c)
-    {
-        return gErrorOutOfRange_c;
-    }
-
-    if(panID == mSmacActivePan)
-    {
-        return gErrorNoError_c;
-    }
-
-    OSA_InterruptDisable();
-    mSmacActivePan = panID;
-    OSA_InterruptEnable();
-
-    return gErrorNoError_c;
-}
-
-smacErrors_t MLMEConfigureDualPanSettings(bool_t bUseAutoMode,
-                                          bool_t bModifyDwell,
-                                          uint8_t u8Prescaler,
-                                          uint8_t u8Scale)
-{
-#if gMpmMaxPANs_c != 2
-    return gErrorNoValidCondition_c;
-#else
-
-#if(TRUE == smacInitializationValidation_d)
-    if(FALSE == mSmacInitialized)
-    {
-        return gErrorNoValidCondition_c;
-    }
-#endif
-
-    if(mSmacStateIdle_c != maSmacAttributes[gSmacPan0_c].smacState ||
-       mSmacStateIdle_c != maSmacAttributes[gSmacPan1_c].smacState)
-    {
-        return gErrorBusy_c;
-    }
-
-    if((bModifyDwell == TRUE) && (u8Prescaler > 3 || u8Scale > 63))
-    {
-        return gErrorOutOfRange_c;
-    }
-
-    mpmConfig_t lMpmConfig;
-    MPM_GetConfig(&lMpmConfig);
-
-    if(bModifyDwell)
-    {
-        lMpmConfig.dwellTime = ((u8Prescaler << mDualPanDwellPrescallerShift_c) |
-                                (u8Scale << mDualPanDwellTimeShift_c));
-    }
-
-    lMpmConfig.autoMode = bUseAutoMode;
-    MPM_SetConfig(&lMpmConfig);
-
-    return gErrorNoError_c;
-#endif
 }
 
 smacErrors_t MLMESetChannelRequest(channels_t newChannel)
@@ -906,17 +836,17 @@ smacErrors_t MLMESetChannelRequest(channels_t newChannel)
     }
 #endif
 
-    if(mSmacStateIdle_c != maSmacAttributes[mSmacActivePan].smacState)
+    if(mSmacStateIdle_c != maSmacAttributes.smacState)
     {
         return gErrorBusy_c;
     }
 
     lMsg.msgType = gPlmeSetReq_c;
-    lMsg.ctx_id = mSmacActivePan;
+    lMsg.ctx_id = maSmacAttributes.phy_context_id;
     lMsg.msgData.setReq.PibAttribute = gPhyPibCurrentChannel_c;
     lMsg.msgData.setReq.PibAttributeValue = (uint64_t) newChannel;
 
-    errorVal = MAC_PLME_SapHandler(&lMsg, 0);
+    errorVal = MAC_PLME_SapHandler(&lMsg, maSmacAttributes.phy_context_id);
     switch (errorVal)
     {
     case gPhyBusy_c:
@@ -949,10 +879,10 @@ channels_t MLMEGetChannelRequest(void)
 #endif
 
     lMsg.msgType = gPlmeGetReq_c;
-    lMsg.ctx_id = mSmacActivePan;
+    lMsg.ctx_id = maSmacAttributes.phy_context_id;
     lMsg.msgData.getReq.PibAttribute = gPhyPibCurrentChannel_c;
 
-    MAC_PLME_SapHandler(&lMsg, 0);
+    (void)MAC_PLME_SapHandler(&lMsg, maSmacAttributes.phy_context_id);
 
     return (channels_t)lMsg.msgData.getReq.PibAttributeValue;
 }
@@ -961,12 +891,12 @@ smacErrors_t SMACSetShortSrcAddress(address_size_t nwShortAddress)
 {
     macToPlmeMessage_t lMsg;
 
-    lMsg.ctx_id = mSmacActivePan;
     lMsg.msgType = gPlmeSetReq_c;
+    lMsg.ctx_id = maSmacAttributes.phy_context_id;
     lMsg.msgData.setReq.PibAttribute = gPhyPibShortAddress_c;
     lMsg.msgData.setReq.PibAttributeValue = (uint64_t)nwShortAddress;
 
-    phyStatus_t u8PhyRes = MAC_PLME_SapHandler(&lMsg,0);
+    phyStatus_t u8PhyRes = MAC_PLME_SapHandler(&lMsg, maSmacAttributes.phy_context_id);
     if(u8PhyRes == gPhyBusy_c || u8PhyRes == gPhyBusyTx_c || u8PhyRes == gPhyBusyRx_c)
     {
         return gErrorBusy_c;
@@ -977,7 +907,7 @@ smacErrors_t SMACSetShortSrcAddress(address_size_t nwShortAddress)
         return gErrorNoResourcesAvailable_c;
     }
 
-    maSmacAttributes[mSmacActivePan].u16ShortSrcAddress = nwShortAddress;
+    maSmacAttributes.u16ShortSrcAddress = nwShortAddress;
     return gErrorNoError_c;
 }
 
@@ -985,12 +915,12 @@ smacErrors_t SMACSetExtendedSrcAddress(uint64_t nwExtendedAddress)
 {
     macToPlmeMessage_t lMsg;
 
-    lMsg.ctx_id = mSmacActivePan;
     lMsg.msgType = gPlmeSetReq_c;
+    lMsg.ctx_id = maSmacAttributes.phy_context_id;
     lMsg.msgData.setReq.PibAttribute = gPhyPibLongAddress_c;
     lMsg.msgData.setReq.PibAttributeValue = nwExtendedAddress;
 
-    phyStatus_t u8PhyRes = MAC_PLME_SapHandler(&lMsg,0);
+    phyStatus_t u8PhyRes = MAC_PLME_SapHandler(&lMsg, maSmacAttributes.phy_context_id);
     if(u8PhyRes == gPhyBusy_c || u8PhyRes == gPhyBusyTx_c || u8PhyRes == gPhyBusyRx_c)
     {
         return gErrorBusy_c;
@@ -1001,7 +931,7 @@ smacErrors_t SMACSetExtendedSrcAddress(uint64_t nwExtendedAddress)
         return gErrorNoResourcesAvailable_c;
     }
 
-    maSmacAttributes[mSmacActivePan].u64ExtendedSrcAddress = nwExtendedAddress;
+    maSmacAttributes.u64ExtendedSrcAddress = nwExtendedAddress;
     return gErrorNoError_c;
 }
 
@@ -1009,12 +939,12 @@ smacErrors_t SMACSetPanID(address_size_t nwShortPanID)
 {
     macToPlmeMessage_t lMsg;
 
-    lMsg.ctx_id = mSmacActivePan;
     lMsg.msgType = gPlmeSetReq_c;
+    lMsg.ctx_id = maSmacAttributes.phy_context_id;
     lMsg.msgData.setReq.PibAttribute = gPhyPibPanId_c;
     lMsg.msgData.setReq.PibAttributeValue = (uint64_t)nwShortPanID;
 
-    phyStatus_t u8PhyRes = MAC_PLME_SapHandler(&lMsg,0);
+    phyStatus_t u8PhyRes = MAC_PLME_SapHandler(&lMsg, maSmacAttributes.phy_context_id);
     if(u8PhyRes == gPhyBusy_c || u8PhyRes == gPhyBusyTx_c || u8PhyRes == gPhyBusyRx_c)
     {
         return gErrorBusy_c;
@@ -1025,11 +955,11 @@ smacErrors_t SMACSetPanID(address_size_t nwShortPanID)
         return gErrorNoResourcesAvailable_c;
     }
 
-    maSmacAttributes[mSmacActivePan].u16PanID = nwShortPanID;
+    maSmacAttributes.u16PanID = nwShortPanID;
     return gErrorNoError_c;
 }
 
-smacErrors_t MLMEPAOutputAdjust( uint8_t u8PaValue)
+smacErrors_t MLMEPAOutputAdjust(uint8_t u8PaValue)
 {
     AppToAspMessage_t   msg;
 
@@ -1043,7 +973,7 @@ smacErrors_t MLMEPAOutputAdjust( uint8_t u8PaValue)
     }
 #endif /* TRUE == smacInitializationValidation_d */
 
-    if(mSmacStateIdle_c != maSmacAttributes[mSmacActivePan].smacState)
+    if(mSmacStateIdle_c != maSmacAttributes.smacState)
     {
         return gErrorBusy_c;
     }
@@ -1051,7 +981,7 @@ smacErrors_t MLMEPAOutputAdjust( uint8_t u8PaValue)
     msg.msgType                                = aspMsgTypeSetPowerLevel_c;
     msg.msgData.aspSetPowerLevelReq.powerLevel = u8PaValue;
 
-    if (APP_ASP_SapHandler(&msg, 0) == gAspSuccess_c)
+    if (APP_ASP_SapHandler(&msg, maSmacAttributes.phy_context_id) == gAspSuccess_c)
     {
         return gErrorNoError_c;
     }
@@ -1068,7 +998,7 @@ uint8_t MLMELinkQuality(void)
     }
 #endif
 
-  return maSmacAttributes[mSmacActivePan].smacLastDataRxParams.linkQuality;
+  return maSmacAttributes.smacLastDataRxParams.linkQuality;
 }
 
 smacErrors_t MLMEPhySoftReset(void)
@@ -1082,25 +1012,25 @@ smacErrors_t MLMEPhySoftReset(void)
     }
 #endif
 
-    lMsg.ctx_id                       = mSmacActivePan;
     lMsg.msgType                      = gPlmeSetTRxStateReq_c;
+    lMsg.ctx_id                       = maSmacAttributes.phy_context_id;
     lMsg.msgData.setTRxStateReq.state = gPhyForceTRxOff_c;
-    (void)MAC_PLME_SapHandler(&lMsg, 0);
+    (void)MAC_PLME_SapHandler(&lMsg, maSmacAttributes.phy_context_id);
 
     OSA_InterruptDisable();
-    maSmacAttributes[mSmacActivePan].smacState= mSmacStateIdle_c;
+    maSmacAttributes.smacState= mSmacStateIdle_c;
     OSA_InterruptEnable();
 
-    if(maSmacAttributes[mSmacActivePan].gSmacDataMessage != NULL)
+    if(maSmacAttributes.gSmacDataMessage != NULL)
     {
-        MSG_Free(maSmacAttributes[mSmacActivePan].gSmacDataMessage);
-        maSmacAttributes[mSmacActivePan].gSmacDataMessage = NULL;
+        MSG_Free(maSmacAttributes.gSmacDataMessage);
+        maSmacAttributes.gSmacDataMessage = NULL;
     }
 
-    if(maSmacAttributes[mSmacActivePan].gSmacMlmeMessage != NULL)
+    if(maSmacAttributes.gSmacMlmeMessage != NULL)
     {
-        MSG_Free(maSmacAttributes[mSmacActivePan].gSmacMlmeMessage);
-        maSmacAttributes[mSmacActivePan].gSmacMlmeMessage = NULL;
+        MSG_Free(maSmacAttributes.gSmacMlmeMessage);
+        maSmacAttributes.gSmacMlmeMessage = NULL;
     }
 
     return gErrorNoError_c;
@@ -1118,7 +1048,7 @@ smacErrors_t MLMEScanRequest(channels_t u8ChannelToScan)
     }
 #endif
 
-    if(mSmacStateIdle_c != maSmacAttributes[mSmacActivePan].smacState)
+    if(mSmacStateIdle_c != maSmacAttributes.smacState)
     {
         return gErrorBusy_c;
     }
@@ -1135,24 +1065,24 @@ smacErrors_t MLMEScanRequest(channels_t u8ChannelToScan)
 
     macToPlmeMessage_t* pMsg = (macToPlmeMessage_t*)MSG_Alloc(sizeof(macToPlmeMessage_t));
 
-    pMsg->ctx_id  = mSmacActivePan;
     pMsg->msgType = gPlmeEdReq_c;
+    pMsg->ctx_id  = maSmacAttributes.phy_context_id;
     pMsg->msgData.edReq.startTime = gPhySeqStartAsap_c;
 
     OSA_InterruptDisable();
-    maSmacAttributes[mSmacActivePan].gSmacMlmeMessage = pMsg;
-    maSmacAttributes[mSmacActivePan].smacState        = mSmacStateScanningChannels_c;
+    maSmacAttributes.gSmacMlmeMessage = pMsg;
+    maSmacAttributes.smacState        = mSmacStateScanningChannels_c;
     OSA_InterruptEnable();
 
-    u8PhyRes = MAC_PLME_SapHandler(pMsg,0);
+    u8PhyRes = MAC_PLME_SapHandler(pMsg, maSmacAttributes.phy_context_id);
     if(u8PhyRes != gPhySuccess_c)
     {
         OSA_InterruptDisable();
-        maSmacAttributes[mSmacActivePan].smacState = mSmacStateIdle_c;
+        maSmacAttributes.smacState = mSmacStateIdle_c;
         OSA_InterruptEnable();
 
-        MSG_Free(maSmacAttributes[mSmacActivePan].gSmacMlmeMessage);
-        maSmacAttributes[mSmacActivePan].gSmacMlmeMessage = NULL;
+        MSG_Free(maSmacAttributes.gSmacMlmeMessage);
+        maSmacAttributes.gSmacMlmeMessage = NULL;
 
         return gErrorBusy_c;
     }
@@ -1171,31 +1101,31 @@ smacErrors_t MLMECcaRequest()
     }
 #endif
 
-    if(mSmacStateIdle_c != maSmacAttributes[mSmacActivePan].smacState)
+    if(mSmacStateIdle_c != maSmacAttributes.smacState)
     {
         return gErrorBusy_c;
     }
 
     pMsg = (macToPlmeMessage_t*)MSG_Alloc(sizeof(macToPlmeMessage_t));
 
-    pMsg->ctx_id = mSmacActivePan;
     pMsg->msgType = gPlmeCcaReq_c;
+    pMsg->ctx_id = maSmacAttributes.phy_context_id;
     pMsg->msgData.ccaReq.ccaType = gPhyCCAMode1_c;
     pMsg->msgData.ccaReq.contCcaMode = gPhyContCcaDisabled;
 
     OSA_InterruptDisable();
-    maSmacAttributes[mSmacActivePan].gSmacMlmeMessage = pMsg;
-    maSmacAttributes[mSmacActivePan].smacState = mSmacStatePerformingCca_c;
+    maSmacAttributes.gSmacMlmeMessage = pMsg;
+    maSmacAttributes.smacState = mSmacStatePerformingCca_c;
     OSA_InterruptEnable();
 
-    if (MAC_PLME_SapHandler(pMsg, 0) != gPhySuccess_c)
+    if (MAC_PLME_SapHandler(pMsg, maSmacAttributes.phy_context_id) != gPhySuccess_c)
     {
         OSA_InterruptDisable();
-        maSmacAttributes[mSmacActivePan].smacState = mSmacStateIdle_c;
+        maSmacAttributes.smacState = mSmacStateIdle_c;
         OSA_InterruptEnable();
 
-        MSG_Free(maSmacAttributes[mSmacActivePan].gSmacMlmeMessage);
-        maSmacAttributes[mSmacActivePan].gSmacMlmeMessage = NULL;
+        MSG_Free(maSmacAttributes.gSmacMlmeMessage);
+        maSmacAttributes.gSmacMlmeMessage = NULL;
 
         return gErrorBusy_c;
     }
@@ -1205,12 +1135,12 @@ smacErrors_t MLMECcaRequest()
 
 void SMACSetTxAutoAck(bool_t enable)
 {
-    maSmacAttributes[mSmacActivePan].txConfigurator.autoAck = enable;
+    maSmacAttributes.txConfigurator.autoAck = enable;
 }
 
 void SMACSetTxEnhAck(bool_t enable)
 {
-    maSmacAttributes[mSmacActivePan].txConfigurator.enhAck = enable;
+    maSmacAttributes.txConfigurator.enhAck = enable;
 }
 
 void SMACFillHeader(smacHeader_t* pSmacHeader, address_size_t destAddr)
@@ -1218,9 +1148,9 @@ void SMACFillHeader(smacHeader_t* pSmacHeader, address_size_t destAddr)
     pSmacHeader->frameControl = gSmacDefaultFrameCtrl_c;
 
 #if !gEnhAckMode8
-    pSmacHeader->panId        = maSmacAttributes[mSmacActivePan].u16PanID;
+    pSmacHeader->panId        = maSmacAttributes.u16PanID;
 #endif
     pSmacHeader->seqNo        = gSmacDefaultSeqNo_c;
-    pSmacHeader->srcAddr      = maSmacAttributes[mSmacActivePan].u16ShortSrcAddress;
+    pSmacHeader->srcAddr      = maSmacAttributes.u16ShortSrcAddress;
     pSmacHeader->destAddr     = destAddr;
 }

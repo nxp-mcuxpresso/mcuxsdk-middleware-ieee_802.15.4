@@ -106,6 +106,7 @@ static hal_rpmsg_return_status_t PhyRpmsgRxCallback(void *param, uint8_t *data, 
             break;
 
         case gPlmeGetReq_c:
+        case gPlmeGetTxPowerCapabilities:
         {
             macToPlmeMessage_t *response = HAL_RpmsgAllocTxBuffer((hal_rpmsg_handle_t)phyRpmsgHandle, sizeof(macToPlmeMessage_t));
 

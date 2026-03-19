@@ -1077,7 +1077,7 @@ void RF_802_15_4_IRQHandler(void)
     /* wrap 802.15.4 interrupt */
     PHY_InterruptHandler();
 }
-#elif defined(KW43B43ZC7_SERIES)
+#elif defined(MCXW70AC_SERIES)
 void RF_ZIGBEE_IRQHandler(void)
 {
     /* wrap 802.15.4 interrupt */

@@ -80,7 +80,7 @@
 /*! This constant defines the identification value of an invalid timer. */
 #define gInvalidTimerId_c (0xFF)
 
-#if defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES)
+#if defined(MCXW70AC_SERIES) || defined(KW43B43ZC7_NBU_SERIES)
 #define gPhyTimeShift_c   (28)
 #endif
 

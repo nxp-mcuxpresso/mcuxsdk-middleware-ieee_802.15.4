@@ -1110,7 +1110,7 @@ phyStatus_t PhyGetRxSensitivity(int8_t *rx_sensitivity)
       defined(MCXW727C_cm33_core0_SERIES)                         || \
       defined(MCXW727C_cm33_core1_SERIES)                         || \
       defined(MCXW716A_SERIES) || defined(MCXW716C_SERIES)        || \
-      defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES) || \
+      defined(MCXW70AC_SERIES) || defined(KW43B43ZC7_NBU_SERIES) || \
       defined(RW610N_BT_CM3_SERIES))
 
     // Get SoC sensitivity (noise floor) in dBm
@@ -1135,7 +1135,7 @@ phyStatus_t PhyGetTxPowerCapabilities(uint8_t channel, int8_t *max, int8_t *min)
       defined(MCXW727C_cm33_core0_SERIES)                         || \
       defined(MCXW727C_cm33_core1_SERIES)                         || \
       defined(MCXW716A_SERIES) || defined(MCXW716C_SERIES)        || \
-      defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES))
+      defined(MCXW70AC_SERIES) || defined(KW43B43ZC7_NBU_SERIES))
 #if (FFU_CNS_TX_PWR_TABLE_CALIBRATION == 1)
     status = gPhyInvalidParameter_c;
 
@@ -1346,7 +1346,7 @@ phyStatus_t PhyPlmeGetPIBRequest(phyPibId_t pibId, uint8_t *pibValue, instanceId
         {
             if (!instanceId)
             {
-#if defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES)
+#if defined(MCXW70AC_SERIES) || defined(KW43B43ZC7_NBU_SERIES)
                 value = !!(ZLL->RX_FRAME_FILTER & ZLL_RX_FRAME_FILTER_PANCORDNTR0_MASK);
 #else
                 value = !!(ZLL->PHY_CTRL & ZLL_PHY_CTRL_PANCORDNTR0_MASK);
@@ -1354,7 +1354,7 @@ phyStatus_t PhyPlmeGetPIBRequest(phyPibId_t pibId, uint8_t *pibValue, instanceId
             }
             else
             {
-#if defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES)
+#if defined(MCXW70AC_SERIES) || defined(KW43B43ZC7_NBU_SERIES)
                 value = !!(ZLL->RX_FRAME_FILTER & ZLL_RX_FRAME_FILTER_PANCORDNTR1_MASK);
 #else
                 value = !!(ZLL->DUAL_PAN_CTRL & ZLL_DUAL_PAN_CTRL_PANCORDNTR1_MASK);

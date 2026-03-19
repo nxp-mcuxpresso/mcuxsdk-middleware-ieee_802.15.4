@@ -26,7 +26,7 @@
 #include "fsl_component_messaging.h"
 
 #if (defined(HDI_MODE) && (HDI_MODE == 1L))
-#if (defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES))
+#if (defined(MCXW70AC_SERIES) || defined(KW43B43ZC7_NBU_SERIES))
 #include "hdi.h"
 #endif
 #endif
@@ -218,7 +218,7 @@ void Phy_Init(void)
 #endif
 
 #if (defined(HDI_MODE) && (HDI_MODE == 1L))
-#if (defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES))
+#if (defined(MCXW70AC_SERIES) || defined(KW43B43ZC7_NBU_SERIES))
     HDI_Init();
     HDI_Set_Mode_Zigbee();
 #endif
@@ -1666,7 +1666,7 @@ static void mode_switch_ZB()
     }
 
 #if (defined(HDI_MODE) && (HDI_MODE == 1L))
-#if (defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES))
+#if (defined(MCXW70AC_SERIES) || defined(KW43B43ZC7_NBU_SERIES))
     HDI_Set_Mode_Zigbee();
 #endif
 #endif
@@ -1713,7 +1713,7 @@ static void mode_switch_BLE()
     }
 
 #if (defined(HDI_MODE) && (HDI_MODE == 1L))
-#if (defined(KW43B43ZC7_SERIES) || defined(KW43B43ZC7_NBU_SERIES))
+#if (defined(MCXW70AC_SERIES) || defined(KW43B43ZC7_NBU_SERIES))
     HDI_Set_Mode_Ble();
 #endif
 #endif

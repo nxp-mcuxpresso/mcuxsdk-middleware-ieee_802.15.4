@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 NXP
+ * Copyright 2023-2026 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -33,13 +33,17 @@ static void delay_phy_get_rsp(void *p);
 
 static void send_phy_get_rsp(uint32_t param)
 {
-    macToPlmeMessage_t *response = (macToPlmeMessage_t *)param;
+    uint8_t *response = (uint8_t *)param;
 
     PLATFORM_RemoteActiveReq();
 
-    if (HAL_RpmsgNoCopySend((hal_rpmsg_handle_t)phyRpmsgHandle, (uint8_t *)response, sizeof(macToPlmeMessage_t)) != kStatus_HAL_RpmsgSuccess)
+    if (HAL_RpmsgSend((hal_rpmsg_handle_t)phyRpmsgHandle, response, sizeof(macToPlmeMessage_t)) != kStatus_HAL_RpmsgSuccess)
     {
         delay_phy_get_rsp(response);
+    }
+    else
+    {
+        MSG_Free(response);
     }
 
     PLATFORM_RemoteActiveRel();
@@ -56,7 +60,7 @@ static void delay_phy_get_rsp(void *p)
     if (PhyTime_ScheduleEvent(&event) == ((phyTimeTimerId_t)gInvalidTimerId_c))
     {
         /* add timeout on the main core side */
-        (void)HAL_RpmsgFreeRxBuffer((hal_rpmsg_handle_t)phyRpmsgHandle, (uint8_t *)p);
+        MSG_Free(p);
     }
 }
 
@@ -108,7 +112,7 @@ static hal_rpmsg_return_status_t PhyRpmsgRxCallback(void *param, uint8_t *data, 
         case gPlmeGetReq_c:
         case gPlmeGetTxPowerCapabilities:
         {
-            macToPlmeMessage_t *response = HAL_RpmsgAllocTxBuffer((hal_rpmsg_handle_t)phyRpmsgHandle, sizeof(macToPlmeMessage_t));
+            macToPlmeMessage_t *response = MSG_Alloc(sizeof(macToPlmeMessage_t));
 
             if (!response)
             {

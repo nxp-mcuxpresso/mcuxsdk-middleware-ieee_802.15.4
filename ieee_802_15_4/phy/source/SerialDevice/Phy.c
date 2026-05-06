@@ -113,8 +113,8 @@ static void phy_intf_cb_task_func()
                     ext_phy_cmd_t *m = (ext_phy_cmd_t *)msg;
 
                     msg_free = FALSE;
-                    m->tx.cnf.ackData = (uint8_t *)m + sizeof(ext_phy_cmd_t);
-                    m->rx_ind.pPsdu = (uint8_t *)m + sizeof(ext_phy_cmd_t) + m->tx.cnf.ackLength;
+                    m->io.out.cnf.ackData = (uint8_t *)m + sizeof(ext_phy_cmd_t);
+                    m->io.out.rx_ind.pPsdu = (uint8_t *)m + sizeof(ext_phy_cmd_t) + m->io.out.cnf.ackLength;
 
                     phyLocal[msg->ctx_id].ext_cmd_handler(msg, msg->ctx_id);
                 }
@@ -492,7 +492,7 @@ void PHY_ext_cmd(phyMessageHeader_t *msg, instanceId_t phy_instance)
 
         msg->ctx_id = (phy_instance & CTX_ID_MASK) | (CTX_EXT_CMD << CTX_ID_SIZE);
 
-        len += ((ext_phy_cmd_t *)msg)->tx.req.psduLength;
+        len += ((ext_phy_cmd_t *)msg)->io.in.req.psduLength;
 
         if (HAL_RpmsgSend((hal_rpmsg_handle_t)phyRpmsgHandle, (uint8_t *)msg, len) != kStatus_HAL_RpmsgSuccess)
         {

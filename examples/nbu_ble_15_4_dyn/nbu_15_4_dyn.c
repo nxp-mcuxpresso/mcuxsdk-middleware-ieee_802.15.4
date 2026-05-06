@@ -234,7 +234,7 @@ phyStatus_t Plme_Mac_SapHandler(plmeToMacMessage_t *pMsg, instanceId_t instanceI
 void PHY_ext_cmd_handler(phyMessageHeader_t *pMsg, instanceId_t instanceId)
 {
     ext_phy_cmd_t *m = (ext_phy_cmd_t *)pMsg;
-    uint32_t len = sizeof(ext_phy_cmd_t) + m->tx.cnf.ackLength + m->rx_ind.psduLength;
+    uint32_t len = sizeof(ext_phy_cmd_t) + m->io.out.cnf.ackLength + m->io.out.rx_ind.psduLength;
 
     pMsg->ctx_id = (instanceId & CTX_ID_MASK) | (CTX_EXT_CMD << CTX_ID_SIZE);
 

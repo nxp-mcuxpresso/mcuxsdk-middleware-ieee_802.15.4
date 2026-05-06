@@ -451,31 +451,38 @@ typedef struct ext_phy_cmd_tag
 
     uint8_t cmd;                /* phyMessageId_t / macMessageId_t */
 
-    uint8_t min_be;             /* CSMA / CA */
-    uint8_t max_be;
-    uint8_t max_backoffs;
+    bool_t do_not_free;
 
-    uint8_t max_retries;
-
-    bool_t rx_after_tx;
-
-    uint32_t rx_duration;
-
-    uint32_t fc;                /* last frame counter used */
-
-    uint32_t period;            /* ms */
     uint32_t count;
 
-    /* the packets have to be right after the message - allocate everything together */
     union
     {
-        pdDataReq_t req;
-        pdDataCnf_t cnf;
-    } tx;
+        struct
+        {
+            pdDataReq_t req;
 
-    pdDataInd_t rx_ind;
+            uint32_t period;    /* ms */
+            uint32_t rx_duration;
 
-    bool_t do_not_free;
+            uint8_t min_be;     /* CSMA / CA */
+            uint8_t max_be;
+            uint8_t max_backoffs;
+
+            uint8_t max_retries;
+
+            bool_t rx_after_tx;
+
+        } in;
+
+        struct
+        {
+            pdDataInd_t rx_ind;
+            pdDataCnf_t cnf;
+
+            uint32_t fc;        /* last frame counter used */
+        } out;
+    } io;
+    /* the packets have to be right after the message - allocate everything together */
 } ext_phy_cmd_t;
 
 /*! PHY data service callback type */

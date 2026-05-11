@@ -66,18 +66,9 @@ extern const uint8_t gUseRtos_c;
 static void wait_response()
 {
     osa_event_flags_t flags;
-    uint32_t dt = osaWaitForever_c;
-
-    if (!OSA_TaskGetCurrentHandle())
-    {
-        /* Current task is valid in OSA_ProcessTasks().
-           There is no check in OSA_EventWait() that current task is valid.
-           For osaWaitNone_c, current task is not used */
-        dt = osaWaitNone_c;
-    }
 
     /* Wait until NBU delivers result over RPMSG */
-    while (OSA_EventWait(get_event, 1, 1, dt, &flags) != KOSA_StatusSuccess)
+    while (OSA_EventWait(get_event, 1, 1, osaWaitForever_c, &flags) != KOSA_StatusSuccess)
     {}
 
     /* Clear event as auto clear is not enabled */

@@ -13,6 +13,8 @@
 #include "fsl_adapter_rpmsg.h"
 #include "fsl_os_abstraction.h"
 #include "fwk_platform.h"
+#include "fwk_platform_ics.h"
+#include "RNG_Interface.h"
 #if (defined(HWINIT_DEBUG_DTEST) && (HWINIT_DEBUG_DTEST == 1L))
 #include "dtest.h"
 #endif
@@ -257,10 +259,8 @@ void Phy_Init(void)
     OSA_InterruptEnable();
 
     /* prepare to send RNG seed to NBU */
-    int PLATFORM_FwkSrvInit();
     PLATFORM_FwkSrvInit();
 
-    int RNG_Init();
     RNG_Init();
 
     if (HAL_RpmsgInit((hal_rpmsg_handle_t)phyRpmsgHandle, &phyRpmsgConfig) != kStatus_HAL_RpmsgSuccess)

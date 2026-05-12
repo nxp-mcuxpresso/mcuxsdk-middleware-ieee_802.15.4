@@ -1,4 +1,4 @@
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -44,6 +44,7 @@ if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.generic_PHY)
             ieee_802_15_4/phy/source/PhySec.c
             ieee_802_15_4/phy/source/PhyStateMachine.c
             ieee_802_15_4/phy/source/PhyTime.c
+            ieee_802_15_4/phy/source/PhyVersion.c
     )
 endif()
 

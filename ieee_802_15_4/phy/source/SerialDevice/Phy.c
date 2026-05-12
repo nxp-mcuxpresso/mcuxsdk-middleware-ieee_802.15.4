@@ -1,5 +1,5 @@
 /*! *********************************************************************************
-* Copyright 2021-2025 NXP
+* Copyright 2021-2026 NXP
 * All rights reserved.
 *
 *
@@ -62,6 +62,14 @@ static bool_t phy_intf_init_done = FALSE;
 static bool_t phy_intf_init_ongoing = FALSE;
 extern const uint8_t gUseRtos_c;
 
+static bool_t api_version_initialized = false;
+static api_version_t api_version = {
+    .msg_type = gGetApiVersion_c,
+    .ctx_id   = 0,                  /* all interfaces use the same API version */
+    .major    = 0,
+    .minor    = 0,
+    .patch    = 0,
+};
 
 static void wait_response()
 {
@@ -166,15 +174,31 @@ static hal_rpmsg_return_status_t PhyRpmsgRxCallback(void *param, uint8_t *data, 
     phyMessageHeader_t *pMsg = (phyMessageHeader_t *)data;
     uint8_t msg_type = (pMsg->ctx_id >> CTX_ID_SIZE) & CTX_CMD_MASK;
 
-    if ((msg_type == CTX_CMD) && ((pMsg->msgType == gPlmeGetReq_c) || (pMsg->msgType == gPlmeGetTxPowerCapabilities)))
+    if (msg_type == CTX_CMD)
     {
-        if (wait_phy_rsp)
+        if ((pMsg->msgType == gPlmeGetReq_c) || (pMsg->msgType == gPlmeGetTxPowerCapabilities))
         {
-            response = *(macToPlmeMessage_t *)pMsg;
+            if (wait_phy_rsp)
+            {
+                response = *(macToPlmeMessage_t *)pMsg;
+
+                OSA_EventSet(get_event, 1);
+            }
+            return kStatus_HAL_RL_RELEASE;
+        }
+
+        if (pMsg->msgType == gGetApiVersion_c)
+        {
+            api_version_t *vers = (api_version_t *)data;
+
+            api_version.major = vers->major;
+            api_version.minor = vers->minor;
+            api_version.patch = vers->patch;
 
             OSA_EventSet(get_event, 1);
+
+            return kStatus_HAL_RL_RELEASE;
         }
-        return kStatus_HAL_RL_RELEASE;
     }
 
     pMsg = (phyMessageHeader_t *)MSG_Alloc(len);
@@ -194,6 +218,28 @@ static hal_rpmsg_return_status_t PhyRpmsgRxCallback(void *param, uint8_t *data, 
         MSG_Free(pMsg);
     }
     return kStatus_HAL_RL_RELEASE;
+}
+
+api_version_t *phy_get_api_version()
+{
+    if (api_version_initialized == false)
+    {   /* Read the version from the NBU */
+        OSA_MutexLock(phy_intf_mutex, osaWaitForever_c);
+        PLATFORM_RemoteActiveReq();
+
+        HAL_RpmsgSend((hal_rpmsg_handle_t)phyRpmsgHandle, (uint8_t *)&api_version, sizeof(api_version_t));
+
+        wait_phy_rsp = true;
+        wait_response();
+        wait_phy_rsp = false;
+
+        PLATFORM_RemoteActiveRel();
+        OSA_MutexUnlock(phy_intf_mutex);
+
+        api_version_initialized = true;
+    }
+
+    return &api_version;
 }
 
 void Phy_Init(void)

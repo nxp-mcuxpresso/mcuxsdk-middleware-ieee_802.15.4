@@ -4,7 +4,7 @@
 ********************************************************************************** */
 /*! *********************************************************************************
 * Copyright (c) 2015, Freescale Semiconductor, Inc.
-* Copyright 2016-2017, 2024-2025 NXP
+* Copyright 2016-2017, 2024-2026 NXP
 * All rights reserved.
 *
 * \file
@@ -22,6 +22,8 @@
 ************************************************************************************/
 #undef EXT_CMD_ID
 #define EXT_CMD_ID (unsigned char)(0xffu)
+
+#define GET_API_VERSION_CMD_ID      0xFEu
 
 /*! 802.15.4-2006 standard PHY PD and PLME API messages */
 typedef enum
@@ -91,6 +93,7 @@ typedef enum
     gPlmeGetRxSensitivity,             /* Get the radio receive sensitivity */
     gPlmeGetTxPowerCapabilities,       /* Get the radio tx power capabilties per channel */
 
+    gGetApiVersion_c = GET_API_VERSION_CMD_ID,
     gPhyExtCmd = EXT_CMD_ID
 } phyMessageId_t;
 

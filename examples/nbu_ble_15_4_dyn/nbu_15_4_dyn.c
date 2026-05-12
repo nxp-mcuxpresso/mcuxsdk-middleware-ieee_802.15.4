@@ -101,6 +101,10 @@ static hal_rpmsg_return_status_t PhyRpmsgRxCallback(void *param, uint8_t *data, 
 
     switch (pMsg->msgType)
     {
+        case gGetApiVersion_c:
+            HAL_RpmsgSend((hal_rpmsg_handle_t)phyRpmsgHandle, (uint8_t *)phy_get_api_version(), sizeof(api_version_t));
+            break;
+
         case gPdDataReq_c:
             ((macToPdDataMessage_t *)pMsg)->msgData.dataReq.pPsdu = (uint8_t *)pMsg + sizeof(macToPdDataMessage_t);
 

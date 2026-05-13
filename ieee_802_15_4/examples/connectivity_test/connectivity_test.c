@@ -14,6 +14,9 @@
 *************************************************************************************
 ************************************************************************************/
 
+#include <stdarg.h>  /* for va_list, va_start, va_end */
+#include <string.h>  /* for strlen */
+
 #include "connectivity_test_menus.h"
 #include "connectivity_test.h"
 #include "connectivity_test_platform.h"
@@ -215,6 +218,134 @@ void UartRxCallBack(void* param, serial_manager_callback_message_t *message, ser
 /*osa start_task*/
 void start_task(void *argument);
 
+static void putc(char c)
+{
+    (void)SerialManager_WriteBlocking(g_connWriteHandle, (uint8_t *)&c, 1);
+}
+
+static void puts(const char *str)
+{
+    while (*str) {
+        putc(*str++);
+    }
+}
+
+static void print_int(int val, int base, int is_signed)
+{
+    char buffer[32];
+    int i = 0;
+    unsigned int num;
+    int is_negative = 0;
+    
+    if (is_signed && val < 0) {
+        is_negative = 1;
+        num = (unsigned int)(-val);
+    } else {
+        num = (unsigned int)val;
+    }
+    
+    if (num == 0) {
+        buffer[i++] = '0';
+    } else {
+        while (num > 0) {
+            int digit = num % base;
+            buffer[i++] = (digit < 10) ? ('0' + digit) : ('a' + digit - 10);
+            num /= base;
+        }
+    }
+    
+    if (is_negative) {
+        buffer[i++] = '-';
+    }
+    
+    /* Print in reverse */
+    while (i > 0) {
+        putc(buffer[--i]);
+    }
+}
+
+int printf(const char *format, ...)
+{
+    va_list args;
+    const char *p;
+    int count = 0;
+    
+    va_start(args, format);
+    
+    for (p = format; *p != '\0'; p++) {
+        if (*p != '%') {
+            putc(*p);
+            count++;
+            continue;
+        }
+        
+        p++; /* Skip % */
+        
+        switch (*p) {
+            case 'd': /* Signed decimal */
+            case 'i':
+            {
+                int val = va_arg(args, int);
+                print_int(val, 10, 1);
+                break;
+            }
+            case 'u': /* Unsigned decimal */
+            {
+                unsigned int val = va_arg(args, unsigned int);
+                print_int((int)val, 10, 0);
+                break;
+            }
+            case 'x': /* Hexadecimal lowercase */
+            case 'X': /* Hexadecimal uppercase */
+            {
+                unsigned int val = va_arg(args, unsigned int);
+                print_int((int)val, 16, 0);
+                break;
+            }
+            case 'c': /* Character */
+            {
+                char c = (char)va_arg(args, int);
+                putc(c);
+                count++;
+                break;
+            }
+            case 's': /* String */
+            {
+                char *s = va_arg(args, char *);
+                if (s == NULL) {
+                    s = "(null)";
+                }
+                puts(s);
+                count += strlen(s);
+                break;
+            }
+            case 'p': /* Pointer */
+            {
+                void *ptr = va_arg(args, void *);
+                puts("0x");
+                print_int((int)ptr, 16, 0);
+                break;
+            }
+            case '%': /* Literal % */
+            {
+                putc('%');
+                count++;
+                break;
+            }
+            default:
+            {
+                putc('%');
+                putc(*p);
+                count += 2;
+                break;
+            }
+        }
+    }
+    
+    va_end(args);
+    return count;
+}
+
 /************************************************************************************
 *
 * InitProject
@@ -415,7 +546,9 @@ void main_task(uint32_t param)
         InitApp();
 
         /*Prints the Welcome screens in the terminal*/
-        PrintMenu(cu8Logo, (serial_write_handle_t)g_connWriteHandle);
+        api_version_t *api_version = phy_get_api_version();
+        printf("%s \r\nVersion API %d.%d.%d", cu8Logo, api_version->major, api_version->minor, api_version->patch);
+        printf("\r\n  - Press enter to start\r\n");
 
         connState = gConnIdleState_c;
         bIsInitialized = TRUE;
@@ -438,7 +571,9 @@ void main_task(uint32_t param)
                 }
                 else
                 {
-                    PrintMenu(cu8Logo, (serial_write_handle_t)g_connWriteHandle);
+                    api_version_t *api_version = phy_get_api_version();
+                    printf("%s \r\nVersion API %d.%d.%d", cu8Logo, api_version->major, api_version->minor, api_version->patch);
+                    printf("\r\n  - Press enter to start\r\n");
                 }
             }
             if(gUseRtos_c == 0)

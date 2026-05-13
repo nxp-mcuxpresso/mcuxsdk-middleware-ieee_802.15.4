@@ -1,6 +1,6 @@
 /*! *********************************************************************************
 * Copyright (c) 2015, Freescale Semiconductor, Inc.
-* Copyright 2016-2024 NXP
+* Copyright 2016-2024,2026 NXP
 * All rights reserved.
 *
 * \file
@@ -15,7 +15,7 @@
 * Public memory declarations
 *************************************************************************************
 ************************************************************************************/
-extern char * const cu8Logo[];
+extern const char * cu8Logo;
 extern char * const cu8MainMenu[]; 
 extern char * const cu8ShortCutsBar[];
 extern char * const cu8ContinuousTestMenu[]; 

@@ -499,6 +499,11 @@ phyStatus_t PhyPlmeRxRequest(Phy_PhyLocalStruct_t *ctx)
 
     ctx->rxParams.ackedWithSecEnhAck = FALSE;
 
+    if (ctx->ps == PS_RX)
+    {
+        ctx->ps_rx_started = TRUE;
+    }
+
     ctx_set_rx_ongoing(ctx, FALSE);
     prepare_for_rx(ctx);
 

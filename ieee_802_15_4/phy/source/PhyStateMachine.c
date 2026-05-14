@@ -1101,6 +1101,7 @@ void Radio_Phy_PdDataConfirm(Phy_PhyLocalStruct_t *ctx, bool_t framePending)
         {
             ctx->ps = PS_RX;
             ctx->rx_poll_to = (ctx->rx_time_poll + PhyTime_ReadClock()) & gPhyTimeMask_c;
+            ctx->ps_rx_started = FALSE;
         }
         else
         {
@@ -1133,6 +1134,8 @@ static void ctx_data_ind(Phy_PhyLocalStruct_t *ctx)
         /* stop rx for POLL after a unicast packet is received */
         ctx->ps = PS_NONE;
     }
+
+    ctx->ps_rx_started = FALSE;
 
     if (is_unicast || (ctx->ps != PS_RX))
     {
@@ -2809,7 +2812,7 @@ void PHY_InterruptHandler()
             sched_abort_current();
         }
         else if ((scheduler.current &&
-                  ((scheduler.current->ps == PS_RX) ||
+                  (((scheduler.current->ps == PS_RX) && (scheduler.current->ps_rx_started)) ||
                    ((scheduler.current->op == RX_OP) && scheduler.current->rx_ongoing))) ||
                  !PHY_graceful_idle())
         {

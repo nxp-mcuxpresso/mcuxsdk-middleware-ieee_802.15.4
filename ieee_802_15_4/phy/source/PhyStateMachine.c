@@ -395,7 +395,7 @@ static void Phy24Task(Phy_PhyLocalStruct_t *ctx)
         uint32_t t = PhyTime_ReadClock();
         uint32_t dt = (ctx->rx_poll_to - t) & gPhyTimeMask_c;
 
-        if (t1_less_t2(t, ctx->rx_poll_to) && (dt > PHY_IMM_ACK_LENGTH))
+        if (t1_less_t2(t, ctx->rx_poll_to) && (dt > PHY_IMM_ACK_LENGTH) && (dt <= ctx->rx_time_poll))
         {
             ctx->flags &= ~(gPhyFlagIdleRx_c | gPhyFlagRxSilent_c);
 

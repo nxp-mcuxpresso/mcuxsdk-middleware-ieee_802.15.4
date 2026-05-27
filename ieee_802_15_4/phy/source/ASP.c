@@ -691,6 +691,11 @@ AspStatus_t ASP_TelecTest(uint8_t mode)
     switch (mode)
     {
     case gTestForceIdle_c:  /* ForceIdle() */
+        /* This is the reliable way of stopping the gTestPulseTxPrbs9_c test.
+         * If we only call XCVR_DftTxOff() it will spin waiting for the TSM to stop forever
+         * blocking the response */
+        PhyAbort();
+
         XCVR_DftTxOff();
 #if !defined(RW610N_BT_CM3_SERIES)
         /* TX unmod uses GENFSK */

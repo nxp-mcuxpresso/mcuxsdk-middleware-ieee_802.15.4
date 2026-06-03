@@ -1,5 +1,5 @@
 /*! *********************************************************************************
-* Copyright 2021-2025 NXP
+* Copyright 2021-2026 NXP
 * All rights reserved.
 *
 * \file
@@ -15,11 +15,12 @@
 *************************************************************************************
 ********************************************************************************** */
 
+#if defined(gAspCapability_d) && gAspCapability_d
+
 #include "EmbeddedTypes.h"
 #include "Phy.h"
 #include "PhyInterface.h"
 #include "AspInterface.h"
-#include "fsl_component_messaging.h"
 #include "fsl_adapter_rpmsg.h"
 
 #if gFsciIncluded_c
@@ -33,15 +34,17 @@
 
 #include "fwk_platform.h"
 
-#if gAspCapability_d
 
 static RPMSG_HANDLE_DEFINE(aspRpmsgHandle);
 static hal_rpmsg_config_t aspRpmsgConfig = {
     .local_addr = 11,
     .remote_addr = 21,
 };
-messaging_t aspMsgQueue;
-OSA_EVENT_HANDLE_DEFINE(aspEventHandle);
+
+static AppToAspMessage_t ret_asp_msg;
+
+static OSA_EVENT_HANDLE_DEFINE(aspEventHandle);
+static OSA_MUTEX_HANDLE_DEFINE(asp_intf_mutex);
 
 /*! *********************************************************************************
 *************************************************************************************
@@ -77,14 +80,12 @@ enum
 static hal_rpmsg_return_status_t AspRpmsgRxCallback(void *param, uint8_t *data, uint32_t len)
 {
 	(void)param;
-	AppToAspMessage_t *pMsg = (AppToAspMessage_t *)MSG_Alloc(len);
-	
-	memcpy(pMsg, data, len);
-	
+	AppToAspMessage_t *pMsg = (AppToAspMessage_t *)data;
+
 	switch(pMsg->msgType) {
 	case aspMsgTypeGetXtalTrimReq_c:
 	case aspMsgTypeTelecTest_c:
-		MSG_QueueAddTail(&aspMsgQueue, pMsg);
+		memcpy(&ret_asp_msg, data, MIN(len, sizeof(AppToAspMessage_t)));
 		OSA_EventSet(aspEventHandle, 1);
 		break;
 		
@@ -116,8 +117,8 @@ void ASP_Init(instanceId_t phyInstance)
         return;
     }
 
-	MSG_QueueInit(&aspMsgQueue);
 	OSA_EventCreate((osa_event_handle_t)aspEventHandle, 1);
+	OSA_MutexCreate((osa_mutex_handle_t)asp_intf_mutex);
 }
 
 /*! *********************************************************************************
@@ -134,6 +135,7 @@ AspStatus_t APP_ASP_SapHandler(AppToAspMessage_t *pMsg, instanceId_t phyInstance
     AspStatus_t status = gAspSuccess_c;
 	osa_event_flags_t flags;
 
+	OSA_MutexLock(asp_intf_mutex, osaWaitForever_c);
 	PLATFORM_RemoteActiveReq();
 
 #if gFsciIncluded_c
@@ -150,20 +152,15 @@ AspStatus_t APP_ASP_SapHandler(AppToAspMessage_t *pMsg, instanceId_t phyInstance
 	case aspMsgTypeGetXtalTrimReq_c:
 	case aspMsgTypeTelecTest_c:
 	{
-		AppToAspMessage_t *response;
-		
 		while (OSA_EventWait(aspEventHandle, 1, 1, osaWaitForever_c, &flags) == KOSA_StatusIdle)
 		{}
 
-		response = MSG_QueueRemoveHead(&aspMsgQueue);
-
-		if (response == NULL || response->msgType != pMsg->msgType)
+		if (ret_asp_msg.msgType != pMsg->msgType)
 		{
 			assert(0);
 		}
 		
-		pMsg->msgData = response->msgData;
-		MSG_Free(response);
+		pMsg->msgData = ret_asp_msg.msgData;
 	}
 		break;
 
@@ -209,6 +206,7 @@ AspStatus_t APP_ASP_SapHandler(AppToAspMessage_t *pMsg, instanceId_t phyInstance
 #endif
 
     PLATFORM_RemoteActiveRel();
+    OSA_MutexUnlock(asp_intf_mutex);
 
     return status;
 }

@@ -13,12 +13,24 @@
 #include "fsl_adapter_rpmsg.h"
 #include "fsl_os_abstraction.h"
 #include "fwk_platform.h"
-#include "fwk_platform_ics.h"
-#include "RNG_Interface.h"
+
 #if (defined(HWINIT_DEBUG_DTEST) && (HWINIT_DEBUG_DTEST == 1L))
 #include "dtest.h"
 #endif
 
+#ifdef __ZEPHYR__
+#include <zephyr/kernel.h>
+
+#define MSG_Alloc(x) k_malloc(x)
+#define MSG_Free(x) k_free(x)
+
+#else
+
+#include "fsl_component_messaging.h"
+#include "fwk_platform_ics.h"
+#include "RNG_Interface.h"
+
+#endif /* __ZEPHYR__ */
 
 #undef CTX_NO
 #define CTX_NO 2
@@ -258,10 +270,12 @@ void Phy_Init(void)
 
     OSA_InterruptEnable();
 
+#ifndef __ZEPHYR__
     /* prepare to send RNG seed to NBU */
     PLATFORM_FwkSrvInit();
 
     RNG_Init();
+#endif
 
     if (HAL_RpmsgInit((hal_rpmsg_handle_t)phyRpmsgHandle, &phyRpmsgConfig) != kStatus_HAL_RpmsgSuccess)
     {
@@ -449,9 +463,10 @@ uint8_t PHY_get_ctx()
 
     assert(ret == gPhySuccess_c);
 
+#ifndef __ZEPHYR__
     /* send RNG seed to NBU */
-    int RNG_SetSeed(void);
     RNG_SetSeed();
+#endif
 
     return (uint8_t)msg.msgData.getReq.PibAttributeValue;
 }

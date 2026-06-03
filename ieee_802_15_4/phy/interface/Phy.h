@@ -1,6 +1,6 @@
 /*! *********************************************************************************
 * Copyright (c) 2015, Freescale Semiconductor, Inc.
-* Copyright 2018, 2023-2025 NXP
+* Copyright 2018, 2023-2026 NXP
 * All rights reserved.
 *
 * \file
@@ -254,7 +254,9 @@ typedef struct Phy_PhyLocalStruct_tag
 
     PHY_ext_cmd_handler_t ext_cmd_handler;
 
+#ifndef __ZEPHYR__
     messaging_t                 macPhyInputQueue;
+#endif
 
     phyTxParams_t               txParams;
     phyRxParams_t               rxParams;

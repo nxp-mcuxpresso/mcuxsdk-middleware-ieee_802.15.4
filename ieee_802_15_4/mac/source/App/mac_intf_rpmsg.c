@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 NXP
+ * Copyright 2024-2026 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -7,8 +7,19 @@
 #include "MacInterface.h"
 #include "PhyInterface.h"
 #include "fsl_adapter_rpmsg.h"
+#ifdef __ZEPHYR__
+#include <zephyr/kernel.h>
+
+#define MSG_Alloc(x) k_malloc(x)
+#define MSG_Free(x)  k_free(x)
+#define MEM_BufferAllocWithId(x,y) k_malloc(x)
+#define MEM_BufferFree(x)          k_free(x)
+
+#else	/* __ZEPHYR__ */
 #include "fsl_component_mem_manager.h"
 #include "fsl_component_messaging.h"
+
+#endif	/* __ZEPHYR__ */
 #include "fwk_platform.h"
 #include "fsl_os_abstraction.h"
 
@@ -545,9 +556,11 @@ instanceId_t BindToMAC(instanceId_t nwkId)
     mac[mac_id].MCPS_NWK_SapHandler = NULL;
     mac[mac_id].MLME_NWK_SapHandler = NULL;
 
+#ifndef __ZEPHYR__
     /* send RNG seed to NBU */
     int RNG_SetSeed(void);
     RNG_SetSeed();
+#endif
 
     return mac_id;
 }

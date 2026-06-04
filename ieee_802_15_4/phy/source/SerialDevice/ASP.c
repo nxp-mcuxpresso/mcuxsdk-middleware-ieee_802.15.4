@@ -1,19 +1,19 @@
 /*! *********************************************************************************
-* Copyright 2021-2026 NXP
-* All rights reserved.
-*
-* \file
-*
-* This is the source file for the ASP module.
-*
-* SPDX-License-Identifier: BSD-3-Clause
-********************************************************************************** */
+ * Copyright 2021-2026 NXP
+ * All rights reserved.
+ *
+ * \file
+ *
+ * This is the source file for the ASP module.
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ ********************************************************************************** */
 
 /*! *********************************************************************************
-*************************************************************************************
-* Include
-*************************************************************************************
-********************************************************************************** */
+ *************************************************************************************
+ * Include
+ *************************************************************************************
+ ********************************************************************************** */
 
 #if defined(gAspCapability_d) && gAspCapability_d
 
@@ -37,8 +37,8 @@
 
 static RPMSG_HANDLE_DEFINE(aspRpmsgHandle);
 static hal_rpmsg_config_t aspRpmsgConfig = {
-    .local_addr = 11,
-    .remote_addr = 21,
+        .local_addr = 11,
+        .remote_addr = 21,
 };
 
 static AppToAspMessage_t ret_asp_msg;
@@ -47,20 +47,20 @@ static OSA_EVENT_HANDLE_DEFINE(aspEventHandle);
 static OSA_MUTEX_HANDLE_DEFINE(asp_intf_mutex);
 
 /*! *********************************************************************************
-*************************************************************************************
-* Public macros
-*************************************************************************************
-********************************************************************************** */
+ *************************************************************************************
+ * Public macros
+ *************************************************************************************
+ ********************************************************************************** */
 #define mFAD_THR_ResetValue         0x82
 #define mANT_AGC_CTRL_ResetValue    0x40
 #define mASP_MinTxIntervalMS_d      (5)
 
 
 /*! *********************************************************************************
-*************************************************************************************
-* Public type definitions
-*************************************************************************************
-********************************************************************************** */
+ *************************************************************************************
+ * Public type definitions
+ *************************************************************************************
+ ********************************************************************************** */
 enum
 {
     gDftNormal_c          = 0,
@@ -72,97 +72,97 @@ enum
 };
 
 /*! *********************************************************************************
-*************************************************************************************
-* Public functions
-*************************************************************************************
-********************************************************************************** */
+ *************************************************************************************
+ * Public functions
+ *************************************************************************************
+ ********************************************************************************** */
 
 static hal_rpmsg_return_status_t AspRpmsgRxCallback(void *param, uint8_t *data, uint32_t len)
 {
-	(void)param;
-	AppToAspMessage_t *pMsg = (AppToAspMessage_t *)data;
+    (void)param;
+    AppToAspMessage_t *pMsg = (AppToAspMessage_t *)data;
 
-	switch(pMsg->msgType) {
-	case aspMsgTypeGetXtalTrimReq_c:
-	case aspMsgTypeTelecTest_c:
-		memcpy(&ret_asp_msg, data, MIN(len, sizeof(AppToAspMessage_t)));
-		OSA_EventSet(aspEventHandle, 1);
-		break;
-		
-	default:
-		assert(0);
-	}
-	
-	return kStatus_HAL_RL_RELEASE;
+    switch(pMsg->msgType) {
+    case aspMsgTypeGetXtalTrimReq_c:
+    case aspMsgTypeTelecTest_c:
+        memcpy(&ret_asp_msg, data, MIN(len, sizeof(AppToAspMessage_t)));
+        OSA_EventSet(aspEventHandle, 1);
+        break;
+
+    default:
+        assert(0);
+    }
+
+    return kStatus_HAL_RL_RELEASE;
 }
 
 /*! *********************************************************************************
-* \brief  Initialize the ASP module
-*
-* \param[in]  phyInstance The instance of the PHY
-* \param[in]  interfaceId The FSCI interface used
-*
-********************************************************************************** */
+ * \brief  Initialize the ASP module
+ *
+ * \param[in]  phyInstance The instance of the PHY
+ * \param[in]  interfaceId The FSCI interface used
+ *
+ ********************************************************************************** */
 void ASP_Init(instanceId_t phyInstance)
 {
-	if (HAL_RpmsgInit((hal_rpmsg_handle_t)aspRpmsgHandle, &aspRpmsgConfig) != kStatus_HAL_RpmsgSuccess)
+    if (HAL_RpmsgInit((hal_rpmsg_handle_t)aspRpmsgHandle, &aspRpmsgConfig) != kStatus_HAL_RpmsgSuccess)
     {
         assert(0);
         return;
     }
-    
+
     if (HAL_RpmsgInstallRxCallback((hal_rpmsg_handle_t)aspRpmsgHandle, AspRpmsgRxCallback, NULL) != kStatus_HAL_RpmsgSuccess)
     {
         assert(0);
         return;
     }
 
-	OSA_EventCreate((osa_event_handle_t)aspEventHandle, 1);
-	OSA_MutexCreate((osa_mutex_handle_t)asp_intf_mutex);
+    OSA_EventCreate((osa_event_handle_t)aspEventHandle, 1);
+    OSA_MutexCreate((osa_mutex_handle_t)asp_intf_mutex);
 }
 
 /*! *********************************************************************************
-* \brief  ASP SAP handler.
-*
-* \param[in]  pMsg        Pointer to the request message
-* \param[in]  instanceId  The instance of the PHY
-*
-* \return  AspStatus_t
-*
-********************************************************************************** */
+ * \brief  ASP SAP handler.
+ *
+ * \param[in]  pMsg        Pointer to the request message
+ * \param[in]  instanceId  The instance of the PHY
+ *
+ * \return  AspStatus_t
+ *
+ ********************************************************************************** */
 AspStatus_t APP_ASP_SapHandler(AppToAspMessage_t *pMsg, instanceId_t phyInstance)
 {
     AspStatus_t status = gAspSuccess_c;
-	osa_event_flags_t flags;
+    osa_event_flags_t flags;
 
-	OSA_MutexLock(asp_intf_mutex, osaWaitForever_c);
-	PLATFORM_RemoteActiveReq();
+    OSA_MutexLock(asp_intf_mutex, osaWaitForever_c);
+    PLATFORM_RemoteActiveReq();
 
 #if gFsciIncluded_c
     FSCI_Monitor(gFSCI_AspSapId_c, pMsg, NULL, fsciGetAspInterfaceId(phyInstance));
 #endif
 
-	if (HAL_RpmsgSend((hal_rpmsg_handle_t)aspRpmsgHandle, (uint8_t *)pMsg, sizeof(AppToAspMessage_t)) != kStatus_HAL_RpmsgSuccess)
-	{
-		 assert(0);
+    if (HAL_RpmsgSend((hal_rpmsg_handle_t)aspRpmsgHandle, (uint8_t *)pMsg, sizeof(AppToAspMessage_t)) != kStatus_HAL_RpmsgSuccess)
+    {
+        assert(0);
     }
 
-	/* wait for the response */
-	switch(pMsg->msgType) {
-	case aspMsgTypeGetXtalTrimReq_c:
-	case aspMsgTypeTelecTest_c:
-	{
-		while (OSA_EventWait(aspEventHandle, 1, 1, osaWaitForever_c, &flags) == KOSA_StatusIdle)
-		{}
+    /* wait for the response */
+    switch(pMsg->msgType) {
+    case aspMsgTypeGetXtalTrimReq_c:
+    case aspMsgTypeTelecTest_c:
+    {
+        while (OSA_EventWait(aspEventHandle, 1, 1, osaWaitForever_c, &flags) == KOSA_StatusIdle)
+        {}
 
-		if (ret_asp_msg.msgType != pMsg->msgType)
-		{
-			assert(0);
-		}
-		
-		pMsg->msgData = ret_asp_msg.msgData;
-	}
-		break;
+        if (ret_asp_msg.msgType != pMsg->msgType)
+        {
+            assert(0);
+        }
+
+        pMsg->msgData = ret_asp_msg.msgData;
+    }
+    break;
 
     /* Not Implemented */
     case aspMsgTypeGetTimeReq_c:
@@ -186,19 +186,19 @@ AspStatus_t APP_ASP_SapHandler(AppToAspMessage_t *pMsg, instanceId_t phyInstance
     case aspMsgTypeSetTxInterval_c:
         break;
 
-	default:
-		assert(0);
-	}
-	
+    default:
+        assert(0);
+    }
+
     /* Must update status accordingly for these responses */
     switch(pMsg->msgType)
     {
-       case aspMsgTypeGetXtalTrimReq_c:
-           status = (AspStatus_t)pMsg->msgData.aspXtalTrim.trim;
-           break;
+    case aspMsgTypeGetXtalTrimReq_c:
+        status = (AspStatus_t)pMsg->msgData.aspXtalTrim.trim;
+        break;
 
-       default:
-           break;
+    default:
+        break;
     }
 
 #if gFsciIncluded_c

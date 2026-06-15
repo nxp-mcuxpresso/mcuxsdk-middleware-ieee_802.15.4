@@ -167,6 +167,11 @@ if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72_nbu.MAC)
 endif()
 
 if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.rw61x.split_MAC)
+    mcux_add_source(
+        SOURCES
+            ieee_802_15_4/mac/source/App/mac_intf.c
+    )
+
     mcux_add_library(
         LIBS
             ieee_802_15_4/lib/libieee-802.15.4_MAC_intf_RW612.a

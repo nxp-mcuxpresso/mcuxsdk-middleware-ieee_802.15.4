@@ -138,6 +138,7 @@ uint32_t PhyTime_GetNextEvent(void);
 const uint32_t mDefaultRxFiltering = ZLL_RX_FRAME_FILTER_FRM_VER_FILTER(7) |
                                      ZLL_RX_FRAME_FILTER_CMD_FT_MASK       |
                                      ZLL_RX_FRAME_FILTER_DATA_FT_MASK      |
+                                     ZLL_RX_FRAME_FILTER_MULTIPURPOSE_FT_MASK |
                                      ZLL_RX_FRAME_FILTER_BEACON_FT_MASK;
 
 const uint32_t mAllFrameTypes = ZLL_RX_FRAME_FILTER_EXTENDED_FT_MASK     |

@@ -28,6 +28,10 @@
 #define gNbuJtagCapability      0
 #endif
 
+/* gAspNoHWParameters_c must be defined on NBU side - prevent access to DEVMGR service from core#1 */
+#define gAspNoHWParameters_c    1
+
+
 #if defined(gNbu_Hadm_d) && (gNbu_Hadm_d == 1)
 #undef gNbuJtagCapability
 #define gNbuJtagCapability 1

@@ -62,6 +62,7 @@ config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.MAC
                MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.MAC
     select MCUX_COMPONENT_middleware.wireless.xcvr
     select MCUX_COMPONENT_middleware.wireless.framework.platform.genfsk
+    select MCUX_COMPONENT_middleware.wireless.framework.devmgr
 
 config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.k32w1_mcxw71.MAC_split_PHY
     bool
@@ -115,6 +116,7 @@ config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.MAC
                MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.MAC
     select MCUX_COMPONENT_middleware.wireless.xcvr
     select MCUX_COMPONENT_middleware.wireless.framework.platform.genfsk
+    select MCUX_COMPONENT_middleware.wireless.framework.devmgr
 
 config MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.MAC_split_PHY
     bool

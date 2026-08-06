@@ -1,6 +1,6 @@
 /*! *********************************************************************************
 * Copyright (c) 2015, Freescale Semiconductor, Inc.
-* Copyright 2016-2021, 2023-2025 NXP
+* Copyright 2016-2021, 2023-2026 NXP
 *
 * \file
 *
@@ -44,7 +44,7 @@ bool_t PHY_is_active();
 #endif
 
 #if !defined(gAspNoHWParameters_c) || (gAspNoHWParameters_c == 0)
-#include "HWParameter.h"
+#include "fwk_devmgr.h"
 #endif
 
 #if gFsciIncluded_c
@@ -159,9 +159,6 @@ AspStatus_t APP_ASP_SapHandler(AppToAspMessage_t *pMsg, instanceId_t phyInstance
 {
     AspStatus_t status = gAspSuccess_c;
     uint64_t tmpTstamp = 0;
-#if !defined(gAspNoHWParameters_c) || (gAspNoHWParameters_c == 0)
-    hardwareParameters_t *pHWParams = NULL;
-#endif
 
 #if gFsciIncluded_c
     FSCI_Monitor(gFSCI_AspSapId_c, pMsg, NULL, fsciGetAspInterfaceId(phyInstance));
@@ -176,11 +173,12 @@ AspStatus_t APP_ASP_SapHandler(AppToAspMessage_t *pMsg, instanceId_t phyInstance
         if(gXcvrSuccess_c == XCVR_SetXtalTrim(pMsg->msgData.aspXtalTrim.trim))
         {
 #if !defined(gAspNoHWParameters_c) || (gAspNoHWParameters_c == 0)
-            (void)NV_ReadHWParameters(&pHWParams);
-            if(pHWParams->xtalTrim != pMsg->msgData.aspXtalTrim.trim)
+            int ret;
+            /* Save 32MHz XO trimming value to flash if different from current value */
+            ret = DEVMGR_Set32MHzTrim(pMsg->msgData.aspXtalTrim.trim);
+            if (ret != DEVMGR_Success_c)
             {
-              pHWParams->xtalTrim = pMsg->msgData.aspXtalTrim.trim;
-              (void)NV_WriteHWParameters();
+                status = gAspDenied_c;
             }
 #endif
         }

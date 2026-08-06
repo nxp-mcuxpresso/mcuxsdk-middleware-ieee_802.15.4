@@ -1,6 +1,6 @@
 /*! *********************************************************************************
 * Copyright (c) 2015, Freescale Semiconductor, Inc.
-* Copyright 2016-2017, 2023-2025 NXP
+* Copyright 2016-2017, 2023-2026 NXP
 * All rights reserved.
 *
 * \file
@@ -31,7 +31,9 @@
 #include "fsl_os_abstraction.h"
 
 #if !defined(gAspNoHWParameters_c) || (gAspNoHWParameters_c == 0)
-#include "HWParameter.h"
+#include "fwk_devmgr.h"
+#include <assert.h>
+#include <stdbool.h>
 #endif
 /************************************************************************************
 *************************************************************************************
@@ -71,7 +73,7 @@ static uint32_t fsciHostGetAspInterfaceId(instanceId_t phyInstance);
 uint8_t mAspFsciBinding = mFsciInvalidInterface_c;
 
 #if gFsciHost_802_15_4_c
-FsciHostAspInterface_t fsciHostAspInterfaces = 
+FsciHostAspInterface_t fsciHostAspInterfaces =
 {
     .fsciInterfaceId = mFsciInvalidInterface_c
 };
@@ -117,22 +119,22 @@ FsciHostAspInterface_t fsciHostAspInterfaces =
 void fsciRegisterAsp( instanceId_t aspInterface, uint32_t fsciInterfaceId )
 {
 #if gFsciIncluded_c && gAspCapability_d
-    
+
     if( aspInterface < gPhyInstancesCnt_c )
     {
-        /* Bind ASP instance to FSCI interfaceId */    
+        /* Bind ASP instance to FSCI interfaceId */
         mAspFsciBinding = fsciInterfaceId;
         /* Register Handler for requests coming from the serial interface */
-        FSCI_RegisterOpGroup( gFSCI_AppAspOpcodeGroup_c, 
-                             gFsciMonitorMode_c, 
-                             fsciAspReqHandler, 
-                             NULL, 
+        FSCI_RegisterOpGroup( gFSCI_AppAspOpcodeGroup_c,
+                             gFsciMonitorMode_c,
+                             fsciAspReqHandler,
+                             NULL,
                              fsciInterfaceId);
         /* Register SAP Monitor Handler */
-        FSCI_RegisterOpGroup( gFSCI_AspSapId_c,          
-                             gFsciMonitorMode_c, 
-                             AspSapMonitor,     
-                             NULL, 
+        FSCI_RegisterOpGroup( gFSCI_AspSapId_c,
+                             gFsciMonitorMode_c,
+                             AspSapMonitor,
+                             NULL,
                              fsciInterfaceId);
     }
 #endif /* gFsciIncluded_c && gFSCI_IncludeMacCommands_c */
@@ -155,18 +157,18 @@ void fsciRegisterAsp( instanceId_t aspInterface, uint32_t fsciInterfaceId )
 void fsciRegisterAspToHost( instanceId_t aspInterface, uint32_t fsciInterfaceId )
 {
 #if gFsciIncluded_c && gAspCapability_d && gFsciHost_802_15_4_c
-    
+
     if( aspInterface < gPhyInstancesCnt_c )
     {
         /* Bind ASP instance to FSCI interfaceId */
         fsciHostAspInterfaces.fsciInterfaceId = fsciInterfaceId;
         /* Register Handler for async confirms and indications coming from the serial interface */
-        FSCI_RegisterOpGroup( gFSCI_AspAppOpcodeGroup_c, 
-                             gFsciMonitorMode_c, 
-                             fsciAspCnfHandler, 
-                             NULL, 
+        FSCI_RegisterOpGroup( gFSCI_AspAppOpcodeGroup_c,
+                             gFsciMonitorMode_c,
+                             fsciAspCnfHandler,
+                             NULL,
                              fsciInterfaceId );
-        
+
         /* Register SAP Monitor Handler */
         FSCI_RegisterOpGroup( gFSCI_AspSapId_c,
                              gFsciMonitorMode_c,
@@ -193,24 +195,24 @@ AspStatus_t APP_ASP_SapHandler(AppToAspMessage_t *pMsg, instanceId_t phyInstance
     AspStatus_t status = gAspSuccess_c;
     uint32_t      fsciInterface;
     uint32_t      fsciHostInterface;
-#if gFsciHostSyncUseEvent_c    
+#if gFsciHostSyncUseEvent_c
     osaEventFlags_t fsciHostSyncRspEventFlags;
 #else
-    uint64_t tStamp = 0;    
+    uint64_t tStamp = 0;
 #endif
 
     fsciInterface = fsciGetAspInterfaceId(phyInstance);
     fsciHostInterface = fsciHostGetAspInterfaceId(phyInstance);
 
-#if gFsciHostSupport_c    
+#if gFsciHostSupport_c
     FSCI_HostSyncLock(fsciHostInterface, gFSCI_AspAppOpcodeGroup_c, pMsg->msgType);
-    
+
     /* Monitor message from fsci interface */
     FSCI_Monitor(gFSCI_AspSapId_c, pMsg, NULL, fsciInterface);
-    
+
     /* Parse message and send request to fsci host interface */
     FSCI_Monitor(gFSCI_AspSapId_c, pMsg, NULL, fsciHostInterface);
-    
+
     /* Wait for result from the serial interface */
 #if gFsciHostSyncUseEvent_c
      OSA_EventWait(gFsciHostSyncRspEventId, 0x00FFFFFF, FALSE, gFsciHost_WaitForStatusTimeout_c ,&fsciHostSyncRspEventFlags);
@@ -222,11 +224,11 @@ AspStatus_t APP_ASP_SapHandler(AppToAspMessage_t *pMsg, instanceId_t phyInstance
         if(TMR_GetTimestamp() - tStamp > mFsciHost_WaitForStatusTimeout_us_c)
         {
             break;
-        }    
+        }
     }
 #endif
     }
-    
+
     if( pFsciHostSyncRsp )
     {
         MEM_BufferFree(pFsciHostSyncRsp);
@@ -235,10 +237,10 @@ AspStatus_t APP_ASP_SapHandler(AppToAspMessage_t *pMsg, instanceId_t phyInstance
     {
         status = gAspDenied_c;
     }
-    
+
     FSCI_HostSyncUnlock(fsciHostInterface);
 #endif
-    
+
     return status;
 }
 #endif
@@ -255,20 +257,15 @@ static void fsciAspCnfHandler(void *pData, void* param, uint32_t interfaceId)
 * \brief  Monitor the ASP Requests and Responses
 *
 * \param[in]  pData        monitored message
-* \param[in]  param        
-* \param[in]  interfaceId  FSCI interface 
-*
-* \return  AspStatus_t
-*
+* \param[in]  param
+* \param[in]  interfaceId  FSCI interface
+**
 ********************************************************************************** */
 void AspSapMonitor(void *pData, void* param, uint32_t interfaceId)
 {
 #if gFsciIncluded_c && gAspCapability_d
     clientPacket_t *pFsciPacket = MEM_BufferAlloc( sizeof(clientPacket_t) );
     AppToAspMessage_t *pReq = (AppToAspMessage_t*)pData;
-#if !defined(gAspNoHWParameters_c) || (gAspNoHWParameters_c == 0)
-    hardwareParameters_t *pHWParams = NULL;
-#endif
     uint8_t *p;
 
     if( NULL == pFsciPacket )
@@ -278,12 +275,12 @@ void AspSapMonitor(void *pData, void* param, uint32_t interfaceId)
     else
     {
         p = pFsciPacket->structured.payload;
-        
+
         if( NULL == param ) /* Requests */
         {
             pFsciPacket->structured.header.opGroup = gFSCI_AppAspOpcodeGroup_c;
             pFsciPacket->structured.header.opCode = pReq->msgType;
-            
+
             switch( pReq->msgType )
             {
             case aspMsgTypeSetXtalTrimReq_c:
@@ -342,16 +339,15 @@ void AspSapMonitor(void *pData, void* param, uint32_t interfaceId)
             default:
                 /* Nothing to do here */
                 break;
-                
             }
         }
         else /* Confirms / Indications */
         {
             pFsciPacket->structured.header.opGroup = gFSCI_AspAppOpcodeGroup_c;
             pFsciPacket->structured.header.opCode = pReq->msgType;
-            
+
             *p++ = *((uint8_t*)param);/* copy status */
-            
+
             switch( pReq->msgType )
             {
             case aspMsgTypeGetTimeReq_c:
@@ -365,11 +361,13 @@ void AspSapMonitor(void *pData, void* param, uint32_t interfaceId)
                 break;
 #if !defined(gAspNoHWParameters_c) || (gAspNoHWParameters_c == 0)
             case aspMsgTypeSetXtalTrimReq_c:
-                (void)NV_ReadHWParameters(&pHWParams);
-                if(pHWParams->xtalTrim != pReq->msgData.aspXtalTrim.trim)
+                /* Save 32MHz XO trimming value to flash if different from current value */
                 {
-                   pHWParams->xtalTrim = pReq->msgData.aspXtalTrim.trim;
-                   (void)NV_WriteHWParameters();
+                    if (DEVMGR_Set32MHzTrim(pReq->msgData.aspXtalTrim.trim) != DEVMGR_Success_c)
+                    {
+                        /* error not propagated */
+                        assert(false);
+                    }
                 }
                 break;
 #endif
@@ -378,10 +376,10 @@ void AspSapMonitor(void *pData, void* param, uint32_t interfaceId)
                 break;
             }
         }
-        
+
         /* Send data over the serial interface */
         pFsciPacket->structured.header.len = (fsciLen_t)(p - pFsciPacket->structured.payload);
-        
+
         if ( pFsciPacket->structured.header.len )
         {
             FSCI_transmitFormatedPacket( pFsciPacket, interfaceId );
@@ -403,7 +401,7 @@ void AspSapMonitor(void *pData, void* param, uint32_t interfaceId)
 /*! *********************************************************************************
 * \brief  Returns the instance of the PHY associated with the fsci interface
 *
-* \param[in]  interfaceId  FSCI interface 
+* \param[in]  interfaceId  FSCI interface
 *
 * \return the instance of the PHY
 *
@@ -419,7 +417,7 @@ static uint32_t getAspInstance( uint32_t fsciInterfaceId )
 /*! *********************************************************************************
 * \brief  Returns the id of the FSCI interface associated with the PHY instance
 *
-* \param[in]  phyInstance the instance of the PHY layer   
+* \param[in]  phyInstance the instance of the PHY layer
 *
 * \return the FSCI interface id
 *
@@ -437,7 +435,7 @@ uint32_t fsciGetAspInterfaceId( instanceId_t phyInstance )
 /*! *********************************************************************************
 * \brief  Returns the id of the FSCI Host interface associated with the PHY instance
 *
-* \param[in]  phyInstance the instance of the PHY layer   
+* \param[in]  phyInstance the instance of the PHY layer
 *
 * \return the FSCI interface id
 *
@@ -453,8 +451,8 @@ uint32_t fsciHostGetAspInterfaceId( instanceId_t phyInstance )
 * \brief  Handle ASP requests received from FSCI
 *
 * \param[in]  pData        monitored message
-* \param[in]  param        
-* \param[in]  interfaceId  FSCI interface 
+* \param[in]  param
+* \param[in]  interfaceId  FSCI interface
 *
 ********************************************************************************** */
 #if gFsciIncluded_c && gAspCapability_d

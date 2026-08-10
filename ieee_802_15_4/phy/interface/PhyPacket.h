@@ -17,6 +17,7 @@ enum
     phyFcfFrameData        = 1 << 0,
     phyFcfFrameAck         = 2 << 0,
     phyFcfFrameMacCmd      = 3 << 0,
+    phyFcfFrameMultipurpose = 5 << 0,
     phyFcfFrameTypeMask    = 7 << 0,
     phyFcfSecurityEnabled  = 1 << 3,
     phyFcfFramePending     = 1 << 4,
@@ -107,6 +108,25 @@ typedef enum {
 
 #define INV_LENGTH ((uint8_t)(-1))
 
+/* Multipurpose frame FCF: 1 byte (short) or 2 bytes (long, per longFrameControl).
+ * Declared as a 16-bit bitfield so both forms share one type. For a short-form
+ * frame only the low octet (frameType, longFrameControl, dst/srcAddressingMode)
+ * is valid; the upper octet fields exist only when longFrameControl == 1.
+ */
+typedef PACKED_STRUCT {
+    uint16_t frameType:3;
+    uint16_t longFrameControl:1;
+    uint16_t dstAddressingMode:2;
+    uint16_t srcAddressingMode:2;
+    uint16_t panIdPresent:1;        /* long form only */
+    uint16_t securityEnabled:1;     /* long form only */
+    uint16_t snSuppression:1;       /* long form only */
+    uint16_t framePending:1;        /* long form only */
+    uint16_t frameVersion:2;        /* long form only */
+    uint16_t iePresent:1;           /* long form only */
+    uint16_t reserved:1;
+} mpFcf_t;
+
 typedef PACKED_STRUCT {
     uint16_t frameType:3;
     uint16_t securityEnabled:1;
@@ -152,5 +172,7 @@ uint8_t  PhyPacket_GetMacHdrLength(uint8_t *packet, uint8_t packetLength);
 macCmdId_t PhyPacket_GetMacCmdId(uint8_t *packet, uint8_t packetLength);
 
 void     PhyPacket_get_dest_pan_addr(uint8_t *f, uint8_t **pan, uint8_t **addr, uint8_t *len);
+void     PhyPacket_GetMpDestAddr(uint8_t *f, uint8_t **addr, uint8_t *len);
+bool_t   PhyPacket_IsMpFrameForUs(uint8_t *f, uint16_t rxfcf);
 
 #endif /* __PHY_PACKET_H__ */

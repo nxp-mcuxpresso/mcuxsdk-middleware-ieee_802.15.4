@@ -16,6 +16,7 @@
 #include "EmbeddedTypes.h"
 
 #include "Phy.h"
+#include "PhyPacket.h"
 #include "PhyPlatform.h"
 #include "dbg_io.h"
 #include "nxp2p4_xcvr.h"
@@ -856,6 +857,64 @@ phyStatus_t PhyPpGetLongAddr(uint8_t *pLongAddr, uint8_t pan)
 
     return gPhySuccess_c;
 }
+
+/*! *********************************************************************************
+ * \brief SW Rx filter for Multipurpose frames. Accepts non-MP frames and MP
+ *        frames whose destination matches our short/extended address
+ *        or the broadcast address; drops everything else.
+ *
+ * \param[in]  f      Pointer to the received frame
+ * \param[in]  rxfcf  Raw FCF
+ *
+ * \return TRUE to keep the frame, FALSE to drop it.
+ ********************************************************************************** */
+bool_t PhyPacket_IsMpFrameForUs(uint8_t *f, uint16_t rxfcf)
+{
+    uint8_t *addr = NULL;
+    uint8_t  len  = 0;
+
+    if ((rxfcf & phyFcfFrameTypeMask) != phyFcfFrameMultipurpose)
+    {
+        return TRUE;
+    }
+
+    PhyPacket_GetMpDestAddr(f, &addr, &len);
+
+    if ((addr == NULL) || (len == 0))
+    {
+        return TRUE;
+    }
+
+    if (len == sizeof(uint16_t))
+    {
+        uint16_t dstShort = PHY_TransformArrayToUint16(addr);
+        uint16_t macShort0 = (ZLL->MACSHORTADDRS0 & ZLL_MACSHORTADDRS0_MACSHORTADDRS0_MASK) >>
+                            ZLL_MACSHORTADDRS0_MACSHORTADDRS0_SHIFT;
+        uint16_t macShort1 = (ZLL->MACSHORTADDRS1 & ZLL_MACSHORTADDRS1_MACSHORTADDRS1_MASK) >>
+                            ZLL_MACSHORTADDRS1_MACSHORTADDRS1_SHIFT;
+
+        if ((dstShort == 0xFFFFu) || (dstShort == macShort0) || (dstShort == macShort1))
+        {
+            return TRUE;
+        }
+    }
+    else if (len == sizeof(uint64_t))
+    {
+        uint32_t dstLo = ((uint32_t)addr[0]) | ((uint32_t)addr[1] << 8) |
+                         ((uint32_t)addr[2] << 16) | ((uint32_t)addr[3] << 24);
+        uint32_t dstHi = ((uint32_t)addr[4]) | ((uint32_t)addr[5] << 8) |
+                         ((uint32_t)addr[6] << 16) | ((uint32_t)addr[7] << 24);
+
+        if (((dstLo == ZLL->MACLONGADDRS0_LSB) && (dstHi == ZLL->MACLONGADDRS0_MSB)) ||
+            ((dstLo == ZLL->MACLONGADDRS1_LSB) && (dstHi == ZLL->MACLONGADDRS1_MSB)))
+        {
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
 
 /*! *********************************************************************************
 * \brief  Set the MAC PanCoordinator role

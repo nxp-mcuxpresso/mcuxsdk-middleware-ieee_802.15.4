@@ -83,6 +83,34 @@ uint8_t PhyPacket_GetHdrLength(const uint8_t *packet)
         return 0;
     }
 
+    /*
+     * Multipurpose frames use a different Frame Control layout (1 or 2 octets)
+     * and different addressing field positions than a normal FCF.
+     */
+    if (((mpFcf_t *)packet)->frameType == phyFcfFrameMultipurpose)
+    {
+        mpFcf_t *mpFcf = (mpFcf_t *)packet;
+
+        length = mpFcf->longFrameControl ? (2 * sizeof(uint8_t)) : sizeof(uint8_t);
+
+        if (!mpFcf->longFrameControl || !mpFcf->snSuppression)
+        {
+            length += SN_SIZE;
+        }
+
+        /* The Destination PAN ID field only exists in the long Frame Control
+           form when the PAN ID Present bit is set. The short form (1 octet)
+           has no PAN ID Present bit and no PAN ID field at all. */
+        if ((mpFcf->dstAddressingMode != 0) && (mpFcf->longFrameControl && mpFcf->panIdPresent))
+        {
+            length += PAN_SIZE;
+        }
+
+        length += PHY_PACKET_ADDR_LENGTH(mpFcf->dstAddressingMode);
+
+        return length;
+    }
+
     if ((fcf->frameVersion < FCF_VER_MAX) ||
         ((fcf->frameVersion == FCF_VER_MAX) && (fcf->snSupression == 0)))
     {
@@ -479,3 +507,45 @@ void PhyPacket_get_dest_pan_addr(uint8_t *f, uint8_t **pan, uint8_t **addr, uint
 
     *addr = f + tmp_pos;
 }
+
+void PhyPacket_GetMpDestAddr(uint8_t *f, uint8_t **addr, uint8_t *len)
+{
+    mpFcf_t *fcf     = (mpFcf_t *)f;
+    uint8_t  tmp_pos = sizeof(uint8_t);     /* short Frame Control is 1 byte */
+
+    *addr = NULL;
+    *len  = 0;
+
+    if (!f)
+    {
+        return;
+    }
+
+    /* Long Frame Control adds a second octet and, unless suppressed, a
+       Sequence Number. Short Frame Control always carries a Sequence Number. */
+    if (fcf->longFrameControl)
+    {
+        tmp_pos += sizeof(uint8_t);
+
+        if (!fcf->snSuppression)
+        {
+            tmp_pos += SN_SIZE;
+        }
+    }
+    else
+    {
+        tmp_pos += SN_SIZE;
+    }
+
+    /* Destination PAN ID only exists in the long Frame Control form when the
+       PAN ID Present bit is set. The short form has no PAN ID field. */
+    if ((fcf->dstAddressingMode != 0) && (fcf->longFrameControl && fcf->panIdPresent))
+    {
+        tmp_pos += PAN_SIZE;
+    }
+
+    *len = PHY_PACKET_ADDR_LENGTH(fcf->dstAddressingMode);
+
+    *addr = f + tmp_pos;
+}
+

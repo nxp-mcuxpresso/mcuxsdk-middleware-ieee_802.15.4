@@ -1165,6 +1165,20 @@ void PHY_InterruptHandler_base(
             }
             else
             {
+                if ((rxFcf & phyFcfFrameTypeMask) == phyFcfFrameMultipurpose)
+                {
+                    if (!PhyPacket_IsMpFrameForUs(rxf, rxFcf))
+                    {
+                        /* Multipurpose frame is not destined to our MAC address:
+                        abort the sequencer to drop the current frame (and any
+                        ACK), then restore the default watermark level. */
+                        PhyAbort_base(ctx);
+                        Radio_Phy_AbortIndication(ctx);
+
+                        ZLL->RX_WTR_MARK = RX_WTMRK_START;
+                    }
+                }
+                else
 #if defined(FFU_DEVICE_LIMIT_VISIBILITY)
                 if( !PHY_isFrameVisible(ctx, rxFcf) )
                 {

@@ -29,6 +29,7 @@ extern uint8_t * const rxf;
 /*********************************************************************************************************************/
 static void   Phy_initVisibleFilters(Phy_PhyLocalStruct_t *ctx);
 static bool_t Phy_isVisibleFiltersEnabled(Phy_PhyLocalStruct_t *ctx);
+static bool_t Phy_isLongAddrWhiteListEnabled(Phy_PhyLocalStruct_t *ctx);
 static bool_t Phy_isExtAddrVisible(Phy_PhyLocalStruct_t *ctx, ext_addr_t extAddr);
 static bool_t Phy_isLocalAddrVisible(Phy_PhyLocalStruct_t *ctx, uint16_t localAddr);
 static int    Phy_getExtAddr(Phy_PhyLocalStruct_t *ctx, uint16_t localAddr, ext_addr_t extAddr);
@@ -42,6 +43,16 @@ static void Phy_initVisibleFilters(Phy_PhyLocalStruct_t *ctx)
 }
 
 static bool_t Phy_isVisibleFiltersEnabled(Phy_PhyLocalStruct_t *ctx)
+{
+    bool_t bRet = false;
+    if (ctx->sFilter.nVisibleDevice != 0 || ctx->sFilter.nInvisibleDevice != 0)
+    {
+        bRet = true;
+    }
+    return bRet;
+}
+
+static bool_t Phy_isLongAddrWhiteListEnabled(Phy_PhyLocalStruct_t *ctx)
 {
     return ctx->sFilter.nVisibleDevice ? true : false;
 }
@@ -138,7 +149,7 @@ bool_t PHY_isFrameVisible(Phy_PhyLocalStruct_t *ctx, uint16_t rxfcf)
                 shortSrcAddr = PHY_TransformArrayToUint16(pSrcAddr);
 
                 bRet = Phy_isLocalAddrVisible(ctx, shortSrcAddr);
-                if( bRet )
+                if( bRet && Phy_isLongAddrWhiteListEnabled(ctx) )
                 {
                     if( Phy_getExtAddr(ctx, shortSrcAddr, extAddr) == 0 )
                     {

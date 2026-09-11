@@ -1,5 +1,5 @@
 /*! *********************************************************************************
-* Copyright (c) 2014 - 2025, Freescale Semiconductor, Inc.
+* Copyright (c) 2014 - 2026, Freescale Semiconductor, Inc.
 * Copyright 2016-2024,2026 NXP
 * All rights reserved.
 *
@@ -17,12 +17,24 @@
 #include "EmbeddedTypes.h"
 
 #include "SMAC_Config.h"
+#ifndef __ZEPHYR__
 #include "fsl_component_mem_manager.h"
+#else /* __ZEPHYR__ */
+#include <zephyr/kernel.h>
+
+#define MSG_Alloc(x) k_malloc(x)
+#define MSG_Free(x)  k_free(x)
+#define MEM_BufferAlloc(x) k_malloc(x)
+#define MEM_BufferAllocWithId(x,y) k_malloc(x)
+#define MEM_BufferFree(x)          k_free(x)
+#endif
 #include "FunctionLib.h"
 #include "fsl_os_abstraction.h"
 
 #if (defined(FSL_FEATURE_SOC_LTC_COUNT) && (FSL_FEATURE_SOC_LTC_COUNT > 0))
+#ifndef __ZEPHYR__
 #include "fsl_ltc.h"
+#endif
 #endif
 
 /* -------------------------------------------------------------------------- */
@@ -38,6 +50,7 @@
 /*                               Private memory                               */
 /* -------------------------------------------------------------------------- */
 
+#ifndef __ZEPHYR__
 static const char* mSmacVersionString = (char*)gSmacVerString_c;
 
 RegisterModuleInfo(SMAC, /* DO NOT MODIFY */
@@ -47,6 +60,7 @@ RegisterModuleInfo(SMAC, /* DO NOT MODIFY */
                    gSmacVerMinor_c, /* DO NOT MODIFY, EDIT in SMAC.h */
                    gSmacVerPatch_c, /* DO NOT MODIFY, EDIT in SMAC.h */
                    gSmacBuildNo_c); /* DO NOT MODIFY, EDIT in SMAC.h */
+#endif /* __ZEPHYR__ */
 
 static smacInternalAttrib_t maSmacAttributes;
 
@@ -124,6 +138,7 @@ static void SMAC_Decrypt(uint8_t* pIn, uint8_t* pOut, uint8_t *len, smacMultiPan
 
 #endif /* gSmacUseSecurity_c */
 
+#ifndef __ZEPHYR__
 static void BackoffTimeElapsed(void* param)
 {
     uint8_t u8PhyRes = MAC_PD_SapHandler(maSmacAttributes.gSmacDataMessage, maSmacAttributes.phy_context_id);
@@ -137,6 +152,35 @@ static void BackoffTimeElapsed(void* param)
         maSmacAttributes.gSmacDataMessage = NULL;
     }
 }
+#else /* __ZEPHYR__ */
+/* Zephyr k_timer used. k_timer expiry runs in INTERRUPT context, so SMAC work is deferred
+ * to s_backoff_work. MAC_PD_SapHandler() and MSG_Free() must NOT run in ISR.
+ * This path is DORMANT because SMAC_Config.h sets CCA_BEFORE_TX (FALSE). */
+static struct k_work s_backoff_work;
+
+static void backoff_work_handler(struct k_work *w)
+{
+    ARG_UNUSED(w);
+    uint8_t u8PhyRes = MAC_PD_SapHandler(maSmacAttributes.gSmacDataMessage,
+                                          maSmacAttributes.phy_context_id);
+    if (u8PhyRes != gPhySuccess_c)
+    {
+        OSA_InterruptDisable();
+        maSmacAttributes.smacState = mSmacStateIdle_c;
+        OSA_InterruptEnable();
+
+        MSG_Free(maSmacAttributes.gSmacDataMessage);
+        maSmacAttributes.gSmacDataMessage = NULL;
+    }
+}
+
+static void BackoffTimeElapsed(struct k_timer *timer)
+{
+    /* ISR context: defer the SMAC logic to the system work queue. */
+    ARG_UNUSED(timer);
+    (void)k_work_submit(&s_backoff_work);
+}
+#endif
 
 static bool_t SMACPacketCheck(pdDataToMacMessage_t* pMsgFromPhy)
 {
@@ -215,7 +259,7 @@ static phyStatus_t PD_SMAC_SapHandler(void* pMsg, instanceId_t instance)
             if(maSmacAttributes.mSmacTimeoutAsked)
             {
                 pSmacMsg = MEM_BufferAlloc(sizeof(smacToAppDataMessage_t));
-                if (pSmacMsg)
+                if (pSmacMsg == NULL)
                 {
                     break;
                 }
@@ -325,10 +369,22 @@ static phyStatus_t PLME_SMAC_SapHandler(void* pMsg, instanceId_t instance)
                 if(maSmacAttributes.txConfigurator.retryCountCCAFail > maSmacAttributes.u8CCARetryCounter)
                 {
                     maSmacAttributes.u8CCARetryCounter++;
+#ifndef __ZEPHYR__
                     HAL_RngGetData(&backOffTime, sizeof(backOffTime));
+#else /* __ZEPHYR__ */
+                    sys_rand_get(&backOffTime, sizeof(backOffTime));
+#endif
 #if !defined(RW610N_BT_CM3_SERIES)
                     /* TODO: MCRED-2 support timers on Redfinch */
+#ifndef __ZEPHYR__
                     TM_Start(maSmacAttributes.u8BackoffTimerId, kTimerModeSingleShot, ((backOffTime & gMaxBackoffTime_c) + gMinBackoffTime_c));
+#else /* __ZEPHYR__ */
+                    /* 802.15.4 backoff unit is SYMBOL period (16 us), not ms.
+                     * gMaxBackoffTime_c = 0x1F (31 symbols ~= 0.5 ms). */
+                    k_timer_start(&maSmacAttributes.u8BackoffTimerId,
+                                  K_USEC(((backOffTime & gMaxBackoffTime_c) + gMinBackoffTime_c) * 16U),
+                                  K_NO_WAIT);
+#endif
 #endif
                 }
                 else
@@ -406,12 +462,23 @@ static phyStatus_t PLME_SMAC_SapHandler(void* pMsg, instanceId_t instance)
                 if(maSmacAttributes.txConfigurator.retryCountAckFail > maSmacAttributes.u8AckRetryCounter)
                 {
                     maSmacAttributes.u8AckRetryCounter++;
-
+#ifndef __ZEPHYR__
                     HAL_RngGetData(&backOffTime, sizeof(backOffTime));
+#else /* __ZEPHYR__ */
+                    sys_rand_get(&backOffTime, sizeof(backOffTime));
+#endif
                     //start event timer. After time elapses, Data request will be fired.
 #if !defined(RW610N_BT_CM3_SERIES)
                     /* TODO: MCRED-2 support timers on Redfinch */
+#ifndef __ZEPHYR__
                     TM_Start(maSmacAttributes.u8BackoffTimerId, kTimerModeSingleShot, ((backOffTime & gMaxBackoffTime_c) + gMinBackoffTime_c));
+#else /* __ZEPHYR__ */
+                    /* 802.15.4 backoff unit is SYMBOL period (16 us), not ms.
+                     * gMaxBackoffTime_c = 0x1F (31 symbols ~= 0.5 ms). */
+                    k_timer_start(&maSmacAttributes.u8BackoffTimerId,
+                                  K_USEC(((backOffTime & gMaxBackoffTime_c) + gMinBackoffTime_c) * 16U),
+                                  K_NO_WAIT);
+#endif
 #endif
                 }
                 else
@@ -495,7 +562,9 @@ void InitSmac(instanceId_t phy_context_id)
 {
     uint32_t u32RandomNo = 0;
 
+#ifndef __ZEPHYR__
     HAL_RngInit();
+#endif
 
 #if gSmacUseSecurity_c
     SecLib_Init();
@@ -528,14 +597,22 @@ void InitSmac(instanceId_t phy_context_id)
 
 #if !defined(RW610N_BT_CM3_SERIES)
         /* TODO: MCRED-2 support timers on Redfinch */
+#ifndef __ZEPHYR__
     (void)TM_Open(maSmacAttributes.u8BackoffTimerId);
     (void)TM_InstallCallback((timer_handle_t)maSmacAttributes.u8BackoffTimerId, BackoffTimeElapsed, NULL);
+#else /* __ZEPHYR__ */
+    k_timer_init(&maSmacAttributes.u8BackoffTimerId, BackoffTimeElapsed, NULL);
+    k_work_init(&s_backoff_work, backoff_work_handler);
+#endif
 #endif
 
     (void)SMACSetShortSrcAddress(gNodeAddress_c);
     (void)SMACSetPanID(gDefaultPanID_c);
-
+#ifndef __ZEPHYR__
     HAL_RngGetData(&u32RandomNo, sizeof(u32RandomNo));
+#else /* __ZEPHYR__ */
+    sys_rand_get(&u32RandomNo, sizeof(u32RandomNo));
+#endif
     maSmacAttributes.u8SmacSeqNo = (uint8_t)u32RandomNo;
 
 #if gSmacUseSecurity_c

@@ -18,10 +18,14 @@
 #include "Phy.h"
 #include "PhyInterface.h"
 #include "SMAC_Interface.h"
+#ifndef __ZEPHYR__
 #include "fsl_component_timer_manager.h"
 #include "fsl_adapter_rng.h"
 #include "ModuleInfo.h"
-
+#else
+#include <zephyr/kernel.h>
+#include <zephyr/random/random.h>
+#endif
 #if gSmacUseSecurity_c
 #include "SecLib.h"
 #endif
@@ -57,11 +61,13 @@ FALSE:  SMAC primitives don't care about SMAC's initialization.
 
 #define gSmacModuleId_c  0xD1
 
+#ifndef __ZEPHYR__
 #define gSmacVerString_c "SMAC v" \
                         QUH(gSmacVerMajor_c) "." \
                         QUH(gSmacVerMinor_c) "." \
                         QUH(gSmacVerPatch_c) "." \
                         QUH(gSmacBuildNo_c)
+#endif
 
 /* -------------------------------------------------------------------------- */
 /*                                Private types                               */
@@ -122,8 +128,11 @@ typedef struct smacInternalAttrib_tag
     uint8_t u8AckRetryCounter;
     uint8_t u8CCARetryCounter;
     uint8_t mSmacTimeoutAsked;
-
+#ifndef __ZEPHYR__
     TIMER_MANAGER_HANDLE_DEFINE(u8BackoffTimerId);
+#else
+    struct k_timer u8BackoffTimerId;
+#endif
     uint8_t u8SmacSeqNo;
 #if (gSmacUseSecurity_c)
     smacEncryptionKeyIV_t secInit;

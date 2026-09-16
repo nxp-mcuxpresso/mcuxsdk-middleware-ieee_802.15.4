@@ -1100,6 +1100,10 @@ void PHY_InterruptHandler_base(
     uint32_t length;
     uint32_t crc_valid;
     uint16_t rxFcf;
+    /* ED result of the sequence being closed. Defaults to the bottom of the
+       scale so a missed sample is never reported as 0 dBm (which scales to 0xFF) */
+    int8_t   ed_level_dbm = (int8_t)MIN_ENERGY_LEVEL;
+    bool_t   ed_level_valid = FALSE;
 
     OSA_InterruptDisable();
 
@@ -1243,6 +1247,22 @@ void PHY_InterruptHandler_base(
     /* Sequencer interrupt, the autosequence has completed */
     if ((!(ZLL->PHY_CTRL & ZLL_PHY_CTRL_SEQMSK_MASK)) && (irqStatus & ZLL_IRQSTS_SEQIRQ_MASK))
     {
+        /* Sample the ED result before PhyIsrSeqCleanup() sets the sequencer to
+           IDLE, which gates its clock and makes CCA1_ED_FNL read back stale */
+        if ((xcvseqCopy == gCCA_c) &&
+            (gPhyEnergyDetectMode_c ==
+             ((ZLL->PHY_CTRL & ZLL_PHY_CTRL_CCATYPE_MASK) >> ZLL_PHY_CTRL_CCATYPE_SHIFT)))
+        {
+            ed_level_dbm = (int8_t)((ZLL->LQI_AND_RSSI & ZLL_LQI_AND_RSSI_CCA1_ED_FNL_MASK) >>
+                                    ZLL_LQI_AND_RSSI_CCA1_ED_FNL_SHIFT);
+
+            /* Require the measurement complete flag (CCAIRQ, cleared per window
+               by PhyPlmeCcaEdRequest) and a plausible value: CCA1_ED_FNL is a
+               signed dBm RSSI, so 0 means "not written yet" rather than 0 dBm */
+            ed_level_valid = ((irqStatus & ZLL_IRQSTS_CCAIRQ_MASK) != 0U) &&
+                             (ed_level_dbm != 0);
+        }
+
         PhyIsrSeqCleanup();
 
         if (seqCtrlStatus & ZLL_SEQ_CTRL_STS_SW_ABORTED_MASK)
@@ -1422,7 +1442,8 @@ void PHY_InterruptHandler_base(
             case gCCA_c:
                 if (gPhyEnergyDetectMode_c == ((ZLL->PHY_CTRL & ZLL_PHY_CTRL_CCATYPE_MASK) >> ZLL_PHY_CTRL_CCATYPE_SHIFT))
                 {
-                    Radio_Phy_PlmeEdConfirm(ctx, (ZLL->LQI_AND_RSSI & ZLL_LQI_AND_RSSI_CCA1_ED_FNL_MASK) >> ZLL_LQI_AND_RSSI_CCA1_ED_FNL_SHIFT);
+                    /* Use the value latched above; the register is stale by now */
+                    Radio_Phy_PlmeEdConfirm(ctx, ed_level_dbm, ed_level_valid);
                 }
                 else /* CCA */
                 {

@@ -859,8 +859,9 @@ static phyStatus_t Phy_Handle_PlmeCcaEdRequest(Phy_PhyLocalStruct_t *ctx, macToP
     phyStatus_t status = gPhySuccess_c;
     uint32_t cca_time = gPhyRxWuTimeSym + gCCATime_c + gPhyRxWdTimeSym;
 
-    ctx->channelParams.maxEnergyLeveldB = -127;     /* set maxEnergyLeveldB to minimum value */
-    ctx->channelParams.energyLeveldB = 0;
+    /* Start both at the bottom of the scale: 0 would be scaled to 0xFF. */
+    ctx->channelParams.maxEnergyLeveldB = -127;
+    ctx->channelParams.energyLeveldB = -127;
 
     if (!pMsg)
     {
@@ -887,7 +888,9 @@ static phyStatus_t Phy_Handle_PlmeCcaEdRequest(Phy_PhyLocalStruct_t *ctx, macToP
 
         /* convert the ED time to CCA measurements */
         ctx->ccaParams.edScanMaxCnt = (pMsg->msgData.edReq.measureDurationSym + cca_time - 1) / cca_time;
+
         ctx->ccaParams.edScanCnt = 0;
+        ctx->ccaParams.edSampleMissed = FALSE;
         break;
 
     default:
@@ -1186,21 +1189,32 @@ void Radio_Phy_PlmeCcaConfirm(phyStatus_t phyChannelStatus, Phy_PhyLocalStruct_t
 * \param[in]  energyLeveldB The energy level in DB
 *
 ********************************************************************************** */
-void Radio_Phy_PlmeEdConfirm(Phy_PhyLocalStruct_t *ctx, int8_t energyLeveldB)
+void Radio_Phy_PlmeEdConfirm(Phy_PhyLocalStruct_t *ctx, int8_t energyLeveldB, bool_t sampleValid)
 {
     if (!ctx)
     {
         return;
     }
 
-    ctx->channelParams.energyLeveldB = energyLeveldB;
-
-    if (energyLeveldB > ctx->channelParams.maxEnergyLeveldB)
+    /* Accumulate only measurements the hardware actually completed */
+    if (sampleValid)
     {
-        ctx->channelParams.maxEnergyLeveldB = energyLeveldB;
+        ctx->ccaParams.edSampleMissed = FALSE;
+
+        ctx->channelParams.energyLeveldB = energyLeveldB;
+
+        if (energyLeveldB > ctx->channelParams.maxEnergyLeveldB)
+        {
+            ctx->channelParams.maxEnergyLeveldB = energyLeveldB;
+        }
+    }
+    else
+    {
+        ctx->ccaParams.edSampleMissed = TRUE;
     }
 
     ctx->ccaParams.edScanCnt++;
+
     if (ctx->ccaParams.edScanCnt >= ctx->ccaParams.edScanMaxCnt)
     {
         PLME_SendMessage(ctx, gPlmeEdCnf_c);
@@ -1208,7 +1222,6 @@ void Radio_Phy_PlmeEdConfirm(Phy_PhyLocalStruct_t *ctx, int8_t energyLeveldB)
     else if (PhyPlmeCcaEdRequest(ctx) != gPhySuccess_c)
     {
         PLME_SendMessage(ctx, gPlmeAbortInd_c);
-
     }
 }
 
@@ -1362,10 +1375,21 @@ void PLME_SendMessage(Phy_PhyLocalStruct_t *ctx, phyMessageId_t msgType)
         break;
 
     case gPlmeEdCnf_c:
-        pMsg->msgData.edCnf.status           = gPhySuccess_c;
+        /* No valid measurement at all: report a non-success status so the MAC
+           skips this sample instead of recording a fabricated level */
+        if (ctx->ccaParams.edSampleMissed)
+        {
+            pMsg->msgData.edCnf.status = gPhyBusy_c;
+        }
+        else
+        {
+            pMsg->msgData.edCnf.status = gPhySuccess_c;
+        }
+
         pMsg->msgData.edCnf.energyLeveldB    = ctx->channelParams.energyLeveldB;
         pMsg->msgData.edCnf.maxEnergyLeveldB = ctx->channelParams.maxEnergyLeveldB;
-        pMsg->msgData.edCnf.energyLevel      = Phy_GetEnergyLevel(ctx->channelParams.energyLeveldB);
+        /* Report the max over all samples of the channel, as the OT RCP does */
+        pMsg->msgData.edCnf.energyLevel      = Phy_GetEnergyLevel(ctx->channelParams.maxEnergyLeveldB);
         break;
 
     default:

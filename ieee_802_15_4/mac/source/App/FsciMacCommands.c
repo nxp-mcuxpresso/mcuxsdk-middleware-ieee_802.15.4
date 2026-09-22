@@ -547,8 +547,15 @@ void fsciMlmeCnfHandler(void *pData, void* param, uint32_t interfaceId)
             FSCI_Error( gFsciOutOfMessages_c, interfaceId );     
             return;
         }
-        /* Allocate buffer for beacon payload separately, always freed later */
-        pMlmeCnf->msgData.beaconNotifyInd.pBufferRoot = MEM_BufferAlloc(pClientPacket->structured.payload[mBeaconMsduLenOffset_c]);
+        /* Allocate buffer for pending address list + beacon payload */
+        {
+            uint8_t sduLength    = pClientPacket->structured.payload[mBeaconMsduLenOffset_c];
+            uint8_t pendAddrSpec = pClientPacket->structured.payload[1];
+            uint8_t pendAddrSize = 2 * (pendAddrSpec & 0x07) +
+                                   8 * ((pendAddrSpec >> 4) & 0x07);
+
+            pMlmeCnf->msgData.beaconNotifyInd.pBufferRoot = MEM_BufferAlloc(pendAddrSize + sduLength);
+        }
         if( NULL == pMlmeCnf->msgData.beaconNotifyInd.pBufferRoot )
         {
             MEM_BufferFree( pData );

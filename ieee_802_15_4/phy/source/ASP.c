@@ -693,8 +693,16 @@ AspStatus_t ASP_TelecTest(uint8_t mode)
     case gTestForceIdle_c:  /* ForceIdle() */
         /* This is the reliable way of stopping the gTestPulseTxPrbs9_c test.
          * If we only call XCVR_DftTxOff() it will spin waiting for the TSM to stop forever
-         * blocking the response */
-        PhyAbort();
+         * blocking the response.
+         * Prevent the PHY abort when the ZLL HW module is not clocked, which happens in
+         * particular once the unmodulated CW test switched the LL to GENFSK. The ZLL remains
+         * clocked when the active LL is BTLE, so only GENFSK needs to be excluded. */
+#if !defined(RW610N_BT_CM3_SERIES)
+        if (XCVR_GetActiveLL() != XCVR_ACTIVE_LL_GENFSK)
+#endif
+        {
+            PhyAbort();
+        }
 
         XCVR_DftTxOff();
 #if !defined(RW610N_BT_CM3_SERIES)

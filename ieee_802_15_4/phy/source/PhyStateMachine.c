@@ -423,6 +423,8 @@ static void Phy24Task(Phy_PhyLocalStruct_t *ctx)
             break;
         }
 
+        ctx->ps = PS_NONE;
+
         pMsgIn = MSG_DeQueue(&ctx->macPhyInputQueue);
         if (pMsgIn == NULL)
         {

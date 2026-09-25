@@ -2328,6 +2328,7 @@ void ctx_set_cca(Phy_PhyLocalStruct_t *ctx)
 void ctx_set_none(Phy_PhyLocalStruct_t *ctx)
 {
     ctx->op = NONE_OP;
+    ctx->ps = PS_NONE;
 }
 
 bool_t start_rx_all()
@@ -3006,6 +3007,11 @@ bool_t PHY_graceful_idle_base(Phy_PhyLocalStruct_t *ctx)
 {
     bool_t status = FALSE;
 
+    if (!ctx)
+    {
+        return status;
+    }
+
     if (scheduler.rx_all)
     {
         status = PHY_graceful_idle();
@@ -3025,6 +3031,7 @@ bool_t PHY_graceful_idle_base(Phy_PhyLocalStruct_t *ctx)
     if (status)
     {
         ctx->op = NONE_OP;
+        ctx->ps = PS_NONE;
 
         if (scheduler.rx_all)
         {

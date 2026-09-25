@@ -1011,6 +1011,8 @@ int8_t PHY_handle_get_RSSI(Phy_PhyLocalStruct_t *ctx)
 ********************************************************************************** */
 static void Phy_EnterIdle(Phy_PhyLocalStruct_t *ctx)
 {
+    ctx->ps = PS_NONE;
+
     if (ctx->flags & gPhyFlagRxOnWhenIdle_c)
     {
         ctx->flags |= gPhyFlagIdleRx_c;

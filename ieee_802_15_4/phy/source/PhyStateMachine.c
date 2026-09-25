@@ -2276,6 +2276,7 @@ bool_t all_ctx_rx()
 
         if (!((ctx->state != E_SCHED_PROTO_OFF) && (ctx_2->state != E_SCHED_PROTO_OFF) &&
               (ctx->op == RX_OP) && (ctx_2->op == RX_OP) &&
+              (ctx->ps == PS_NONE) && (ctx_2->ps == PS_NONE) &&
               (ctx->rxParams.startTime == ctx_2->rxParams.startTime) &&
               (ctx->rxParams.duration == ctx_2->rxParams.duration)))
         {

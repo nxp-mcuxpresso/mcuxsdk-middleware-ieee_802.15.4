@@ -1396,7 +1396,7 @@ void PHY_InterruptHandler_base(
                                 RX_PB[0] |= phyFcfFramePending;
                             }
                             RX_PB[2] = TX_PB[3];    /* SN */
-                            ctx->rxParams.psduLength = PHY_IMM_ACK_LENGTH - gPhyFCSSize_c;
+                            ctx->rxParams.psduLength = PHY_IMM_ACK_LENGTH;
                         }
 
                         /* Copy the received ACK */

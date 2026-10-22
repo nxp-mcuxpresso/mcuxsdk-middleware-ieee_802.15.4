@@ -720,6 +720,7 @@ typedef MAC_STRUCT mcpsToNwkMessage_tag
 {
     uint8_t             msgType; /*!< The id of the MAC massage */
     uint8_t             mac_id;
+    bool_t              do_not_free; /*!< TRUE if the message is not heap allocated and must not be freed */
     MAC_UNION
     {
         mcpsDataCnf_t       dataCnf;
@@ -762,6 +763,7 @@ typedef MAC_STRUCT nwkMessage_tag
 {
     uint8_t             msgType; /*!< The id of the MAC massage */
     uint8_t             mac_id;
+    bool_t              do_not_free; /*!< TRUE if the message is not heap allocated and must not be freed */
     MAC_UNION
     {
         mlmeAssociateInd_t      associateInd;

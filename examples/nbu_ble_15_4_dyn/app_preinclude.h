@@ -67,7 +67,7 @@
 
 #elif defined(KW43B43ZC7_NBU_SERIES)
 
-#define MinimalHeapSize_c        (uint32_t)1024
+#define MinimalHeapSize_c        (uint32_t)4096
 #define gMemManagerLightExtendHeapAreaUsage 0
 
 #else

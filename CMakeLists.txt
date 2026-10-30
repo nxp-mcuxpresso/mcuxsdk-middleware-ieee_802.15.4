@@ -159,6 +159,13 @@ if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72.NBU_img)
     )
 endif()
 
+if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw70_nbu.MAC)
+    mcux_add_library(
+        LIBS
+            ../ieee-802.15.4_private/ieee_802_15_4/lib/libieee-802.15.4_NBU_MCXW70.a
+    )
+endif()
+
 if (CONFIG_MCUX_COMPONENT_middleware.wireless.ieee_802_15_4.mcxw72_nbu.MAC)
     mcux_add_library(
         LIBS
